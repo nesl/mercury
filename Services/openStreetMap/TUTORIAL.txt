@@ -1,0 +1,14 @@
+Tutorial: http://learnosm.org/en/osm-data/data-overview/
+
+Possible website to download maps:
+- http://download.geofabrik.de/
+- https://mapzen.com/metro-extracts/
+
+Software to open the map:
+- QGIS, installation instruction in http://www.qgis.org/en/site/forusers/alldownloads.html#ubuntu
+
+
+[QGIS]
+QGIS itself can download part of the map by specifying the lat/long range. See http://learnosm.org/en/osm-data/osm-in-qgis/ for tutorial. The map downloading can be issued by clicked "Download data." The downloaded file should come with a file extension .osm extension, nevertheless the file itself is an xml. Briefly scanning it, the atom element seems to be node. The road/street is coded in way element, with a list of nd elements, the ref elements of which refer to the node elements by id. Probably it's the way to get the road path.
+
+

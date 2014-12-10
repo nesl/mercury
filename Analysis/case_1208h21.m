@@ -62,12 +62,14 @@ plot(baroRaw(:,1), baroRaw(:,2))
 %% pile baro to gps-ele
 clf
 hold on
+seaPre = 1020.394;
 sca = -7.9736;
 off = 8136.404;
-plot(baroRaw(:,1), baroRaw(:,2) * sca + off, 'r');
+%plot(baroRaw(:,1), baroRaw(:,2) * sca + off, 'r');
+plot(baroRaw(:,1), (baroRaw(:,2) - seaPre) * sca, 'r');
 plot(gpsEle(:,1), gpsEle(:,4), 'b.-');
 legend({'baro', 'gps-ele'});
-xlabel('convert barometer 
+xlabel('convert barometer to height and match gps elevation')
 
 %% plot baro (segments)
 clf

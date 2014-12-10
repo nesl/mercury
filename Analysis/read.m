@@ -1,4 +1,4 @@
-function [baroData, accData, gyroData, magData, gpsData] = read(fileID, varargin)
+function [baroData, accData, gyroData, magData, gpsData, gpsEleData] = read(fileID, varargin)
 
 % fileID refer to middle parts of file
 % e.g. baro_n501_20141127_174324.mag.csv
@@ -7,10 +7,11 @@ function [baroData, accData, gyroData, magData, gpsData] = read(fileID, varargin
 % read() accept either 1 or 3 arguments. The last two specify begining and
 % edding points of time interested, unit in second.
 
-rootDir = 'forMat/';
-ext = {'baro', 'acc', 'gyro', 'mag', 'gps'};
-dataSets = cell(1, 5);
-for i = 1:5
+rootDir = '../Data/forMat/';
+ext = {'baro', 'acc', 'gyro', 'mag', 'gps', 'gpsele'};
+nrExt = size(ext, 2);
+dataSets = cell(1, nrExt);
+for i = 1:nrExt
     filename = [ rootDir 'baro_' fileID '.' ext{i} '.csv' ]
     dataSets{i} = csvread(filename);
 end
@@ -24,7 +25,7 @@ if numel(varargin) == 2
     bt = st;
 end
 
-for i = 1:5
+for i = 1:nrExt
     if i <= 4
         w = 1e-9;
     else
@@ -35,9 +36,9 @@ for i = 1:5
     dataSets{i} = dataSets{i}(ind,:);
 end
 
-baroData = dataSets{1};
-accData  = dataSets{2};
-gyroData = dataSets{3};
-magData  = dataSets{4};
-gpsData  = dataSets{5};
-
+baroData   = dataSets{1};
+accData    = dataSets{2};
+gyroData   = dataSets{3};
+magData    = dataSets{4};
+gpsData    = dataSets{5};
+gpsEleData = dataSets{6};

@@ -16,8 +16,9 @@ except ImportError:
 
 # --- CONSTANTS ---
 EARTH_RAD_KM = 6371
-MAX_REQUEST_POINTS = 50000
+MAX_REQUEST_POINTS = 300000
 REQUEST_BLOCKSIZE = 75
+REQUEST_MAXATTEMPTS = 5
 
 # --- HTTP API URLs ---
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
@@ -74,8 +75,6 @@ class ElevationGridRequester:
       raise ValueError('Specified Region cannot cross 180 degrees longitude')
 
     # define the positional grid
-    dist_lat = abs( latlng_NW[0] - latlng_SE[0] )
-    dist_lng = abs( latlng_NW[1] - latlng_SE[1] )
 
     latgrid_range = drange(latlng_NW[0], latlng_SE[0], -self.res_latlng)
     self.latgrid = [x for x in latgrid_range]
@@ -113,7 +112,7 @@ class ElevationGridRequester:
     fid.write('latstart '+str(self.latgrid[0])+'\n')
     fid.write('latstop '+str(self.latgrid[-1])+'\n')
     fid.write('lngstart '+str(self.lnggrid[0])+'\n')
-    fid.write('latstop '+str(self.lnggrid[-1])+'\n')
+    fid.write('lngstop '+str(self.lnggrid[-1])+'\n')
     fid.write('numpts '+str(self.num_points)+'\n')
     fid.write('lenlat '+str(self.len_lat)+'\n')
     fid.write('lenlng '+str(self.len_lng)+'\n')
@@ -122,8 +121,10 @@ class ElevationGridRequester:
     # create matrix file
     fid = open(path + '/data.csv', 'w')
     for line in self.elevationGrid:
-      for point in line:
-        fid.write('%f,' % point)
+      for idx in range(len(line)):
+        fid.write('%f' % line[idx])
+        if idx != len(line)-1:
+          fid.write(',')
       fid.write('\n')
     fid.close()
 
@@ -182,20 +183,26 @@ def requestElevationBlock(block_pts):
   elvtn_args = {
     'locations': pts_str,
   }
-  url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
-  response = simplejson.load(urllibRequest.urlopen(url))
 
-  # parse elevations
-  elevations = []
-  for resultset in response['results']:
-    elevations.append(resultset['elevation'])
+  requestAttempt = 0
+  goodResponse = False
 
-  if len(elevations) != len(block_pts):
-    raise EnvironmentError('Response from Google Elevation API is underfull')
+  while requestAttempt < REQUEST_MAXATTEMPTS and not goodResponse:
+    requestAttempt += 1
 
-  return elevations
+    url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
+    response = simplejson.load(urllibRequest.urlopen(url))
+    print(response)
+    # parse elevations
+    elevations = []
+    for resultset in response['results']:
+      elevations.append(resultset['elevation'])
 
+    if len(elevations) == len(block_pts):
+      goodResponse = True
+      return elevations
 
+  raise EnvironmentError('No response from google after %d attempts' % REQUEST_MAXATTEMPTS)
 
 if __name__ == '__main__':
     # testing...

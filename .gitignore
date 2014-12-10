@@ -4,3 +4,7 @@
 
 #Data
 Data/
+
+#Compiled objects
+*.o
+*.pyc

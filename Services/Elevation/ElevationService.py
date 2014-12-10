@@ -109,14 +109,14 @@ class ElevationGridRequester:
 
     # create metadata file
     fid = open(path + '/meta.txt', 'w')
-    fid.write('resolution,'+str(self.res_latlng)+'\n')
-    fid.write('latstart,'+str(self.latgrid[0])+'\n')
-    fid.write('latstop,'+str(self.latgrid[-1])+'\n')
-    fid.write('lngstart,'+str(self.lnggrid[0])+'\n')
-    fid.write('latstop,'+str(self.lnggrid[-1])+'\n')
-    fid.write('numpts,'+str(self.num_points)+'\n')
-    fid.write('lenlat,'+str(self.len_lat)+'\n')
-    fid.write('lenlng,'+str(self.len_lng)+'\n')
+    fid.write('resolution '+str(self.res_latlng)+'\n')
+    fid.write('latstart '+str(self.latgrid[0])+'\n')
+    fid.write('latstop '+str(self.latgrid[-1])+'\n')
+    fid.write('lngstart '+str(self.lnggrid[0])+'\n')
+    fid.write('latstop '+str(self.lnggrid[-1])+'\n')
+    fid.write('numpts '+str(self.num_points)+'\n')
+    fid.write('lenlat '+str(self.len_lat)+'\n')
+    fid.write('lenlng '+str(self.len_lng)+'\n')
     fid.close()
 
     # create matrix file

@@ -1,0 +1,8 @@
+resolution,0.0001
+latstart,34.073263
+latstop,34.071062999999924
+lngstart,-118.444527
+latstop,-118.44082699999987
+numpts,874
+lenlat,23
+lenlng,38

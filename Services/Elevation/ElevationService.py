@@ -2,6 +2,7 @@
 # --- IMPORTS ---
 import simplejson
 import numpy as np
+import os
 
 try:
   import urllib.parse as urllibParse
@@ -16,11 +17,13 @@ except ImportError:
 # --- CONSTANTS ---
 EARTH_RAD_KM = 6371
 MAX_REQUEST_POINTS = 50000
+REQUEST_BLOCKSIZE = 75
 
 # --- HTTP API URLs ---
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
 CHART_BASE_URL = 'http://chart.apis.google.com/chart'
 
+# --- HELPER SUBROUTINES ---
 def isValidLattitude(test):
   if test >= -90 and test <= 90:
     return True
@@ -49,134 +52,160 @@ def drange(start, stop, step):
     yield r
     r += step
 
-# class ElevationMatrixRequester:
+class ElevationGridRequester:
 
-#   def __init__(self, latlng_start, latlng_stop, resolution):
+  def __init__(self, latlng_start, latlng_stop, resolution):
 
-#     self.res_latlng = resolution
+    self.res_latlng = resolution
+    self.elevationGrid = []
 
-#     # check for valid inputs
-#     if not isValidLatlng(latlng_start) or not isValidLatlng(latlng_stop):
-#       raise ValueError('Improper (lat,long) pair provided')
-#     if res_meters < 0:
-#       raise ValueError('Negative resolution provided')
+    # check for valid inputs
+    if not isValidLatlng(latlng_start) or not isValidLatlng(latlng_stop):
+      raise ValueError('Improper (lat,long) pair provided')
+    if resolution < 0:
+      raise ValueError('Negative resolution provided')
 
-#     # find the "North West" and "South East" (lat,lng)
-#     latlng_NW = (max(latlng_start[0],latlng_stop[0]),min(latlng_start[1],latlng_stop[1]))
-#     latlng_SE = (min(latlng_start[0],latlng_stop[0]),max(latlng_start[1],latlng_stop[1]))
+    # find the "North West" and "South East" (lat,lng)
+    latlng_NW = (max(latlng_start[0],latlng_stop[0]),min(latlng_start[1],latlng_stop[1]))
+    latlng_SE = (min(latlng_start[0],latlng_stop[0]),max(latlng_start[1],latlng_stop[1]))
 
-#     # make sure the longitude is the correct polarity
-#     if latlng_NW[1] - latlng_SE[1] <= -180:
-#       raise ValueError('Specified Region cannot cross 180 degrees longitude')
+    # make sure the longitude is the correct polarity
+    if latlng_NW[1] - latlng_SE[1] <= -180:
+      raise ValueError('Specified Region cannot cross 180 degrees longitude')
 
-#     # define the positional grid
-#     dist_lat = abs( latlng_NW[0] - latlng_SE[0] )
-#     dist_lng = abs( latlng_NW[1] - latlng_SE[1] )
+    # define the positional grid
+    dist_lat = abs( latlng_NW[0] - latlng_SE[0] )
+    dist_lng = abs( latlng_NW[1] - latlng_SE[1] )
 
-#     latgrid_range = drange(latlng_NW[0], latlng_SE[0], -self.res_latlng)
-#     self.latgrid = ["%f" % round(x,6) for x in latgrid_range]
-#     self.len_lat = len(self.latgrid)
+    latgrid_range = drange(latlng_NW[0], latlng_SE[0], -self.res_latlng)
+    self.latgrid = [x for x in latgrid_range]
+    self.len_lat = len(self.latgrid)
 
-#     lnggrid_range = drange(latlng_NW[1], latlng_SE[1], self.res_latlng)
-#     self.lnggrid = ["%f" % round(x,6) for x in lnggrid_range]
-#     self.len_lng = len(self.lnggrid)
+    lnggrid_range = drange(latlng_NW[1], latlng_SE[1], self.res_latlng)
+    self.lnggrid = [x for x in lnggrid_range]
+    self.len_lng = len(self.lnggrid)
 
-#     self.num_points = self.len_lng*self.len_lat
+    self.num_points = self.len_lng*self.len_lat
 
-#     if self.num_points > MAX_REQUEST_POINTS:
-#       raise ValueError('The specified resolution produces %d points (max %d)' %\
-#         (self.num_points, MAX_REQUEST_POINTS))
+    if self.num_points > MAX_REQUEST_POINTS:
+      raise ValueError('The specified resolution produces %d points (max %d)' %\
+        (self.num_points, MAX_REQUEST_POINTS))
 
-#   def issueRequest(self):
-#     requester = ElevationRequester()
-    
+  def downloadElevations(self):
+    for lat in self.latgrid:
+      block_pts = []
+      for lng in self.lnggrid:
+        block_pts.append((lat,lng))
+      elevations = requestElevations(block_pts)
+      self.elevationGrid.append(elevations)
 
-class ElevationRequester:
-  BLOCKSIZE = 75
+  def getElevationGrid(self):
+    return self.elevationGrid
 
-  def __init__(self):
-    #self.savepath = 'storage/default'
-    self.data = {}
-    self.positions = []
+  def saveAsFolder(self, path):
+    # if the folder doesn't exist, create it
+    if not os.path.exists(path):
+      os.makedirs(path)
 
-  #def setSaveName(self, savename):
-  #  self.savename = savename
+    # create metadata file
+    fid = open(path + '/meta.txt', 'w')
+    fid.write('resolution,'+str(self.res_latlng)+'\n')
+    fid.write('latstart,'+str(self.latgrid[0])+'\n')
+    fid.write('latstop,'+str(self.latgrid[-1])+'\n')
+    fid.write('lngstart,'+str(self.lnggrid[0])+'\n')
+    fid.write('latstop,'+str(self.lnggrid[-1])+'\n')
+    fid.write('numpts,'+str(self.num_points)+'\n')
+    fid.write('lenlat,'+str(self.len_lat)+'\n')
+    fid.write('lenlng,'+str(self.len_lng)+'\n')
+    fid.close()
 
-  def setPositions(self, positions):
-    self.positions = positions
+    # create matrix file
+    fid = open(path + '/data.csv', 'w')
+    for line in self.elevationGrid:
+      for point in line:
+        fid.write('%f,' % point)
+      fid.write('\n')
+    fid.close()
 
-  def addPosition(self, xy):
-    self.positions.append(xy)
 
-  def requestElevations(self):
-    # since google elevation api doesn't allow us to access very fine-grained
-    # (my test is up to 6th digit after floating point, which is cm level),
-    # the following line is just truncate the tailing digits
-    self.positions = [ (round(x[0],6), round(x[1],6)) for x in self.positions ]
+def requestElevations(pts):
+  # truncate tailing digits
+  pts = [ (round(x[0],6), round(x[1],6)) for x in pts ]
+  if len(pts) == 0:
+    return
 
-    #self.fid = open('storage/'+str(self.savename)+".csv", 'w')
+  # how many request blocks do we need?
+  num_blocks = int( len(pts)/REQUEST_BLOCKSIZE) + 1
+  
+  # request elevations in blocks
+  block_pts = []
+  current_block_size = 0
+  current_block = 1
+  elevations = []
 
-    if len(self.positions) == 0:
-      return
-    # how many request blocks do we need?
-    num_blocks = int( len(self.positions)/ElevationRequester.BLOCKSIZE) + 1
+  for p in pts:
+    # if this block is big enough, send it out and keep going
+    if current_block_size >= REQUEST_BLOCKSIZE:
+      #print(" requesting block " + str(current_block) + " of " + str(num_blocks))
+      elevation_block = requestElevationBlock(block_pts)
+      elevations.extend(elevation_block)
+      current_block_size = 0
+      current_block += 1
+      block_pts = []
 
-    # convert block locations to string
-    location_str = ''
-    location_pts = []
-    current_block_size = 0
-    current_block = 1
+    current_block_size += 1
+    block_pts.append( (p[0],p[1]) )
 
-    for l in self.positions:
-      # if this block is big enough, send it out and keep going
-      if current_block_size >= ElevationRequester.BLOCKSIZE:
-        # remove last "|"
-        location_str = location_str[0:-1]
-        print(" requesting block " + str(current_block) + " of " + str(num_blocks))
-        data = self.requestElevationBlock(location_str, location_pts)
-        current_block_size = 0
-        current_block += 1
-        location_str = ''
-        location_pts = []
+  # if there are pending points still
+  if current_block_size > 0:
+    elevation_block = requestElevationBlock(block_pts)
+    elevations.extend(elevation_block)
 
-      current_block_size += 1
-      location_str += str(l[0]) + "," + str(l[1])
-      location_str += "|"
-      location_pts.append( (l[0],l[1]) )
+  return elevations
 
-    print(" requesting block " + str(current_block) + " of " + str(num_blocks))
-    # remove last "|"
-    location_str = location_str[0:-1]
-    self.requestElevationBlock(location_str, location_pts)
+  #self.fid.close()
 
-    #self.fid.close()
+def requestElevationBlock(block_pts):
+  # make sure the request is short enough
+  if len(block_pts) > REQUEST_BLOCKSIZE:
+    raise ValueError('requested block is too large')
 
-  def requestElevationBlock(self,block_str, block_pts):
-    elvtn_args = {
-      'locations': block_str,
-    }
-    url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
-    response = simplejson.load(urllibRequest.urlopen(url))
-    result_num = 0
-    for resultset in response['results']:
-      #lat = resultset['location']['lat']
-      #lng = resultset['location']['lng']
-      lat = block_pts[result_num][0]
-      lng = block_pts[result_num][1]
-      alt = resultset['elevation']
-      self.data[lat,lng] = alt
-      #self.fid.write(str(lat) + "," + str(lng) + "," + str(alt) + "\n")
-      result_num += 1
+  # convert positions to string
+  pts_str = ''
+  for p in block_pts:
+    pts_str += str(p[0]) + "," + str(p[1])
+    pts_str += "|"
+  # remove final "|"
+  pts_str = pts_str[0:-1]
 
-  def getElevationMap(self):
-    return self.data
+  # request elevations
+  elvtn_args = {
+    'locations': pts_str,
+  }
+  url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
+  response = simplejson.load(urllibRequest.urlopen(url))
+
+  # parse elevations
+  elevations = []
+  for resultset in response['results']:
+    elevations.append(resultset['elevation'])
+
+  if len(elevations) != len(block_pts):
+    raise EnvironmentError('Response from Google Elevation API is underfull')
+
+  return elevations
 
 
 
 if __name__ == '__main__':
     # testing...
-    rq = ElevationRequester()
-    rq.addPosition( (36.578581,-118.291994) )
-    rq.addPosition( (36.23998,-116.83171) )
-    rq.requestElevations()
-    print(rq.getElevationMap())
+    print('testing basic elevation requesting...')
+    res = requestElevations([(36.578581,-118.291994), (36.23998,-116.83171)])
+    print(res)
+    print('testing grid requests...')
+    NW = (34.073263, -118.444527)
+    SE = (34.070979, -118.440804)
+    req = ElevationGridRequester(NW, SE, 1e-4)
+    req.downloadElevations()
+    req.saveAsFolder('storage/test')
+

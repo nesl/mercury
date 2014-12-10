@@ -2,7 +2,6 @@
 [Tt]humbs.db
 *.DS_Store
 *~
-*.pyc
 
 #Data
 Data/

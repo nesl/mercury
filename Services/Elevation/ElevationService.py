@@ -1,4 +1,7 @@
+
+# --- IMPORTS ---
 import simplejson
+import numpy as np
 
 try:
   import urllib.parse as urllibParse
@@ -10,22 +13,98 @@ try:
 except ImportError:
   import urllib as urllibRequest
 
+# --- CONSTANTS ---
+EARTH_RAD_KM = 6371
+
+# --- HTTP API URLs ---
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
 CHART_BASE_URL = 'http://chart.apis.google.com/chart'
 
 def roundTo6thDigit(n):
   return round(n, 6)
 
+def latlngToMeters(dist_latlng):
+  a = (np.sin(np.deg2rad(dist_latlng)/2))**2
+  c = 2*np.arctan2(np.sqrt(a), np.sqrt(1-a))
+  d = EARTH_RAD_KM*c
+  return d*1000.0
+
+def metersToLatlng(dist_m):
+  dist_km = dist_m/1000.0
+  degrees = np.rad2deg(dist_km/EARTH_RAD_KM)
+
+def isValidLattitude(test):
+  if test >= -90 and test <= 90:
+    return True
+  return False
+
+def isValidLongitude(test):
+  if test >= -180 and test <= 180:
+    return True
+  return False
+
+def isValidLatlng(latlng):
+  if isValidLattitude(latlng[0]) and isValidLongitude(latlng[1])
+    return True
+  return False
+
+def drange(start, stop, step):
+  pol = 1
+  if stop < start:
+    pol = -1
+  r = start
+  # make sure polarity and step align
+  if pol == 1 and step < 0 or pol == -1 and step > 0:
+    return
+
+  while pol*r <= pol*stop:
+    yield r
+    r += step
+
+class ElevationMatrixRequester:
+
+  def __init__(self, latlng_start, latlng_stop, res_meters=10):
+
+    self.res_latlng = metersToLatlng(res_meters)
+
+    # check for valid inputs
+    if not isValidLatlng(latlng_start) or not isValidLatlng(latlng_stop):
+      raise ValueError('Improper (lat,long) pair provided')
+    if res_meters < 0:
+      raise ValueError('Negative resolution provided')
+
+    # find the "North West" and "South East" (lat,lng)
+    latlng_NW = (max(latlng_start[0],latlng_stop[0]),min(latlng_start[1],latlng_stop[1]))
+    latlng_SE = (min(latlng_start[0],latlng_stop[0]),max(latlng_start[1],latlng_stop[1]))
+
+    # make sure the longitude is the correct polarity
+    if latlng_NW[1] - latlng_SE[1] <= -180:
+      raise ValueError('Specified Region cannot cross 180 degrees longitude')
+
+    # define the positional grid
+    dist_lat = abs( latlng_NW[0] - latlng_SE[0] )
+    dist_lng = abs( latlng_NW[1] - latlng_SE[1] )
+    if dist_lng >= 180:
+      dist_lng = 360 - dist_lng
+    latgrid_range = drange(latlng_NW[0], latlng_SE[0], resolution)
+    latgrid = ["%f" % round(x,6) for x in latgrid_range]
+    if 
+    lnggrid_range = drange(latlng_NW[1], latlng_SE[1], resolution)
+    lnggrid = ["%f" % round(x,6) for x in lnggrid_range]
+
+    num_points = len(latgrid)*len(lnggrid)
+    
+
 class ElevationRequester:
   BLOCKSIZE = 75
 
   def __init__(self):
-    self.cachename = 'default'
+    self.savename = 'default'
     self.data = {}
     self.positions = []
 
-  def setName(self, name):
-    self.cachename = name
+  def setSaveName(self, savename):
+    self.savename = savename
 
   def setPositions(self, positions):
     self.positions = positions
@@ -39,7 +118,7 @@ class ElevationRequester:
     # the following line is just truncate the tailing digits
     self.positions = [ map(roundTo6thDigit, x) for x in self.positions ]
 
-    self.fid = open('cache/'+str(self.cachename)+".csv", 'w')
+    self.fid = open('storage/'+str(self.savename)+".csv", 'w')
 
     if len(self.positions) == 0:
       return
@@ -95,8 +174,10 @@ class ElevationRequester:
 
 
 if __name__ == '__main__':
+    # testing...
     rq = ElevationRequester()
-    rq.setName('test')
+    rq.setSaveName('test')
     rq.addPosition( (36.578581,-118.291994) )
     rq.addPosition( (36.23998,-116.83171) )
-    rq.requestElevations()
+    print(latlngToMeters(-179.999-(179.999)))
+    #rq.requestElevations()

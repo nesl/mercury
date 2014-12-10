@@ -44,7 +44,7 @@ def isValidLongitude(test):
   return False
 
 def isValidLatlng(latlng):
-  if isValidLattitude(latlng[0]) and isValidLongitude(latlng[1])
+  if isValidLattitude(latlng[0]) and isValidLongitude(latlng[1]):
     return True
   return False
 
@@ -88,7 +88,7 @@ class ElevationMatrixRequester:
       dist_lng = 360 - dist_lng
     latgrid_range = drange(latlng_NW[0], latlng_SE[0], resolution)
     latgrid = ["%f" % round(x,6) for x in latgrid_range]
-    if 
+    #if 
     lnggrid_range = drange(latlng_NW[1], latlng_SE[1], resolution)
     lnggrid = ["%f" % round(x,6) for x in lnggrid_range]
 

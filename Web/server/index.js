@@ -5,6 +5,7 @@ var path = require("path");
 var express = require("express");
 var readline = require('readline');
 var port = 8888;
+var dataFolder = '../../Data/';
 
 var app = express();
 //app.use(express.static(__dirname+ "/../"));
@@ -40,7 +41,7 @@ wss.on("connection", function (ws) {
 
 
 	if (page == 'collect') {
-		var p = '../../baroProject/forMat/';
+		var p = dataFolder + 'forMat/';
 		if (cmd == 'ls') {
 			// request on list the gps trajectories
 			
@@ -85,7 +86,7 @@ wss.on("connection", function (ws) {
 		}
 	}
 	else if (page == 'osm') {
-		rPath = '../../openStreetMap/trajectorySets/'
+		rPath = dataFolder + 'trajectorySets/'
 		if (cmd == 'ls') {
 			// request on list of osm dataset
 			re = [];

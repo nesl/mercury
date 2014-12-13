@@ -139,6 +139,50 @@ wss.on("connection", function (ws) {
 			});
 		}
 	}
+	else if (page == 'fix') {
+		rPath = dataFolder + 'trajectorySetsFix/'
+		if (cmd == 'ls') {
+			// request on list of osm dataset
+			re = [];
+			fs.readdir(rPath, function (err, files) {
+				if (err) {
+					console.log(err);
+					console.log('ERROR: directory not existed?');
+				}
+
+				for (var i = 0; i < files.length; i++) {
+					file = files[i];
+					if (file.substring(file.length - 5, file.length) == '.tfix')
+						re.push(file);
+				}
+				ws.send(JSON.stringify(re));
+				ws.close();
+			});
+		}
+		else if (cmd == 'load') {
+			// request on list the gps trajectories
+			var filename = rPath + params[0];
+			console.log('begin', filename);
+			re = [];
+			fs.exists(filename, function(exists) {
+				if (exists) {
+					var rd = readline.createInterface({
+						input: fs.createReadStream(filename),
+						output: process.stdout,
+						terminal: false
+					});
+					rd.on('line', function(line) {
+						re.push(line);
+					});
+					rd.on('close', function() {
+						console.log(re);
+						ws.send(JSON.stringify(re));
+						ws.close();
+					});
+				}
+			});
+		}
+	}
 	
 	ws.on("close", function () {
 		console.log("websocket connection close");

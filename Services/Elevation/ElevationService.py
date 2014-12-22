@@ -149,7 +149,7 @@ def requestElevations(pts):
     if current_block_size >= REQUEST_BLOCKSIZE:
       #print(" requesting block " + str(current_block) + " of " + str(num_blocks))
       elevation_block = requestElevationBlock(block_pts)
-      elevations.extend(elevation_block)
+      elevations.extend(elevation_block)  # you can simply put elevations += elevation block
       current_block_size = 0
       current_block += 1
       block_pts = []

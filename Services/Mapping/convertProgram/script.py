@@ -19,7 +19,8 @@ if len(osmName.split('.')) == 1:
     osmNameWoExt = osmName
 else:
     osmNameWoExt = osmName[:-(1+len(osmName.split('.')[-1]))]
-outDir = '../trajectorySets/' + osmNameWoExt + '/'
+outRootDir = '../../../Data/trajectorySets/'
+outDir = outRootDir + osmNameWoExt + '/'
 
 #if outDir[-1] != '/':
 #    outDir += '/'
@@ -36,7 +37,7 @@ cmd = 'basex findWaySummary.xq > /tmp/summary.xml'
 print 'CMD: ' + cmd
 os.system(cmd)
 
-tfname = '../trajectorySets/' + osmNameWoExt + '_summary.txt'
+tfname = outRootDir + osmNameWoExt + '_summary.txt'
 print 'ACTION: convert /tmp/summary.xml to ' + tfname
 f = open('/tmp/summary.xml', 'r')
 lines = f.readlines()

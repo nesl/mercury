@@ -1,36 +1,23 @@
 %% Housekeeping
 clc; close all; clear all;
 
-%% Load CSV
-fpath = '../ElevationAPI/cache/';
-fname = 'Bishop_res_30e-4.csv';
-%fname = 'Valley_res_50e-2.csv';
-%fname = 'Hawaii_res_5e-2.csv';
-%fname = 'steps_res_5e-5.csv';
-%fname = 'UCLA_res_1e-4.csv';
+%% Data storage path
+fpath = '../Services/Elevation/storage/Hawaii/';
 
-data = csvread([fpath fname]);
+%% Load meta data
+fname = 'meta.txt';
+[ res, latvec, lngvec, npts ] = parseElevationGridMetafile([fpath fname]);
 
-lat = data(:,1);
-lng = data(:,2);
-alt = data(:,3);
+%% Load elevation
+fname = 'data.csv';
+alt = csvread([fpath fname]);
 
-
-% Reshape to find lat vector, lng vector, and elevation matrix
-% x = lng, y = lat
-len_lng = find(diff(lat), 1, 'first');
-len_lat = length(alt)/len_lng;
-alt_matrix = reshape(alt, len_lng, len_lat);
-lat_vec = linspace(lat(1), lat(end), len_lat)';
-lng_vec = linspace(lng(1), lng(end), len_lng)';
 
 %% Surface Plot
-%scatter3(lat,lng,alt)
-
 cfigure(50,20);
-surf(lng_vec, lat_vec, alt_matrix');
+surf(lngvec, latvec, alt);
 colormap hsv
-alpha(.4)
+alpha(0.4);
 
 xlabel('Longitude (E/W)','FontSize',14);
 ylabel('Latitude (N/S)','FontSize',14);

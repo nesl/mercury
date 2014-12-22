@@ -192,7 +192,6 @@ def requestElevationBlock(block_pts):
 
     url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
     response = simplejson.load(urllibRequest.urlopen(url))
-    print(response)
     # parse elevations
     elevations = []
     for resultset in response['results']:

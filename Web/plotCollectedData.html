@@ -12,6 +12,20 @@ var nrMarkers = 1000;
 var map;
 var two;
 
+function timeConverter(msec) {
+	var a = new Date(Number(msec));
+	var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+	var year = a.getFullYear();
+	var month = months[a.getMonth()];
+	var date = a.getDate();
+	var hour = a.getHours();
+	var min = a.getMinutes();
+	var sec = a.getSeconds();
+	var time = date + '/' + month + '/' + year + ' ' + hour + ':' + min + ':' + sec ;
+	//return time;
+	return time + " (" + msec + ")";
+}
+
 function googleMapInitialize() {
 	//console.log('screen-height: ' + window.innerHeight);
 	//console.log('screen-width: ' + window.innerWidth);
@@ -21,6 +35,13 @@ function googleMapInitialize() {
 		mapTypeId:google.maps.MapTypeId.ROADMAP
 	};
 	map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
+
+	gpsIndicator = new google.maps.Marker({
+		position: new google.maps.LatLng(1, 1),
+		map: map
+	});
+	gpsIndicator.setVisible(false);
+	gpsIndicator.setZIndex(google.maps.Marker.MAX_ZINDEX + 1);
 	console.log('first', map);
 }
 google.maps.event.addDomListener(window, 'load', googleMapInitialize);
@@ -57,32 +78,37 @@ function regulateSize() {
 	$('#fileSelector').width(fileSelectorWidth);
 	$('#fileSelector').css({left:(ww - fileSelectorWidth)});
 	$('#controlPanel').height(controlPanelHeight);
-	two.height = $('#controlPanel').height();
-	two.width = $('#controlPanel').width();
-	two.update();
+	var barw = ww - 200;
+	$('#barArea').width(barw);
+	$('#barArea').css({"background-size": "" + barw + "px 15px"});
+	$('#barActive').width(barw);
+	$('#barActive').css({"background-size": "" + barw + "px 15px"});
+	if (two.cursor[0] >= 0)
+		two.cursor = [0, $('#controlPanel').width() - 200];
 	drawColorBar();
 }
 
 function drawColorBar() {
-	for (var i = 0; i < two.colorLine.length; i++)
-		two.remove(two.colorLine[i]);
-	two.colorLine = [];
-
-	var dh = $('#controlPanel').height();
-	var dw = $('#controlPanel').width();
-	for (var i = 0; i < dw - 200; i++) {
-		var line = two.makeLine(i+100, 10, i+100, 25);
-		line.linewidth = 1;
+	if (two.cursor[0] < 0)
+		$('#barActive').css({"display":"none"});
+	else {
+		$('#barActive').css({"display":"block"});
 		lv = Math.min(two.cursor[0], two.cursor[1]);
 		uv = Math.max(two.cursor[0], two.cursor[1]);
-		darkness = (lv < i && i < uv) ? 0.5 : 0.2;
-		line.stroke = hslToRgb(Number(i) / (dw-200.0) * 0.7, 0.8, darkness);
-		two.colorLine.push(line);
+		console.log(lv, uv);
+		$('#barActive').css({"background-position":"-" + lv + "px 0px", "width":(uv-lv), "left":lv});
+		dw = $('#controlPanel').width();
+		i0 = Math.floor( Number(two.cursor[0]) / dw * gpsData.length );
+		i1 = Math.floor( Number(two.cursor[1]) / dw * gpsData.length );
+		$('#cursorHint0').html(timeConverter(gpsData[i0].time));
+		$('#cursorHint1').html(timeConverter(gpsData[i1].time));
+		$('#cursorHint0').css({left:two.cursor[0]});
+		$('#cursorHint1').css({left:two.cursor[1]});
 	}
-	two.update();
 }
 
 function captureCursorDown(me) {
+	console.log('down');
 	var sh = $('#controlPanel').offset().top;
 	var dw = $('#controlPanel').width();
 	if (sh + 10 <= me.clientY && me.clientY <= sh + 25 && 70 < me.clientX && me.clientX <= dw - 70) {
@@ -91,8 +117,8 @@ function captureCursorDown(me) {
 		var dmin = Math.min(d0, d1);
 		if (dmin < 30) {
 			two.cursorFocus = (d0 < d1) ? 0 : 1;
-			keepRepaintingColorBar();
 		}
+		gpsIndicator.setVisible(true);
 	}
 }
 
@@ -106,20 +132,26 @@ function captureCursorMove(me) {
 		if (tx > dw - 200)
 			tx = dw - 200;
 		two.cursor[ two.cursorFocus ] = tx;
+		drawColorBar();
+		dw = $('#controlPanel').width() - 200;
+		ind = Math.floor( Number( two.cursor[ two.cursorFocus ] ) / dw * gpsData.length );
+		gpsIndicator.setPosition( gpsData[ind].marker.getPosition() );
+		console.log(ind, gpsData[ind].marker.getPosition() );
 	}
 }
 
-function keepRepaintingColorBar() {
-	drawColorBar();
-	dw = $('#controlPanel').width() - 200;
-	ia = Math.floor( Number( Math.min(two.cursor[0], two.cursor[1])) / dw * gpsData.length );
-	ib = Math.floor( Number( Math.max(two.cursor[0], two.cursor[1])) / dw * gpsData.length );
-	d = ib - ia + 1;
-	for (i = 0; i < gpsData.length; i++)
-		gpsData[i].marker.setVisible(ia <= i && i <= ib && Math.floor(Number(i - ia) / d * nrMarkers) != Math.floor(Number(i - ia + 1) / d * nrMarkers) );
-	console.log(new Date().getTime(), 'drawn', ia, ib);
-	if (two.cursorFocus != -1)
-		setTimeout(keepRepaintingColorBar, 50);
+function captureCursorUp(me) {
+	if (two.cursorFocus != -1) {
+		two.cursorFocus=-1;
+		// TODO: make sure cursor[0] < cursor[1]
+		dw = $('#controlPanel').width() - 200;
+		ia = Math.floor( Number( Math.min(two.cursor[0], two.cursor[1])) / dw * gpsData.length );
+		ib = Math.floor( Number( Math.max(two.cursor[0], two.cursor[1])) / dw * gpsData.length );
+		d = ib - ia + 1;
+		for (i = 0; i < gpsData.length; i++)
+			gpsData[i].marker.setVisible(ia <= i && i <= ib && Math.floor(Number(i - ia) / d * nrMarkers) != Math.floor(Number(i - ia + 1) / d * nrMarkers) );
+		gpsIndicator.setVisible(false);
+	}
 }
 
 // ---- Web socket --------------------------------------------------------
@@ -150,12 +182,14 @@ function loadFileList() {
 }
 
 gpsData = null;
+gpsIndicator = null;
 function loadTrajectory(filename) {
 	if (gpsData) {
 		for (var i = 0; i < gpsData.length; i++)
 			gpsData[i].marker.setMap(null);
 	}
 
+	$('#status').html("Connect to server and load " + filename);
 	var ws = new WebSocket('ws://localhost:8888/collect/load/' + filename);
 	var checkpoint = false;
 	var tmpGpsData = [];
@@ -164,7 +198,7 @@ function loadTrajectory(filename) {
 	};
 	ws.onmessage = function (evt)  { 
 		var rcvStr = evt.data;
-		console.log("Message is received...", rcvStr);
+		$('#status').html("Data loaded, plotting...");
 		var rcvObj = $.parseJSON(rcvStr);
 
 		for (var i = 0; i < rcvObj.items.length; i++) {
@@ -194,10 +228,12 @@ function loadTrajectory(filename) {
 		console.log("Connection is closed..."); 
 		if (checkpoint == false) {
 			alert("cannot connect to server");
+			$('#status').html("Fatal error...");
 			two.cursor = [-100, -100];
 		}
 		else {
 			two.cursor = [0, dw - 200];
+			$('#status').html("Loaded successfully");
 		}
 		drawColorBar();
 	};
@@ -207,7 +243,7 @@ function loadTrajectory(filename) {
 </script>
 </head>
 
-<body style='margin:0; padding:0; overflow:hidden' body onresize="regulateSize()" onmouseup="two.cursorFocus=-1">
+<body style='margin:0; padding:0; overflow:hidden' body onresize="regulateSize()" onmouseup="captureCursorUp(event)">
 <div id="top" style="width:100%; position: relative">
 	<div id="googleMap" style="width:500px;height:100%;position:absolute"></div>
 	<div id="fileSelector" style="background-color: rgb(255, 233, 233); height:100%; float:right; position:absolute">
@@ -215,13 +251,22 @@ function loadTrajectory(filename) {
 		</select>
 	</div>
 </div>
-<div id="controlPanel" style="background-color: rgb(255, 255, 200); width:100%" onmousedown="captureCursorDown(event)" onmousemove="captureCursorMove(event)"></div>
+<div id="controlPanel" style="background-color: rgb(255, 255, 200); width:100%; position:relative" onmousedown="captureCursorDown(event)" onmousemove="captureCursorMove(event)">
+	<!--<div style='background-color: red; position: relative; left:0px; top:0px; width:100%; height:100%'>A
+		<div style='background-color: green; position: relative; left:40px; top:10px'>Test</div>
+	</div>
+	<div style='background-color: blue; position: relative; left:0px; width:100%; height: 100%;top:-60px'>B</div> -->
+	<div id="barArea" style="position:absolute; background-image:url(dark.png); background-size:1000px 15px; width:1000px; height:15px; left:100px; top:10px">
+		<div id="barActive" style="position:relative; background-image:url(bright.png); background-size:1000px 15px; background-position:-200px 0px;
+			background-repeat:no-repeat; left:200px; width:800px; height:15px"></div>
+	</div>
+	<div id="status" style="position:absolute; bottom:0px"></div>
+	<div id="cursorHint0" style="position:absolute; top:27px; font-size:10px; width:200px; text-align:center; display:block"></div>
+	<div id="cursorHint1" style="position:absolute; top:39px; font-size:10px; width:200px; text-align:center; display:block"></div>
+</div>
 	
 <script>
-var elem = document.getElementById("controlPanel")
-two = new Two({type: Two.Types['webgl']});
-two.appendTo(elem);
-two.colorLine = [];
+two = new Object();
 two.cursor = [-100, -100];
 two.cursorFocus = -1;
 regulateSize();

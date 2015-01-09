@@ -1,7 +1,7 @@
 # imports
 import ElevationService
 
-filename = 'baro_n501_20141207_181427'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
+filename = 'baro_n501_20141129_140457'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
 
 rootDir = '../../Data/forMat/'
 

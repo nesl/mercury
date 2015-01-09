@@ -13,7 +13,11 @@ nrExt = size(ext, 2);
 dataSets = cell(1, nrExt);
 for i = 1:nrExt
     filename = [ rootDir 'baro_' fileID '.' ext{i} '.csv' ]
-    dataSets{i} = csvread(filename);
+    if exist(filename, 'file')
+        dataSets{i} = csvread(filename);
+    else
+        dataSets{i} = [];
+    end
 end
 
 st = 0;
@@ -26,14 +30,16 @@ if numel(varargin) == 2
 end
 
 for i = 1:nrExt
-    if i <= 4
-        w = 1e-9;
-    else
-        w = 1e-3;
+    if size(dataSets{i}, 1) ~= 0
+        if i <= 4
+            w = 1e-9;
+        else
+            w = 1e-3;
+        end
+        dataSets{i}(:,1) = dataSets{i}(:,1) * w - bt;
+        ind = (st <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
+        dataSets{i} = dataSets{i}(ind,:);
     end
-    dataSets{i}(:,1) = dataSets{i}(:,1) * w - bt;
-    ind = (st <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
-    dataSets{i} = dataSets{i}(ind,:);
 end
 
 baroData   = dataSets{1};

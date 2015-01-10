@@ -2,7 +2,7 @@
 clc; close all; clear all;
 
 %% Data storage path
-fpath = '../Services/Elevation/storage/Hawaii/';
+fpath = '../Services/Elevation/storage/Ucla/';
 
 %% Load meta data
 fname = 'meta.txt';

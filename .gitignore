@@ -10,3 +10,6 @@ Data/
 #Compiled objects
 *.o
 *.pyc
+
+#Swapfiles
+*.swp

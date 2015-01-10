@@ -3,7 +3,7 @@
 %baro_n501_20141129_140457.acc
 
 %% read files
-[baroRaw, accRaw, gyroRaw, magRaw, gpsRaw] = read('n501_20141128_120042');
+[baroRaw, accRaw, gyroRaw, magRaw, gpsRaw, gpsEle] = read('n501_20141128_120042');
 baroRaw(1,:)
 baroRaw(end,:)
 accRaw(1,:)
@@ -14,6 +14,7 @@ magRaw(1,:)
 magRaw(end,:)
 gpsRaw(1,:)
 gpsRaw(end,:)
+return;
 
 %% plot gps 2D
 %subRaw = gpsRaw( gpsRaw(
@@ -50,6 +51,25 @@ plot3(gpsGps(:,3), gpsGps(:,2), gpsGps(:,4), 'rv');
 plot3(gpsNet(:,3), gpsNet(:,2), gpsNet(:,4), 'b*');
 legend('GPS', 'network');
 %axis euqal
+
+%% plot gps-ele
+clf
+plot(gpsEle(:,1), gpsEle(:,4))
+
+%% pile baro to gps-ele
+clf
+hold on
+
+seaPre = 1013.494;
+sca = -8.2836;
+%seaPre = 1016.694;
+%sca = -8.2836;
+%seaPre = 1016.394;
+%sca = -8.2836;
+plot(baroRaw(:,1), (baroRaw(:,2) - seaPre) * sca, 'r');
+plot(gpsEle(:,1), gpsEle(:,4), 'b.-');
+legend({'baro', 'gps-ele'});
+xlabel('convert barometer to height and match gps elevation')
 
 %% plot baro (all)
 clf

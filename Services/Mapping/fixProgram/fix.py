@@ -73,6 +73,6 @@ for n in nextNodes:
 							if (nnn, tnn) not in tracedEdges:
 								tracedEdges += [ (nnn, tnn), (tnn, nnn) ]
 								seg += [tnn]
-					segCoor = [ nodes[x][0] + ',' + nodes[x][1] for x in seg ]
+					segCoor = [ x + ',' + nodes[x][0] + ',' + nodes[x][1] for x in seg ]
 					print ",".join( tuple(segCoor) )
 

@@ -7,7 +7,7 @@ names = fileFilter.do()
 for name in names:
     src = 'storage/sdcard0/' + name
     tmp = '/tmp/baro'
-    dst = '../forMat/' + name + '.csv'
+    dst = '../Data/forMat/' + name + '.csv'
     cmd = 'adb pull ' + src + ' ' + dst;
     print 'CMD=' + cmd
     os.system(cmd)

@@ -58,7 +58,8 @@ plot(gpsEle(:,1), gpsEle(:,4))
 
 %% plot baro (all)
 clf
-plot(baroRaw(:,1), baroRaw(:,2))
+%plot(baroRaw(:,1), baroRaw(:,2))
+plot(baroRaw(:,2))
 
 %% pile baro to gps-ele
 clf

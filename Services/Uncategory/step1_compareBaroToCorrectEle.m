@@ -64,7 +64,7 @@ res = sortrows(answer, 4)
 %    doesn't matter that much
 
 %% parse res
-f = res(res(:,1) == 1,:);
+f = res(res(:,1) == 2,:);
 f(:,4) = log10(f(:,4));
 m = zeros(9, 11);
 for i = 1:size(f,1)
@@ -74,6 +74,9 @@ for i = 1:size(f,1)
 end
 clf
 imagesc(m)
+xlabel('scale coefficients')
+ylabel('sea level pressure (hPa)')
 set(gca, 'XTickLabel', strread(num2str(-8.08:0.02:-7.88), '%s') )
 set(gca, 'YTickLabel', strread(num2str(1018:0.5:1022), '%s') )
+
 colorbar

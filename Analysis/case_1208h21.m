@@ -64,7 +64,7 @@ clf
 hold on
 seaPre = 1020.394;
 sca = -7.9736;
-off = 8136.404;
+%off = 8136.404;
 %plot(baroRaw(:,1), baroRaw(:,2) * sca + off, 'r');
 plot(baroRaw(:,1), (baroRaw(:,2) - seaPre) * sca, 'r');
 plot(gpsEle(:,1), gpsEle(:,4), 'b.-');

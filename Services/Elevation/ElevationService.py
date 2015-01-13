@@ -320,7 +320,8 @@ def requestElevationBlock(block_pts):
   # convert positions to string
   pts_str = ''
   for p in block_pts:
-    pts_str += str(p[0]) + "," + str(p[1])
+    #pts_str += str(p[0]) + "," + str(p[1])
+    pts_str += '%.6f,%.6f' % (p[0], p[1])
     pts_str += "|"
   # remove final "|"
   pts_str = pts_str[0:-1]

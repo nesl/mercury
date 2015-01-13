@@ -101,12 +101,14 @@ class ElevationGridQuerier:
   def getLatBoundIndx(self, lat):
     for i in range(len(self.latvec)):
       if self.latvec[i] < lat:
+        # return top, bot
         return (i-1,i)
     raise ValueError('Requested lattitude out of range')
 
   def getLngBoundIndx(self, lng):
     for i in range(len(self.lngvec)):
       if self.lngvec[i] > lng:
+        # return left, right
         return (i-1,i)
     raise ValueError('Requested longitude out of range')
 
@@ -159,17 +161,19 @@ class ElevationGridQuerier:
     if lng < self.lngstart or lng > self.lngstop:
       raise ValueError('One or more specified longitude points exceeds grid dimensions')
 
-    # get surrounding lat/lng indices
+    # get surrounding, bounding lat/lng indices
     latb = self.getLatBoundIndx(lat)
     lngb = self.getLngBoundIndx(lng)
 
     # get surrounding elevation value tuples (x/lng, y/lat, value/elev)
     elev_NW = (self.lngvec[lngb[0]], self.latvec[latb[0]], self.data[latb[0], lngb[0]])
-    elev_NE = (self.lngvec[lngb[0]], self.latvec[latb[1]], self.data[latb[0], lngb[1]])
-    elev_SW = (self.lngvec[lngb[1]], self.latvec[latb[0]], self.data[latb[1], lngb[0]])
+    elev_NE = (self.lngvec[lngb[1]], self.latvec[latb[0]], self.data[latb[0], lngb[1]])
+    elev_SW = (self.lngvec[lngb[0]], self.latvec[latb[1]], self.data[latb[1], lngb[0]])
     elev_SE = (self.lngvec[lngb[1]], self.latvec[latb[1]], self.data[latb[1], lngb[1]])
 
     bounding_points = [elev_NW, elev_NE, elev_SW, elev_SE]
+    print('-------------- PT = ' + str(latlng) + ' -----------------')
+    print('NW = ' + str(elev_NW) + ' NE = ' + str(elev_NE) + ' SW = ' + str(elev_SW) + ' SE = ' + str(elev_SE))
 
     # interpolate
     elev_inter = self.bilinear_interpolation(lng, lat, bounding_points)
@@ -187,7 +191,7 @@ class ElevationGridQuerier:
 
     latstep = (stop[0] - start[0])/N
     lngstep = (stop[1] - start[1])/N
-    points = [(start[0] + x*latstep, start[1] + x*lngstep) for x in range(N)]
+    points = [(round(start[0] + x*latstep, 6), round(start[1] + x*lngstep, 6)) for x in range(N)]
 
     return self.getElevationPoints( points )
 
@@ -346,14 +350,6 @@ def requestElevationBlock(block_pts):
   raise EnvironmentError('No response from google after %d attempts' % REQUEST_MAXATTEMPTS)
 
 if __name__ == '__main__':
-    # testing...
-    print('testing basic elevation requesting...')
-    res = requestElevations([(36.578581,-118.291994), (36.23998,-116.83171)])
-    print(res)
-    print('testing grid requests...')
-    NW = (34.073263, -118.444527)
-    SE = (34.070979, -118.440804)
-    req = ElevationGridRequester(NW, SE, 1e-4)
-    req.downloadElevations()
-    req.saveAsFolder('storage/test')
+    # testing bilinear interpolation
+    pass
 

@@ -10,6 +10,7 @@ var fileSelectorWidth = 250;
 var map;
 var chosenN = [];
 var possibleN;
+var markerN = [];
 
 function googleMapInitialize() {
 	var mapProp = {
@@ -171,13 +172,14 @@ function loadTrajectory(filename) {
 					position: this.getPosition(),
 					map: map
 				});
+				markerN.push(marker);
+				$('#bundo').removeAttr('disabled');
 				updateResult();
 			});
 		}
 		gpsData = tmpGpsData;
 		map.panTo(new google.maps.LatLng((latMin + latMax) / 2.0, (lonMin + lonMax) / 2.0));
 		$('#breset').removeAttr('disabled');
-		$('#bundo').removeAttr('disabled');
 		checkpoint = true;
 	};
 	ws.onclose = function() { 
@@ -185,6 +187,25 @@ function loadTrajectory(filename) {
 			alert("cannot connect to server");
 		// websocket is closed.
 	};
+}
+
+function reset() {
+	chosenN = [];
+	possibleN = '';
+	for (i = 0; i < markerN.length; i++)
+		markerN[i].setMap(null);
+	markerN = [];
+	updateResult();
+}
+
+function undo() {
+	chosenN.pop()
+	possibleN = '';
+	markerN[ markerN.length - 1 ].setMap(null);
+	markerN.pop();
+	if (chosenN.length == 0)
+		$('#bundo').attr('disabled', 'disabled');
+	updateResult();
 }
 
 function updateResult() {
@@ -214,8 +235,8 @@ function updateResult() {
 				<textarea id="result" style='height:100%; width:100%; -webkit-box-sizing: border-box;' readonly /></textarea>
 			</div>
 			<div id='resultButtons' style='position:relative; width:100%; bottom:0'>
-				<input id='breset' type='button' style='width:100%' value='Reset' disabled /><br/>
-				<input id='bundo' type='button' style='width:100%' value='Undo' disabled /><br/>
+				<input id='breset' type='button' style='width:100%' value='Reset' disabled onclick="reset()" /><br/>
+				<input id='bundo' type='button' style='width:100%' value='Undo' disabled onclick="undo()" /><br/>
 			</div>
 		</div>
 	</div>

@@ -103,9 +103,9 @@ function loadTrajectory(filename) {
 			var eles = rcvObj[i].split(",");
 			var nreles = eles.length;
 			var coors = [];
-			for (var j = 0; j + 1 < nreles; j += 2) {
-				var tlat = parseFloat(eles[j  ]);
-				var tlon = parseFloat(eles[j+1]);
+			for (var j = 0; j + 2 < nreles; j += 3) {
+				var tlat = parseFloat(eles[j+1]);
+				var tlon = parseFloat(eles[j+2]);
 				latMin = Math.min(latMin, tlat);
 				latMax = Math.max(latMax, tlat);
 				lonMin = Math.min(lonMin, tlon);

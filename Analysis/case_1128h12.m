@@ -60,12 +60,10 @@ plot(gpsEle(:,1), gpsEle(:,4))
 clf
 hold on
 
-seaPre = 1013.494;
-sca = -8.2836;
-%seaPre = 1016.694;
-%sca = -8.2836;
-%seaPre = 1016.394;
-%sca = -8.2836;
+seaPre = 1015.294;
+sca = -8.3036;
+seaPre = 1013.994;
+sca = -8.3036;
 plot(baroRaw(:,1), (baroRaw(:,2) - seaPre) * sca, 'r');
 plot(gpsEle(:,1), gpsEle(:,4), 'b.-');
 legend({'baro', 'gps-ele'});

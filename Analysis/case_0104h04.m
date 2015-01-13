@@ -1,5 +1,7 @@
 %% read files
 [baroRaw, accRaw, gyroRaw, magRaw, gpsRaw, gpsEle] = read('n501_20150104_044004');
+% Which is 1940 Taipei time
+
 baroRaw = baroRaw(3:end, :);
 baroRaw(1,:)
 baroRaw(end,:)
@@ -73,6 +75,7 @@ legend({'baro', 'gps-ele'});
 xlabel('convert barometer to height and match gps elevation')
 
 %% plot baro (segments)
+%{
 clf
 subplot(3, 3, 1)
 ind = 0 < baroRaw(:,1) & baroRaw(:,1) < 900;
@@ -113,8 +116,10 @@ subplot(3, 3, 8)
 ind = 85900 < baroRaw(:,1) & baroRaw(:,1) < 86500;
 plot(baroRaw(ind, 1), baroRaw(ind, 2))
 xlabel('2014/11/30 2pm, Indian oven -> lab by driving')
+%}
 
 %% compare height baro
+%{
 tl = 600;
 tu = 1600;
 
@@ -132,4 +137,22 @@ plot(gpsRaw(ind, 1), gpsRaw(ind, 4), 'bx')
 legend('baro (remapping)', 'gps altitude');
 xlabel('2014/11/28 12pm, bos home to NESL')
 
+%}
 
+
+%% acc
+HOUR = 12;
+st = 3600 * HOUR;
+et = 3600 * (HOUR+2);
+
+clf
+subplot(2, 1, 1)
+hold on
+ind = st < accRaw(:,1) & accRaw(:,1) < et;
+plot(accRaw(ind, 1), accRaw(ind, 2), 'r');
+plot(accRaw(ind, 1), accRaw(ind, 3), 'g');
+plot(accRaw(ind, 1), accRaw(ind, 4), 'b');
+
+subplot(2, 1, 2)
+ind = st < baroRaw(:,1) & baroRaw(:,1) < et;
+plot(baroRaw(ind, 1), baroRaw(ind, 2), 'b');

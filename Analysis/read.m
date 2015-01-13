@@ -8,7 +8,7 @@ function [baroData, accData, gyroData, magData, gpsData, gpsEleData] = read(file
 % edding points of time interested, unit in second.
 
 rootDir = '../Data/forMat/';
-ext = {'baro', 'acc', 'gyro', 'mag', 'gps'}%, 'gpsele'};
+ext = {'baro', 'acc', 'gyro', 'mag', 'gps', 'gpsele'};
 nrExt = size(ext, 2);
 dataSets = cell(1, nrExt);
 for i = 1:nrExt
@@ -20,13 +20,11 @@ for i = 1:nrExt
     end
 end
 
-st = 0;
 et = inf;
 bt = dataSets{1}(1,1) * 1e-9;
 if numel(varargin) == 2
-    st = varargin{1};
-    et = varargin{2};
-    bt = st;
+    bt = varargin{1};
+    et = varargin{2} - bt;
 end
 
 for i = 1:nrExt
@@ -37,7 +35,7 @@ for i = 1:nrExt
             w = 1e-3;
         end
         dataSets{i}(:,1) = dataSets{i}(:,1) * w - bt;
-        ind = (st <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
+        ind = (0 <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
         dataSets{i} = dataSets{i}(ind,:);
     end
 end

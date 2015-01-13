@@ -66,7 +66,9 @@ colorbar
 %% examine
 seaPre = 1020.394;
 sca = -7.9736;
-datae = csvread([dataDir testFiles{5}]); % query
+testCaseInd = 1;
+
+datae = csvread([dataDir testFiles{testCaseInd}]); % query
 
 height = (baros - seaPre) * sca;
 

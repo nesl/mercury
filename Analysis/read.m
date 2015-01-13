@@ -20,12 +20,10 @@ for i = 1:nrExt
     end
 end
 
-st = 0;
 et = inf;
 bt = dataSets{1}(1,1) * 1e-9;
 if numel(varargin) == 2
     bt = varargin{1};
-    st = 0;
     et = varargin{2} - bt;
 end
 
@@ -37,7 +35,7 @@ for i = 1:nrExt
             w = 1e-3;
         end
         dataSets{i}(:,1) = dataSets{i}(:,1) * w - bt;
-        ind = (st <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
+        ind = (0 <= dataSets{i}(:,1)) & (dataSets{i}(:,1) <= et);
         dataSets{i} = dataSets{i}(ind,:);
     end
 end

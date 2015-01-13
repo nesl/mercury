@@ -72,6 +72,7 @@ legend({'baro', 'gps-ele'});
 xlabel('convert barometer to height and match gps elevation')
 
 %% plot baro (segments)
+%{
 clf
 subplot(3, 3, 1)
 ind = 0 < baroRaw(:,1) & baroRaw(:,1) < 900;
@@ -112,6 +113,7 @@ subplot(3, 3, 8)
 ind = 85900 < baroRaw(:,1) & baroRaw(:,1) < 86500;
 plot(baroRaw(ind, 1), baroRaw(ind, 2))
 xlabel('2014/11/30 2pm, Indian oven -> lab by driving')
+%}
 
 %% compare height baro
 tl = 600;

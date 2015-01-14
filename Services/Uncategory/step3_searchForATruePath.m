@@ -2,14 +2,14 @@ eleTrajDir = '../../Data/eleSegments/ucla_west/';
 baroFile = '../../Data/eleSegments/test_case/case1_baro_gnd.csv';
 
 % load all the segments
-fileProf = dir(eleTrajDir);
-fileProf = fileProf(3:end);
+fileProfile = dir(eleTrajDir);
+fileProfile = fileProfile(3:end);
 endNodePairs = [];
 nrNode = 0;
 nodeName2ind = containers.Map;
 ind2nodeName = [];
-for i = 1:size(fileProf)
-    f = fileNames(i).name;
+for i = 1:size(fileProfile)
+    f = fileProfile(i).name;
     n = find(f == '_');
     p.na = f(1:(n-1));
     p.nb = f((n+1):end);
@@ -84,7 +84,6 @@ for i = 1:nrB
             % ind + i  map to range (i+1):(nrB+1), 
             dp(tn, i+ind) = dp(j, i) + allPairDTW{j, tn}(i, ind+i-1);
             from(tn, i+ind, :) = ones(numel(ind), 1) * [j i];
-
         end
     end
     fprintf('%d\n', i)

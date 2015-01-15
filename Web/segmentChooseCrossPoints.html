@@ -21,7 +21,7 @@ function googleMapInitialize() {
 	map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
 }
 google.maps.event.addDomListener(window, 'load', googleMapInitialize);
-/*
+
 function hslToRgb(h, s, l){
 	var r, g, b;
 
@@ -45,7 +45,7 @@ function hslToRgb(h, s, l){
 	}
 	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
-*/
+
 function regulateSize() {
 	var wh = window.innerHeight;
 	var ww = window.innerWidth;

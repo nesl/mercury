@@ -18,7 +18,7 @@ except ImportError:
 EARTH_RAD_KM = 6371
 MAX_REQUEST_POINTS = 600000
 REQUEST_BLOCKSIZE = 75
-REQUEST_MAXATTEMPTS = 5
+REQUEST_MAXATTEMPTS = 20
 
 # --- HTTP API URLs ---
 ELEVATION_BASE_URL = 'https://maps.googleapis.com/maps/api/elevation/json'
@@ -293,7 +293,7 @@ def requestElevations(pts):
   for p in pts:
     # if this block is big enough, send it out and keep going
     if current_block_size >= REQUEST_BLOCKSIZE:
-      #print(" requesting block " + str(current_block) + " of " + str(num_blocks))
+      print(" requesting block " + str(current_block) + " of " + str(num_blocks))
       elevation_block = requestElevationBlock(block_pts)
       elevations.extend(elevation_block)  # you can simply put elevations += elevation block
       current_block_size = 0

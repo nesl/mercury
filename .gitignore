@@ -13,3 +13,7 @@ Data/
 
 #Swapfiles
 *.swp
+
+# old format folder
+forMat
+forMat/

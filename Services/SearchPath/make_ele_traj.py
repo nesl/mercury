@@ -1,5 +1,8 @@
-# load a segment and query the elevations on this segment in a dense manner
-# (I plan to do it roughly less than 1 meter.)
+# input: .tfix file
+# output: a folder contains the elevation series of each segment of input .tfix file
+#
+# summary: load each segment in .tfix file and query the elevations
+# alone this segment in a dense manner  (I plan to do it roughly less than 1 meter.)
 
 import os
 import sys
@@ -19,11 +22,11 @@ def linearSpace(latLngA, latLngB):
 
 
 
-f = open('../../Data/trajectorySetsFix/ucla_west.tfix')
+f = open('../../Data/trajectorySetsFix/ucla_west.tfix')   # input part
 lines = f.readlines()
 f.close()
 
-outDir = '../../Data/eleSegments/ucla_west/'
+outDir = '../../Data/eleSegments/ucla_west/'   # output folder
 for line in lines:
     eles = line.strip().split(',')
     ida = eles[0]

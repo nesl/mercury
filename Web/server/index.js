@@ -6,6 +6,7 @@ var express = require("express");
 var readline = require('readline');
 var port = 8888;
 var dataFolder = '../../Data/';
+var nodeIdToLatLng = {};
 
 var app = express();
 //app.use(express.static(__dirname+ "/../"));
@@ -172,7 +173,73 @@ wss.on("connection", function (ws) {
 						terminal: false
 					});
 					rd.on('line', function(line) {
+						console.log(line)
 						re.push(line);
+						updateNodeDictionary(line);
+					});
+					rd.on('close', function() {
+						//console.log(re);
+						ws.send(JSON.stringify(re));
+						ws.close();
+					});
+				}
+			});
+		}
+	}
+	else if (page == 'res') {
+		rPath = dataFolder + 'resultSets/'
+		if (cmd == 'ls') {
+			// load all result sets
+			good_files = [];
+			fs.readdir(rPath, function (err, files) {
+				if (err) {
+					console.log(err);
+					console.log('ERROR: directory might not exist...');
+				}
+
+				for (var i = 0; i < files.length; i++) {
+					file = files[i];
+					if (file.substring(file.length - 5, file.length) == '.rset')
+						good_files.push(file);
+				}
+				ws.send(JSON.stringify(good_files));
+				console.log(good_files);
+				ws.close();
+			});
+		}
+		else if (cmd == 'load') {
+			// request on list the gps trajectories
+			var filename = rPath + params[0];
+			console.log('loading file: ', filename);
+			re = [];
+			fs.exists(filename, function(exists) {
+				if (exists) {
+					var rd = readline.createInterface({
+						input: fs.createReadStream(filename),
+						output: process.stdout,
+						terminal: false
+					});
+					rd.on('line', function(line) {
+						line_str = "";
+						// parse line into score + lat/lng pairs
+						tokens = line.split(",");
+						console.log(tokens)
+						if( tokens.length <= 2){
+							return;
+						}
+						var score = tokens[0];
+						line_str += score + ","
+						for( var i=1; i<tokens.length; i++){
+							var nodeid = tokens[i];
+							var latlng = nodeIdToLatLng[nodeid];
+							line_str += latlng[0] + "," + latlng[1]
+							if( i < tokens.length-1){
+								line_str += ",";
+							}
+						}
+						re.push(line_str);
+						//console.log(line_str)
+						// Add this segment to the dictionary
 					});
 					rd.on('close', function() {
 						console.log(re);
@@ -189,3 +256,15 @@ wss.on("connection", function (ws) {
 	});
 });
 console.log("websocket server created");
+
+function updateNodeDictionary(line){
+	// parse tokens
+	tokens = line.split(",");
+	for (var i = 0; i+1<line.length; i += 3) {
+		var id = tokens[i];
+		var lat = tokens[i+1];
+		var lng = tokens[i+2];
+		nodeIdToLatLng[id] = [lat,lng];
+	}
+
+}

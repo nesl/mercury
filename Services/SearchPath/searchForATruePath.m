@@ -1,15 +1,18 @@
 eleTrajDir = '../../Data/eleSegments/ucla_west/';
 baroFile = '../../Data/eleSegments/test_case/case1_baro_gnd.csv';
 
+tic
+
 % load all the segments
-fileProf = dir(eleTrajDir);
-fileProf = fileProf(3:end);
+fileProfile = dir(eleTrajDir);
+fileProfile = fileProfile(3:end);
 endNodePairs = [];
 nrNode = 0;
 nodeName2ind = containers.Map;
 ind2nodeName = [];
-for i = 1:size(fileProf)
-    f = fileNames(i).name;
+
+for i = 1:size(fileProfile)
+    f = fileProfile(i).name;
     n = find(f == '_');
     p.na = f(1:(n-1));
     p.nb = f((n+1):end);
@@ -41,7 +44,7 @@ fprintf('finish reading all the trajectories\n')
 
 % segment barometer trajectory into window
 dataq = csvread(baroFile);
-WINDOW = 1; % sec
+WINDOW = 5; % sec
 nrB = floor((dataq(end,1) - dataq(1,1)) / WINDOW);
 baros = zeros(nrB, 1);
 baroc = zeros(nrB, 1);
@@ -61,7 +64,7 @@ height = (baros - seaPre) * sca;
 
 % all pair DTW
 allPairDTW = cell(nrNode);
-for i = 1:nrNode
+parfor i = 1:nrNode
     for j = 1:nrNode
         if numel(eleTrajs{i, j}) > 0
             fprintf('calculate dtw of traj(%d, %d)\n', i, j);
@@ -84,7 +87,6 @@ for i = 1:nrB
             % ind + i  map to range (i+1):(nrB+1), 
             dp(tn, i+ind) = dp(j, i) + allPairDTW{j, tn}(i, ind+i-1);
             from(tn, i+ind, :) = ones(numel(ind), 1) * [j i];
-
         end
     end
     fprintf('%d\n', i)
@@ -114,3 +116,5 @@ for i = 1:nrNode
 end
    
 sortedTraces = nestedSortStruct(traces, {'score'});
+
+fprintf('computation time %.2f\n', toc);

@@ -13,6 +13,7 @@ import re
 #outDir = '../trajectorySets/ucla/'
 
 osmName = 'ucla.osm'   # sample: 'ucla.osm'
+optionAllowLoop = False   # most of the cases are building bounding boxes
 
 inFile = '../osmFiles/' + osmName
 if len(osmName.split('.')) == 1:
@@ -35,7 +36,7 @@ cmd = 'basex findWayTrajectory.xq > /tmp/wayDetail.xml'
 print 'CMD: ' + cmd
 os.system(cmd)
 
-cmd = 'python fix.py < /tmp/wayDetail.xml > ' + outFile 
+cmd = 'python fix.py ' + ('-a' if optionAllowLoop else '') + ' < /tmp/wayDetail.xml > ' + outFile 
 print 'CMD: ' + cmd
 os.system(cmd)
 

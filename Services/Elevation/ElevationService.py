@@ -236,9 +236,9 @@ class ElevationGridRequester:
       raise ValueError('The specified resolution produces %d points (max %d)' %\
         (self.num_points, MAX_REQUEST_POINTS))
 
-  def downloadElevations(self, path, truncate=True):
-    # if truncate is disabled, it becomes to append mode and load the previous result
-    # automatically
+  def downloadElevations(self, path, truncate=False):
+    # if truncate is disabled, it is append mode and load the previous result
+    # automatically.
 
     # if the folder doesn't exist, create it
     if not os.path.exists(path):
@@ -269,9 +269,10 @@ class ElevationGridRequester:
     fid.close()
 
   def loadData(self, path):
-    fid = open(path + '/data.csv', 'r')
-    self.elevationGrid = [ list(map(float, x.strip().split(','))) for x in fid.readlines() ]
-    fid.close()
+    if os.path.isfile(path + '/data.csv'):
+      fid = open(path + '/data.csv', 'r')
+      self.elevationGrid = [ list(map(float, x.strip().split(','))) for x in fid.readlines() ]
+      fid.close()
 
   def saveData(self, path):
     fid = open(path + '/data.csv', 'w')

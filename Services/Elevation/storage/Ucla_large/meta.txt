@@ -1,8 +1,8 @@
-resolution 1e-05
-latstart 34.064255
-latstop 34.062874999999565
-lngstart -118.449709
-lngstop -118.43535899999544
-numpts 199604
-lenlat 139
-lenlng 1436
+resolution 0.0001
+latstart 34.088381
+latstop 34.04988099999872
+lngstart -118.471726
+lngstop -118.41912599999826
+numpts 203422
+lenlat 386
+lenlng 527

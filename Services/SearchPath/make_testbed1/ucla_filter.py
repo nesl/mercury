@@ -8,11 +8,11 @@ fp = open('t1')
 points = [ x.strip() for x in fp.readlines() ]
 fp.close()
 
-f = open('../../Data/trajectorySetsFix/ucla.tfix')
+f = open('../../../Data/trajectorySetsFix/ucla.tfix')
 lines = f.readlines()
 f.close()
 
-fo = open('../../Data/trajectorySetsFix/ucla_west.tfix', 'w')
+fo = open('../../../Data/trajectorySetsFix/ucla_west.tfix', 'w')
 for line in lines:
     ele = line.strip().split(',')
     if ele[0] in points and ele[-3] in points:

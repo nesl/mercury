@@ -236,23 +236,32 @@ class ElevationGridRequester:
       raise ValueError('The specified resolution produces %d points (max %d)' %\
         (self.num_points, MAX_REQUEST_POINTS))
 
-  def downloadElevations(self):
-    for lat in self.latgrid:
-      block_pts = []
-      for lng in self.lnggrid:
-        block_pts.append((lat,lng))
-      elevations = requestElevations(block_pts)
-      self.elevationGrid.append(elevations)
+  def downloadElevations(self, path, truncate=True):
+    # if truncate is disabled, it becomes to append mode and load the previous result
+    # automatically
 
-  def getElevationGrid(self):
-    return self.elevationGrid
-
-  def saveAsFolder(self, path):
     # if the folder doesn't exist, create it
     if not os.path.exists(path):
       os.makedirs(path)
 
-    # create metadata file
+    if truncate == False:
+      loadData()
+
+    for rowCnt in range(len(self.elevationGrid), len(self.latgrid)):
+      lat = self.latgrid[rowCnt]
+      print('progress: row %d/%d' % (rowCnt, len(self.latgrid)))
+      block_pts = list(zip([lat] * len(self.lnggrid), self.lnggrid))
+      elevations = requestElevations(block_pts)
+      self.elevationGrid.append(elevations)
+      saveData()
+    # save metadata
+    saveMetaData(path)
+
+  def getElevationGrid(self):
+    return self.elevationGrid
+
+
+  def saveMeta(self, path):
     fid = open(path + '/meta.txt', 'w')
     fid.write('resolution '+str(self.res_latlng)+'\n')
     fid.write('latstart '+str(self.latgrid[0])+'\n')
@@ -264,16 +273,16 @@ class ElevationGridRequester:
     fid.write('lenlng '+str(self.len_lng)+'\n')
     fid.close()
 
-    # create matrix file
+  def loadData(self, path):
     fid = open(path + '/data.csv', 'w')
-    for line in self.elevationGrid:
-      for idx in range(len(line)):
-        fid.write('%f' % line[idx])
-        if idx != len(line)-1:
-          fid.write(',')
-      fid.write('\n')
+    self.elevationGrid = [ list(map(float, x.strip().split(','))) for x in fid.readlines() ]
     fid.close()
 
+  def saveData(self, path):
+    fid = open(path + '/data.csv', 'w')
+    for line in self.elevationGrid:
+      fid.write( ','.join( list(map(str, line)) ) + '\n' )
+    fid.close()
 
 def requestElevations(pts):
   # truncate tailing digits
@@ -293,7 +302,7 @@ def requestElevations(pts):
   for p in pts:
     # if this block is big enough, send it out and keep going
     if current_block_size >= REQUEST_BLOCKSIZE:
-      print(" requesting block " + str(current_block) + " of " + str(num_blocks))
+      #print(" requesting block " + str(current_block) + " of " + str(num_blocks))
       elevation_block = requestElevationBlock(block_pts)
       elevations.extend(elevation_block)  # you can simply put elevations += elevation block
       current_block_size = 0

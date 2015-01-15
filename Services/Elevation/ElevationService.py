@@ -245,21 +245,16 @@ class ElevationGridRequester:
       os.makedirs(path)
 
     if truncate == False:
-      loadData()
+      self.loadData(path)
 
     for rowCnt in range(len(self.elevationGrid), len(self.latgrid)):
       lat = self.latgrid[rowCnt]
-      print('progress: row %d/%d' % (rowCnt, len(self.latgrid)))
+      print('progress: row %d/%d' % (rowCnt+1, len(self.latgrid)))
       block_pts = list(zip([lat] * len(self.lnggrid), self.lnggrid))
       elevations = requestElevations(block_pts)
       self.elevationGrid.append(elevations)
-      saveData()
-    # save metadata
-    saveMetaData(path)
-
-  def getElevationGrid(self):
-    return self.elevationGrid
-
+      self.saveData(path)
+    self.saveMeta(path)
 
   def saveMeta(self, path):
     fid = open(path + '/meta.txt', 'w')
@@ -274,7 +269,7 @@ class ElevationGridRequester:
     fid.close()
 
   def loadData(self, path):
-    fid = open(path + '/data.csv', 'w')
+    fid = open(path + '/data.csv', 'r')
     self.elevationGrid = [ list(map(float, x.strip().split(','))) for x in fid.readlines() ]
     fid.close()
 
@@ -283,6 +278,9 @@ class ElevationGridRequester:
     for line in self.elevationGrid:
       fid.write( ','.join( list(map(str, line)) ) + '\n' )
     fid.close()
+  
+  def getElevationGrid(self):
+    return self.elevationGrid
 
 def requestElevations(pts):
   # truncate tailing digits

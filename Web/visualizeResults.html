@@ -136,11 +136,15 @@ function plotResultSet(filename) {
 		for( var i=0; i<mapData.paths.length; i++){
 			mapData.paths[i].setMap(null);
 		}
+		for( var i=0; i<mapData.markers.length; i++){
+			mapData.markers[i].setMap(null);
+		}
+
 	}
 
 	// request file data from server
 	var ws = new WebSocket('ws://localhost:8888/res/load/' + filename);
-	var tmpMapData = {paths:[]};
+	var tmpMapData = {paths:[], markers:[]};
 
 	ws.onopen = function() {
 		console.log("opening socket to load result set");
@@ -211,6 +215,40 @@ function plotResultSet(filename) {
 			path_line.setMap(map);
 			tmpMapData.paths.push(path_line);
 		}
+
+		// put start and end marker on the best estimate
+		start_color = hslToRgb(1/3, 1, 0.3);
+		end_color = hslToRgb(0, 1, 0.3);
+
+		var start_marker = new google.maps.Marker({
+				position: est_paths[0][0],
+				icon: {
+					path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+					strokeWeight: 1,
+					strokeColor: start_color,
+					fillColor: start_color,
+					fillOpacity: 0.4,
+					scale: 5,
+				},
+				map: map,
+				title: "start"
+			});
+		var end_marker = new google.maps.Marker({
+				position: est_paths[0][est_paths[0].length-1],
+				icon: {
+					path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+					strokeWeight: 1,
+					strokeColor: end_color,
+					fillColor: end_color,
+					fillOpacity: 0.4,
+					scale: 5,
+				},
+				map: map,
+				title: "end"
+			});
+
+		tmpMapData.markers.push(start_marker);
+		tmpMapData.markers.push(end_marker);
 
 		mapData = tmpMapData;
 

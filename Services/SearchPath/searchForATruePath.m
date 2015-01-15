@@ -34,7 +34,7 @@ nextNodes = cell(nrNode, 1);
 for i = 1:numel(endNodePairs)
     nna = nodeName2ind( endNodePairs(i).na );
     nnb = nodeName2ind( endNodePairs(i).nb );
-    eleTrajs{nna, nnb} = csvread([eleTrajDir fileProf(i).name]);
+    eleTrajs{nna, nnb} = csvread([eleTrajDir fileProfile(i).name]);
     eleTrajs{nna, nnb} = eleTrajs{nna, nnb}(1:2:numel(eleTrajs{nna, nnb}));
     eleTrajs{nnb, nna} = flipud(eleTrajs{nna, nnb});
     nextNodes{nna} = [nextNodes{nna} nnb];
@@ -64,7 +64,7 @@ height = (baros - seaPre) * sca;
 
 % all pair DTW
 allPairDTW = cell(nrNode);
-parfor i = 1:nrNode
+for i = 1:nrNode
     for j = 1:nrNode
         if numel(eleTrajs{i, j}) > 0
             fprintf('calculate dtw of traj(%d, %d)\n', i, j);
@@ -118,3 +118,24 @@ end
 sortedTraces = nestedSortStruct(traces, {'score'});
 
 fprintf('computation time %.2f\n', toc);
+
+%% Generate result output
+MAX_RESULTS = 5;
+fpath = '../../Data/resultSets/';
+fname = 'ucla_west_results.rset';
+
+fid = fopen([fpath fname], 'w');
+for i=1:min( MAX_RESULTS, length(sortedTraces) )
+    score = sortedTraces(i).score;
+    t = sortedTraces(i).trace(:,1);
+    fprintf(fid, '%.1f,', score);
+    for j=1:length(t)
+        fprintf(fid, '%d', t(j));
+        if j ~= length(t)
+            fprintf(fid, ',');
+        end
+    end
+    fprintf(fid,'\n');
+end
+
+

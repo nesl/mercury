@@ -28,7 +28,7 @@ for i = 1:c
     D(1,:) = NaN;
     D(:,1) = NaN;
     D(1,1) = 0;
-    D(2:end, 2:end) = costMatrix(i:end, :);
+    D(2:end, 2:end) = costMatrix(:,i:end);
     
     % store the DTW result back to D
     for j = 1:r; 

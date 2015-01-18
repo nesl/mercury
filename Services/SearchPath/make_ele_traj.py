@@ -22,12 +22,15 @@ def linearSpace(latLngA, latLngB):
 
 
 
-f = open('../../Data/trajectorySetsFix/ucla_west.tfix')   # input part
+f = open('../../Data/trajectorySetsFix/ucla_small.tfix')   # input part
 lines = f.readlines()
 f.close()
 
-outDir = '../../Data/eleSegments/ucla_west/'   # output folder
+outDir = '../../Data/eleSegments/ucla_small/'   # output folder
+cnt = 0
 for line in lines:
+    cnt += 1
+    print cnt, len(lines)
     eles = line.strip().split(',')
     ida = eles[0]
     idb = eles[-3]

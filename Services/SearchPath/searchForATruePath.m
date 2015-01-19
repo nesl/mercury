@@ -128,6 +128,7 @@ fprintf('computation time %.2f\n', toc);
 
 %% Generate result output
 fid = fopen([outPath outFileName], 'w');
+
 for i=1:min( MAX_RESULTS, length(sortedTraces) )
     score = sortedTraces(i).score;
     t = sortedTraces(i).trace(:,1);

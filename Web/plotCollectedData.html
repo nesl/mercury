@@ -97,7 +97,7 @@ function drawColorBar() {
 		uv = Math.max(two.cursor[0], two.cursor[1]);
 		console.log(lv, uv);
 		$('#barActive').css({"background-position":"-" + lv + "px 0px", "width":(uv-lv), "left":lv});
-		dw = $('#controlPanel').width();
+		dw = $('#controlPanel').width() - 200;
 		i0 = Math.floor( Number(two.cursor[0]) / dw * gpsData.length );
 		i1 = Math.floor( Number(two.cursor[1]) / dw * gpsData.length );
 		$('#cursorHint0').html(timeConverter(gpsData[i0].time));
@@ -133,8 +133,9 @@ function captureCursorMove(me) {
 			tx = dw - 200;
 		two.cursor[ two.cursorFocus ] = tx;
 		drawColorBar();
-		dw = $('#controlPanel').width() - 200;
-		ind = Math.floor( Number( two.cursor[ two.cursorFocus ] ) / dw * gpsData.length );
+		bw = $('#controlPanel').width() - 200;
+		console.log(Number( two.cursor[ two.cursorFocus ] ) / bw);
+		ind = Math.floor( Number( two.cursor[ two.cursorFocus ] ) / bw * gpsData.length );
 		gpsIndicator.setPosition( gpsData[ind].marker.getPosition() );
 		console.log(ind, gpsData[ind].marker.getPosition() );
 	}

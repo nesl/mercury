@@ -4,6 +4,8 @@ import ElevationService as ES
 import sys
 import traceback
 
+# WARNING: This file should be obseleted and shouldn't be used anymore
+
 ROOT_TILE_FOLDER = '../../Data/EleTile/'
 
 def query(latLngSeries):

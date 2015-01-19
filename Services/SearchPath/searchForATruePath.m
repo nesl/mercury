@@ -1,5 +1,5 @@
 eleTrajDir = '../../Data/eleSegments/ucla_west/';
-baroFile = '../../Data/eleSegments/test_case/case1_baro_gnd.csv';
+baroFile = '../../Data/eleSegments/test_case/case2_baro_query.csv';
 
 tic
 
@@ -120,7 +120,7 @@ sortedTraces = nestedSortStruct(traces, {'score'});
 fprintf('computation time %.2f\n', toc);
 
 %% Generate result output
-MAX_RESULTS = 5;
+MAX_RESULTS = 3;
 fpath = '../../Data/resultSets/';
 fname = 'ucla_west_results.rset';
 

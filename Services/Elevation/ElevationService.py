@@ -3,6 +3,8 @@
 import simplejson
 import numpy as np
 import os
+import sys
+import traceback
 
 try:
   import urllib.parse as urllibParse
@@ -320,43 +322,206 @@ def requestElevations(pts):
 
   #self.fid.close()
 
-def requestElevationBlock(block_pts):
-  # make sure the request is short enough
-  if len(block_pts) > REQUEST_BLOCKSIZE:
-    raise ValueError('requested block is too large')
 
-  # convert positions to string
-  pts_str = ''
-  for p in block_pts:
-    #pts_str += str(p[0]) + "," + str(p[1])
-    pts_str += '%.6f,%.6f' % (p[0], p[1])
-    pts_str += "|"
-  # remove final "|"
-  pts_str = pts_str[0:-1]
+# Before using this class especially in the first time:
+#   - Make sure the folder hierarchy is correct, namely under folder <Data>/<EleTile>/
+#     we should find the folder named by resolution exponent. Or, should
+#     execute activate() method once.
+#
+# Terminology:
+#   +--------+
+#   |        |
+#   |  v  v  | 
+#   |        |
+#   |  v  v  | 
+#   |        |
+#   +--------+ = tile,  v in the tile = vertex
+#
+# (edge length is equal to specified tile resolution)
 
-  # request elevations
-  elvtn_args = {
-    'locations': pts_str,
-  }
+# CONSTANTS  ----
+RESOLUTION_MIN = 3
+RESOLUTION_MAX = 5
 
-  requestAttempt = 0
-  goodResponse = False
+class ElevationQuerier:
 
-  while requestAttempt < REQUEST_MAXATTEMPTS and not goodResponse:
-    requestAttempt += 1
+  def __init__(self, resolution=4):
+    if isinstance(resolution, int) == False or resolution < RESOLUTION_MIN or resolution > RESOLUTION_MAX:
+      raise ValueError('expected variable type of resolution is int with range 3~5')
+    self.tileRootFolderPath = '../../Data/EleTile/';
+    self.tileResolution = {3:1e-2, 4:1e-3, 5:1e-4}[resolution]
+    self.numVerticePerEdge = {3:10, 4:20, 5:10}[resolution] + 1  # including end points
+    self.numVerticeInTile = self.numVerticePerEdge * self.numVerticePerEdge
+    self.verticeInterval = self.tileResolution / (self.numVerticePerEdge - 1)
+    self.tileSetPath = self.tileRootFolderPath + str(resolution) + '/'
+    self.verbose = True
+    self.tiles = {}
 
-    url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
-    response = simplejson.load(urllibRequest.urlopen(url))
-    # parse elevations
-    elevations = []
-    for resultset in response['results']:
-      elevations.append(resultset['elevation'])
+  def query(self, latLngSeries):
+    # also support signle point query
 
-    if len(elevations) == len(block_pts):
-      goodResponse = True
-      return elevations
+    if isinstance(latLngSeries, list) == False:
+      latLngSeries = [ latLngSeries ]
 
-  raise EnvironmentError('No response from google after %d attempts' % REQUEST_MAXATTEMPTS)
+    # evaluate what tiles should be queried from Google service
+    metaSeries = []  # index corresponding to latLngSeries, store info related to tiles
+    tilesToRequest = []
+    for latLng in latLngSeries:
+      tinfo = self._belongedTileInfo(latLng)
+      print(latLng, tinfo)
+      metaSeries += [tinfo]  # tinfo[0] is belonged tile file name
+      if os.path.isfile(self.tileSetPath + tinfo[0]) == False and tinfo[0] not in tilesToRequest:
+        tilesToRequest += [ tinfo[0] ]
+    
+    blockPoints = []
+    eleReturn = []
+    errorFlag = False
+    try:
+      for tile in tilesToRequest:  # tile as tile name
+        #print(a, latLng, a[:-6])
+        latLng = tuple(map(float, tile[:-6].split('_')))  # split into lat and lng from tile name
+        for i in range(self.numVerticePerEdge):
+          for j in range(self.numVerticePerEdge):
+            blockPoints += [ (latLng[0] + self.verticeInterval * i, latLng[1] + self.verticeInterval * j) ]
+            if len(blockPoints) == REQUEST_BLOCKSIZE:
+                #print(qp, len(qp))
+                if self.verbose:
+                  print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVerticeInTile))
+                eleReturn += self._requestElevationBlock(blockPoints)
+                blockPoints = []
+      if len(blockPoints) > 0:
+        if self.verbose:
+          print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVerticeInTile))
+        eleReturn += self._requestElevationBlock(blockPoints)
+    except:
+      # remember that we got the exception. don't raise right now since we need to save files
+      exc_type, exc_value, exc_traceback = sys.exc_info()
+      errorFlag = True
+      traceback.print_exception(exc_type, exc_value, exc_traceback)
+  
+    # store succesfully requested tiles into files
+    #print(eleReturn, len(eleReturn))
+    for i in range( (len(eleReturn) + 1) // self.numVerticeInTile ):  # number of complete tiles downloaded
+      #print(i, tilesToRequest[i])
+      f = open(self.tileSetPath + tilesToRequest[i], 'w')
+      for j in range(self.numVerticePerEdge):
+        s = i * self.numVerticeInTile + j * self.numVerticePerEdge  # start index
+        line = ",".join( list( map(str, eleReturn[s:(s+self.numVerticePerEdge)]) ) ) + '\n'
+        f.write(line)
+      f.close()
+
+    # raise the exception if the whole downloaded process is incomplete
+    if errorFlag:
+      traceback.print_exception(exc_type, exc_value, exc_traceback)
+      raise EnvironmentError('get exception from requestElevationBlock(), query abort')
+
+    # to query
+    ret = []  # final result to return
+    for i in range(len(latLngSeries)):
+      latLng = latLngSeries[i]
+      meta = metaSeries[i]
+      fn = meta[0]  # tile file name
+      if fn not in self.tiles:
+        f = open(self.tileSetPath + fn)
+        content = [ list(map(float, x.strip().split(','))) for x in f.readlines()[:self.numVerticePerEdge] ]
+        self.tiles[fn] = content
+      dlati, dlngi, latfrac, lngfrac = meta[1], meta[2], meta[3], meta[4] # vertex indice and fractions
+      #print(fn, latLng, dlati, dlngi)
+      ret += [ self._bilinearInterpolation(latfrac, lngfrac,
+          self.tiles[fn][dlati  ][dlngi  ],
+          self.tiles[fn][dlati  ][dlngi+1],
+          self.tiles[fn][dlati+1][dlngi  ],
+          self.tiles[fn][dlati+1][dlngi+1]) ]
+    return ret
+    
+  def setVerbose(self, flag):
+    self.verbose = flag
+
+  def currentCacheSize(self):
+    return len(self.tiles)
+
+  def activate():
+    for resolutionID in range(RESOLUTION_MIN - 1, RESOLUTION_MAX):
+      dirName = self.tileRootFolderPath + str(resolutionID)
+      if not os.path.exists(dirName):
+        os.makedirs(dirName)
+
+
+  def _requestElevationBlock(self, block_pts):
+    # make sure the request is short enough
+    if len(block_pts) > REQUEST_BLOCKSIZE:
+      raise ValueError('requested block is too large')
+
+    # convert positions to string
+    pts_str = ''
+    for p in block_pts:
+      #pts_str += str(p[0]) + "," + str(p[1])
+      pts_str += '%.6f,%.6f' % (p[0], p[1])
+      pts_str += "|"
+    # remove final "|"
+    pts_str = pts_str[0:-1]
+
+    # request elevations
+    elvtn_args = {
+      'locations': pts_str,
+    }
+
+    requestAttempt = 0
+    goodResponse = False
+
+    while requestAttempt < REQUEST_MAXATTEMPTS and not goodResponse:
+      requestAttempt += 1
+
+      url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
+      response = simplejson.load(urllibRequest.urlopen(url))
+      # parse elevations
+      elevations = []
+      for resultset in response['results']:
+        elevations.append(resultset['elevation'])
+
+      if len(elevations) == len(block_pts):
+        goodResponse = True
+        return elevations
+
+    raise EnvironmentError('No response from google after %d attempts' % REQUEST_MAXATTEMPTS)
+
+  def _belongedTileInfo(self, latLng):
+    # return (filename,
+    #         ind of point to immediate south lat line in this tile,
+    #         ind of point to immediate west lng line in this tile,
+    #         fraction of <point to first vertex to the south> / <vertice interval>,
+    #         fraction of <point to first vertex to the west> / <vertice interval>)
+
+    # assume tileResolution=1e-3 and verticeInterval=1e-4
+    # => lat/lng = -118.325479 = -118.326 + 0.0001 * 5   + 0.000021
+    #                          = tileLng  + deltaTileLng
+    #                          =    "     + vertexLng    + deltaVertexLng    
+    deltaTileLat = latLng[0] % self.tileResolution  
+    deltaTileLng = latLng[1] % self.tileResolution
+    tileLat = latLng[0] - deltaTileLat
+    tileLng = latLng[1] - deltaTileLng
+    vertexLatInd = int(deltaTileLat // self.verticeInterval)
+    vertexLngInd = int(deltaTileLng // self.verticeInterval)
+    deltaVertexLat = deltaTileLat % self.verticeInterval
+    deltaVertexLng = deltaTileLng % self.verticeInterval
+    fracDeltaVertexLat = deltaVertexLat / self.verticeInterval
+    fracDeltaVertexLng = deltaVertexLng / self.verticeInterval
+    return ("%.6lf_%.6lf.etile" % (tileLat, tileLng), 
+        vertexLatInd, vertexLngInd, fracDeltaVertexLat, fracDeltaVertexLng)
+
+  def _bilinearInterpolation(self, latf, lngf, e1a, e1b, e2a, e2b):
+    #  <e2a> ------ <e2b>
+    #    |            |
+    #    |   *        |     * at (latf, lngf) value range within (0,0) to (1,1)
+    #    |            |
+    #  <e1a> ------ <e1b>
+    #print(latf, lngf, e1a, e1b, e2a, e2b)
+    e1c = self._interpolation(e1a, e1b, lngf)    # e1a -- e1c ------ e1b
+    e2c = self._interpolation(e2a, e2b, lngf)
+    return self._interpolation(e1c, e2c, latf)
+
+  def _interpolation(self, va, vb, f):  # value a, value b, fraction (0 = va, 1 = vb)
+    return va + (vb - va) * f
 
 if __name__ == '__main__':
     # testing bilinear interpolation

@@ -61,55 +61,70 @@ CHART_BASE_URL = 'http://chart.apis.google.com/chart'
 
 
 
-class ElevationQuerier:
+class ElevationRequester:
 
   def __init__(self, resolution=4):
+    # Check resolution sanity
     if isinstance(resolution, int) == False or resolution < RESOLUTION_MIN or resolution > RESOLUTION_MAX:
-      raise ValueError('expected variable type of resolution is int with range 3~5')
+      raise ValueError('expected variable type of resolution to be int with range 3-5')
+    # Root folder for tile storage
     self.tileRootFolderPath = '../../Data/EleTile/';
+    # tile meta information
     self.tileResolution = {3:1e-2, 4:1e-3, 5:1e-4}[resolution]
-    self.numVerticePerEdge = {3:10, 4:20, 5:10}[resolution] + 1  # including end points
-    self.numVerticeInTile = self.numVerticePerEdge * self.numVerticePerEdge
-    self.verticeInterval = self.tileResolution / (self.numVerticePerEdge - 1)
+    self.numVertexPerEdge = {3:10, 4:20, 5:10}[resolution] + 1  # including end points
+    self.numVertexInTile = self.numVertexPerEdge**2
+    self.vertexInterval = self.tileResolution / (self.numVertexPerEdge - 1)
+    # cache subpath
     self.tileSetPath = self.tileRootFolderPath + str(resolution) + '/'
+    # by default, we'll be verbose
     self.verbose = True
     self.tiles = {}
 
   def query(self, latLngSeries):
     # also support signle point query
-
+    # (force input to be list)
     if isinstance(latLngSeries, list) == False:
       latLngSeries = [ latLngSeries ]
 
-    # evaluate what tiles should be queried from Google service
-    metaSeries = []  # index corresponding to latLngSeries, store info related to tiles
+    # index corresponding to latLngSeries, store info related to tiles
+    metaSeries = [] 
+    # What tiles should be queried from Google service
     tilesToRequest = []
+
+    # retrieve appropriate tile data
     for latLng in latLngSeries:
-      tinfo = self._belongedTileInfo(latLng)
+      tileinfo = self.getTileInfo(latLng)
       #print(latLng, tinfo)
-      metaSeries += [tinfo]  # tinfo[0] is belonged tile file name
-      if os.path.isfile(self.tileSetPath + tinfo[0]) == False and tinfo[0] not in tilesToRequest:
-        tilesToRequest += [ tinfo[0] ]
+      metaSeries += [tileinfo]
+      # if we don't have this tile downloaded, we need to ask Google for it
+      #    (tileinfo[0] is tile file name)
+      if os.path.isfile(self.tileSetPath + tileinfo[0]) == False and tileinfo[0] not in tilesToRequest:
+        tilesToRequest += [ tileinfo[0] ]
     
+    # -- REQUEST ALL TILES --
     blockPoints = []
     eleReturn = []
     errorFlag = False
     try:
-      for tile in tilesToRequest:  # tile as tile name
+      for tile in tilesToRequest:
+        # gather points to request for this tile
         #print(a, latLng, a[:-6])
         latLng = tuple(map(float, tile[:-6].split('_')))  # split into lat and lng from tile name
-        for i in range(self.numVerticePerEdge):
-          for j in range(self.numVerticePerEdge):
-            blockPoints += [ (latLng[0] + self.verticeInterval * i, latLng[1] + self.verticeInterval * j) ]
+        for i in range(self.numVertexPerEdge):
+          for j in range(self.numVertexPerEdge):
+            blockPoints += [ (latLng[0] + self.vertexInterval * i, latLng[1] + self.vertexInterval * j) ]
+            # if we've gathered enough points, request this block
             if len(blockPoints) == REQUEST_BLOCKSIZE:
                 #print(qp, len(qp))
                 if self.verbose:
-                  print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVerticeInTile))
+                  print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVertexInTile))
                 eleReturn += self._requestElevationBlock(blockPoints)
                 blockPoints = []
+
+      # get the left over (underfull) block after all tiles have been run through
       if len(blockPoints) > 0:
         if self.verbose:
-          print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVerticeInTile))
+          print('query %d-%d of %d' % (len(eleReturn), len(eleReturn)+len(blockPoints), len(tilesToRequest)*self.numVertexInTile))
         eleReturn += self._requestElevationBlock(blockPoints)
     except:
       # remember that we got the exception. don't raise right now since we need to save files
@@ -119,19 +134,19 @@ class ElevationQuerier:
   
     # store succesfully requested tiles into files
     #print(eleReturn, len(eleReturn))
-    for i in range( (len(eleReturn) + 1) // self.numVerticeInTile ):  # number of complete tiles downloaded
+    for i in range( (len(eleReturn) + 1) // self.numVertexInTile ):  # number of complete tiles downloaded
       #print(i, tilesToRequest[i])
       f = open(self.tileSetPath + tilesToRequest[i], 'w')
-      for j in range(self.numVerticePerEdge):
-        s = i * self.numVerticeInTile + j * self.numVerticePerEdge  # start index
-        line = ",".join( list( map(str, eleReturn[s:(s+self.numVerticePerEdge)]) ) ) + '\n'
+      for j in range(self.numVertexPerEdge):
+        s = i * self.numVertexInTile + j * self.numVertexPerEdge  # start index
+        line = ",".join( list( map(str, eleReturn[s:(s+self.numVertexPerEdge)]) ) ) + '\n'
         f.write(line)
       f.close()
 
     # raise the exception if the whole downloaded process is incomplete
     if errorFlag:
       traceback.print_exception(exc_type, exc_value, exc_traceback)
-      raise EnvironmentError('get exception from requestElevationBlock(), query abort')
+      raise EnvironmentError('got exception from requestElevationBlock(), query aborted (and saved)')
 
     # to query
     ret = []  # final result to return
@@ -141,9 +156,9 @@ class ElevationQuerier:
       fn = meta[0]  # tile file name
       if fn not in self.tiles:
         f = open(self.tileSetPath + fn)
-        content = [ list(map(float, x.strip().split(','))) for x in f.readlines()[:self.numVerticePerEdge] ]
+        content = [ list(map(float, x.strip().split(','))) for x in f.readlines()[:self.numVertexPerEdge] ]
         self.tiles[fn] = content
-      dlati, dlngi, latfrac, lngfrac = meta[1], meta[2], meta[3], meta[4] # vertex indice and fractions
+      dlati, dlngi, latfrac, lngfrac = meta[1], meta[2], meta[3], meta[4] # vertex index and fractions
       #print(fn, latLng, dlati, dlngi)
       ret += [ self._bilinearInterpolation(latfrac, lngfrac,
           self.tiles[fn][dlati  ][dlngi  ],
@@ -203,14 +218,14 @@ class ElevationQuerier:
 
     raise EnvironmentError('No response from google after %d attempts' % REQUEST_MAXATTEMPTS)
 
-  def _belongedTileInfo(self, latLng):
+  def _getTileInfo(self, latLng):
     # return (filename,
     #         ind of point to immediate south lat line in this tile,
     #         ind of point to immediate west lng line in this tile,
     #         fraction of <point to first vertex to the south> / <vertice interval>,
     #         fraction of <point to first vertex to the west> / <vertice interval>)
 
-    # assume tileResolution=1e-3 and verticeInterval=1e-4
+    # assume tileResolution=1e-3 and vertexInterval=1e-4
     # => lat/lng = -118.325479 = -118.326 + 0.0001 * 5   + 0.000021
     #                          = tileLng  + deltaTileLng
     #                          =    "     + vertexLng    + deltaVertexLng    
@@ -218,12 +233,12 @@ class ElevationQuerier:
     deltaTileLng = latLng[1] % self.tileResolution
     tileLat = latLng[0] - deltaTileLat
     tileLng = latLng[1] - deltaTileLng
-    vertexLatInd = int(deltaTileLat // self.verticeInterval)
-    vertexLngInd = int(deltaTileLng // self.verticeInterval)
-    deltaVertexLat = deltaTileLat % self.verticeInterval
-    deltaVertexLng = deltaTileLng % self.verticeInterval
-    fracDeltaVertexLat = deltaVertexLat / self.verticeInterval
-    fracDeltaVertexLng = deltaVertexLng / self.verticeInterval
+    vertexLatInd = int(deltaTileLat // self.vertexInterval)
+    vertexLngInd = int(deltaTileLng // self.vertexInterval)
+    deltaVertexLat = deltaTileLat % self.vertexInterval
+    deltaVertexLng = deltaTileLng % self.vertexInterval
+    fracDeltaVertexLat = deltaVertexLat / self.vertexInterval
+    fracDeltaVertexLng = deltaVertexLng / self.vertexInterval
     return ("%.6lf_%.6lf.etile" % (tileLat, tileLng), 
         vertexLatInd, vertexLngInd, fracDeltaVertexLat, fracDeltaVertexLng)
 

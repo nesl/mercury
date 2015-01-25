@@ -7,7 +7,7 @@
 import os
 import sys
 sys.path.append('../Elevation')
-import ElevationCacheService as ECS
+import ElevationService as ES
 
 def linearSpace(latLngA, latLngB):
     dlat = latLngB[0] - latLngA[0]
@@ -30,7 +30,7 @@ outDir = '../../Data/eleSegments/ucla_small/'   # output folder
 cnt = 0
 for line in lines:
     cnt += 1
-    print cnt, len(lines)
+    print(cnt, len(lines))
     eles = line.strip().split(',')
     ida = eles[0]
     idb = eles[-3]
@@ -46,11 +46,14 @@ for line in lines:
         ida, idb = idb, ida
         latLngs.reverse()
 
-    elevation = ECS.query(latLngs)
-    print(elevation)
+    requester = ES.ElevationRequester()
+    elevation = requester.query(latLngs)
+
+    #print(elevation)
+    eleLatLng = list(zip(elevation, latLngs))
     f = open(outDir + ida + '_' + idb, 'w')
-    for x in elevation:
-        f.write(str(x) + '\n')
+    for x in eleLatLng:
+        f.write(",".join( map(str, [ x[0], x[1][0], x[1][1] ] ) ) + '\n')
     f.close()
 
 

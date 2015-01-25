@@ -93,7 +93,7 @@ class ElevationRequester:
 
     # retrieve appropriate tile data
     for latLng in latLngSeries:
-      tileinfo = self.getTileInfo(latLng)
+      tileinfo = self._getTileInfo(latLng)
       #print(latLng, tinfo)
       metaSeries += [tileinfo]
       # if we don't have this tile downloaded, we need to ask Google for it

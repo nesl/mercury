@@ -13,11 +13,19 @@ function [re] = all_pair_dtw_baro(hele, hbaro)
 %   The output re is an NxN matrix where re(a, b) means DTW( hbaro(a:b), hele).
 %   Both hele and hbaro are row vector 
 
+% reshape the input and make the parameters:
+%    - hele as a column (y-axis) vector
+%    - hbaro as a row (x-axis) vector
+hele = hele(:);
+hbaro = hbaro(:)';
+
 r = numel(hele);
 c = numel(hbaro);
-re = zeros(c) * NaN;
 
-costMatrix = (repmat(hele', 1, c) - repmat(hbaro, r, 1)) .^ 2;
+re = nan(c);
+
+costMatrix = (repmat(hele, 1, c) - repmat(hbaro, r, 1)) .^ 2;
+%costMatrix
 
 % costs
 for i = 1:c

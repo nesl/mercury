@@ -2,19 +2,24 @@
 # output: a folder contains the elevation series of each segment of input .tfix file
 #
 # summary: load each segment in .tfix file and query the elevations
-# alone this segment in a dense manner  (I plan to do it roughly less than 1 meter.)
+# 
+# the experiment told us there's no big improvement if you generate very
+# fine-grained elevation segments, so let's set resolution as >= 1e-4
+# (should be roughly 5m)
 
 import os
 import sys
 sys.path.append('../Elevation')
 import ElevationService as ES
 
+RESOLUTION = 1e-4
+
 def linearSpace(latLngA, latLngB):
     dlat = latLngB[0] - latLngA[0]
     dlng = latLngB[1] - latLngA[1]
     d = (dlat*dlat + dlng*dlng) ** 0.5
     print(dlat, dlng, d)
-    hop = int(d / 1e-5) + 1
+    hop = int(d / RESOLUTION) + 1
     ret = []
     for i in range(hop):
         ret += [ (latLngA[0] + dlat * i / hop, latLngA[1] + dlng * i / hop) ]
@@ -26,7 +31,7 @@ f = open('../../Data/trajectorySetsFix/ucla_small.tfix')   # input part
 lines = f.readlines()
 f.close()
 
-outDir = '../../Data/eleSegments/ucla_small/'   # output folder
+outDir = '../../Data/EleSegmentSets/ucla_small/'   # output folder
 cnt = 0
 for line in lines:
     cnt += 1

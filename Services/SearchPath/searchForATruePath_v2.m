@@ -7,8 +7,17 @@
 % In this version, we list every possible start/end points pair and do DTW
 % and try to avoid the issue in previous version.
 
-eleTrajDir = '../../Data/eleSegments/ucla_west/';
-baroFile = '../../Data/eleSegments/test_case/case1_baro_gnd.csv';
+% input files
+eleTrajDir = '../../Data/eleSegments/ucla_small/';
+baroFile = '../../Data/eleSegments/test_case/case2_baro_query.csv';
+
+% output files
+MAX_RESULTS = 20;
+outPath = '../../Data/resultSets/';
+outFileName = 'case2_ucla_small_hilgard_results.rset';
+
+% TODO: this should be based on searchForATruePath.m but since the previous
+%  file has changed a lot, this file needs to sync with previous file first
 
 tic
 

@@ -12,7 +12,7 @@ gpsRaw(1,:)
 gpsRaw(end,:)
 return;
 
-%% test timestamp for all sensors
+%% test timestamp for all sensors, then generate case 2 and case 3
 baroRaw(end, 1) - baroRaw(1, 1)
 gpsRaw(end, 1) - gpsRaw(1, 1)
 baroRaw(1, 1)
@@ -26,14 +26,28 @@ gpsRaw(1, 1)
 %    - gps time 1421002693000 to 1421002988000 on Hilgard
 
 % case 2:
-stoff = (1421002543000 - gpsRaw(1,1)) / 1e3; % start time offset in second
-tint = (1421002988000 - 1421002543000) / 1e3;  % time interval in second
+%st = 1421002543000;  % start time
+%et = 1421002693000;  % end time
+%outDir = '../Data/BaroTrajTestCases/case2_sunset(north_ucla)/';
+
+% case 3:
+st = 1421002543000;
+et = 1421002988000;
+outDir = '../Data/BaroTrajTestCases/case3_sunset_hilgard(surround_ucla)/';
+
+stoff = (st - gpsRaw(1,1)) / 1e3; % start time offset in second
+tint = (et - st) / 1e3;  % time interval in second
 baroSt = baroRaw(1,1) + stoff * 1e9; % desired barometer start timestamp
 baroEt = baroRaw(1,1) + (stoff + tint) * 1e9; % desired barometer end timestamp
 ind = (baroSt <= baroRaw(:,1) & baroRaw(:,1) <= baroEt);
 dataOut = baroRaw(ind,:);
 dataOut(:,1) = (dataOut(:,1) - dataOut(1,1)) / 1e9;
-dlmwrite('../Data/eleSegments/test_case/case3_baro_query.csv', dataOut, 'delimiter', ',', 'precision', 9);
+dlmwrite([outDir '/baro.csv'], dataOut, 'delimiter', ',', 'precision', 9);
+
+ind = (st <= gpsRaw(:,1) & gpsRaw(:,1) <= et);
+dataOut = gpsRaw(ind, :);
+dataOut(:,1) = (dataOut(:,1) - st) / 1e3;
+dlmwrite([outDir '/gps.csv'], dataOut, 'delimiter', ',', 'precision', 9);
 
 %% plot gps-ele
 clf

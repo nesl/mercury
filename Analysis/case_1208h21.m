@@ -116,6 +116,7 @@ xlabel('2014/11/30 2pm, Indian oven -> lab by driving')
 %}
 
 %% compare height baro
+%{
 tl = 600;
 tu = 1600;
 
@@ -132,5 +133,30 @@ ind = 600 < gpsRaw(:,1) & gpsRaw(:,1) < 1600;
 plot(gpsRaw(ind, 1), gpsRaw(ind, 4), 'bx')
 legend('baro (remapping)', 'gps altitude');
 xlabel('2014/11/28 12pm, bos home to NESL')
+%}
 
+%% create test case 1
+[baroRaw, accRaw, gyroRaw, magRaw, gpsRaw, gpsEle] = readRaw('n501_20141208_211251');
+baroRaw = baroRaw(3:end, :);
+baroRaw(1,:)
+baroRaw(end,:)
+gpsRaw(1,:)
+gpsRaw(end,:)
 
+st = 1418102835;
+et = 1418103643;
+ind = (st <= baroRaw(:,1) / 1e9 & baroRaw(:,1) / 1e9 <= et);
+
+selectedBaro = baroRaw(ind,:);
+selectedBaro(:,1) = selectedBaro(:,1) / 1e9 - st;
+% plot(selectedBaro(:,1), selectedBaro(:,2))
+
+ind = (st <= gpsRaw(:,1) / 1e3 & gpsRaw(:,1) / 1e3 <= et);
+selectedGps = gpsRaw(ind,:);
+selectedGps(:,1) = selectedGps(:,1) / 1e3 - st;
+
+selectedGps(end,:)
+
+dirName = '../Data/BaroTrajTestCases/case1_surround_weyburn/';
+dlmwrite([dirName 'baro.csv'], selectedBaro, 'delimiter', ',', 'precision', 9);
+dlmwrite([dirName 'gps.csv'], selectedGps, 'delimiter', ',', 'precision', 9);

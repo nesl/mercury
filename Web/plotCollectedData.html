@@ -100,6 +100,8 @@ function drawColorBar() {
 		dw = $('#controlPanel').width() - 200;
 		i0 = Math.floor( Number(two.cursor[0]) / dw * gpsData.length );
 		i1 = Math.floor( Number(two.cursor[1]) / dw * gpsData.length );
+		if (i1 >= gpsData.length)
+			i1 = gpsData.length - 1;
 		$('#cursorHint0').html(timeConverter(gpsData[i0].time));
 		$('#cursorHint1').html(timeConverter(gpsData[i1].time));
 		$('#cursorHint0').css({left:two.cursor[0]});

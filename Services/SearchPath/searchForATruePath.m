@@ -169,8 +169,15 @@ for i = 1:length(nodeSeries)-1
     b = nodeSeries(i+1, 2) - 1;
     baroHeightTraj = height(a:b);
     
-    % TODO: haven't finished yet
+    eleInds = dtw_find_path(eleTraj(:,1), baroHeightTraj);
+    latLngs = [latLngs ; eleTraj(eleInds, 2:3)];
 end
+
+numLatLngs = length(latLngs);
+estimatedTraj = [ ((1:numLatLngs) * WINDOW)' latLngs ];
+groundTruthTraj = gpsRaw(:,1:3);
+groundTruthTraj(:,1) = groundTruthTraj(:,1) - gpsRaw(1,1);  % make time offset of first gps record as 0
+gpsSeriesCompare(groundTruthTraj, estimatedTraj)
 
 %% debug
 detrace = sortedTraces(1).trace;

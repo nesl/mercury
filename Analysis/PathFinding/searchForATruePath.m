@@ -1,7 +1,22 @@
-% input files
-eleTrajDir = '../../Data/EleSegmentSets/ucla_small/';
-testCaseID = 'case1';
+%% NOTE:
+% This will eventually be converted into a function, but for debugging
+% I'll keep it as a script for now. Inputs will be map file, sensor file,
+% and sensor segmentation (start and duration). 
 
+%% Inputs:
+mapfile =    '../../Data/EleSegmentSets/ucla_small/';
+sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
+
+%% Ensure library paths are added
+add_paths;
+
+%% Create SensorData object
+sensor_data = SensorData(sensorfile);
+
+%% Create MapData object
+map_data = MapData(mapfile);
+
+%% Output settings
 % output files
 MAX_RESULTS = 20;
 outPath = '../../Data/resultSets/';

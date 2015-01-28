@@ -13,6 +13,5 @@ for name in names:
     os.system(cmd)
     #cmd = 'sed \'$d\' ' + tmp + ' > ' + dst
     #print cmd
-        
-
+       
 

@@ -27,7 +27,7 @@ def linearSpace(latLngA, latLngB):
 
 
 
-f = open('../../Data/trajectorySetsFix/ucla_small.tfix')   # input part
+f = open('../../Data/trajectorySets/ucla_small.tfix')   # input part
 lines = f.readlines()
 f.close()
 

@@ -5,7 +5,7 @@ testCaseID = 'case1';
 % output files
 MAX_RESULTS = 20;
 outPath = '../../Data/resultSets/';
-outfileName = 'case1_ucla_west_results.rset';
+outFileName = 'case1_ucla_west_results.rset';
 %outFileName = 'case2_ucla_small_hilgard_results.rset';
 
 GPS_SKIP_STEP = 1;

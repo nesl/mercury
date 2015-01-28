@@ -17,83 +17,47 @@ sensor_data = SensorData(sensorfile);
 map_data = MapData(mapfile);
 
 %% Output settings
+% (eventually will be removed and placed in calling script)
 % output files
 MAX_RESULTS = 20;
-outPath = '../../Data/resultSets/';
-outFileName = 'case1_ucla_west_results.rset';
-%outFileName = 'case2_ucla_small_hilgard_results.rset';
+OUTPATH = '../../Data/resultSets/';
+OUTFILENAME = 'case1_ucla_west_results.rset';
 
 GPS_SKIP_STEP = 1;
 
 tic
 
-%CONSIDER: create a class to handle segment related stuff
-% load all the segments
-fileProfile = dir(eleTrajDir);
-fileProfile = fileProfile(3:end);
-endNodePairs = [];
-nrNode = 0;
-nodeName2ind = containers.Map;
-ind2nodeName = [];
 
-for i = 1:size(fileProfile)
-    f = fileProfile(i).name;
-    n = find(f == '_');
-    p.na = f(1:(n-1));
-    p.nb = f((n+1):end);
-    endNodePairs = [endNodePairs p];
-    if ~isKey(nodeName2ind, p.na)
-        nrNode = nrNode + 1;
-        nodeName2ind(p.na) = nrNode;
-        ind2nodeName = [ind2nodeName str2num(p.na)];
-    end
-    if ~isKey(nodeName2ind, p.nb)
-        nrNode = nrNode + 1;
-        nodeName2ind(p.nb) = nrNode;
-        ind2nodeName = [ind2nodeName str2num(p.nb)];
-    end
-end
 
-eleTrajs = cell(nrNode);
-nextNodes = cell(nrNode, 1);
-for i = 1:numel(endNodePairs)
-    nna = nodeName2ind( endNodePairs(i).na );
-    nnb = nodeName2ind( endNodePairs(i).nb );
-    tmp = csvread([eleTrajDir fileProfile(i).name]);
-    eleTrajs{nna, nnb} = tmp(1:GPS_SKIP_STEP:size(tmp, 1), :);  % filtered by rows
-    eleTrajs{nnb, nna} = flipud(eleTrajs{nna, nnb});
-    nextNodes{nna} = [nextNodes{nna} nnb];
-    nextNodes{nnb} = [nextNodes{nnb} nna];
-end
-fprintf('finish reading all the trajectories, %d nodes, %d segments\n', nrNode, numel(endNodePairs))
+            % segment barometer trajectory into window
+            [baroRaw, gpsRaw] = readTestCase(testCaseID);
+            WINDOW = 5; % sec
+            nrB = floor((baroRaw(end,1) - baroRaw(1,1)) / WINDOW);
+            baros = zeros(nrB, 1);
+            baroc = zeros(nrB, 1);
+            for i = 1:length(baroRaw)
+                ind = floor((baroRaw(i,1) - baroRaw(1,1)) / WINDOW) + 1;
+                if 1 <= ind && ind <= nrB
+                    baros(ind) = baros(ind) + baroRaw(i,2);
+                    baroc(ind) = baroc(ind) + 1;
+                end
+            end
+            baros = baros ./ baroc;
+            baros = baros(setdiff(1:nrB, find(isnan(baros))));
+            nrB = length(baros);   % since some invalid windows are taken out thus total # of windows changes
 
-% segment barometer trajectory into window
-[baroRaw, gpsRaw] = readTestCase(testCaseID);
-WINDOW = 5; % sec
-nrB = floor((baroRaw(end,1) - baroRaw(1,1)) / WINDOW);
-baros = zeros(nrB, 1);
-baroc = zeros(nrB, 1);
-for i = 1:length(baroRaw)
-    ind = floor((baroRaw(i,1) - baroRaw(1,1)) / WINDOW) + 1;
-    if 1 <= ind && ind <= nrB
-        baros(ind) = baros(ind) + baroRaw(i,2);
-        baroc(ind) = baroc(ind) + 1;
-    end
-end
-baros = baros ./ baroc;
-baros = baros(setdiff(1:nrB, find(isnan(baros))));
-nrB = length(baros);   % since some invalid windows are taken out thus total # of windows changes
+            % for case 1
+            seaPre = 1020;
+            sca = -8.15;
 
-% for case 1
-seaPre = 1020;
-sca = -8.15;
+            % for case 2, 3
+            %seaPre = 1019.394;
+            %sca = -7.9736;
+            height = (baros - seaPre) * sca;
 
-% for case 2, 3
-%seaPre = 1019.394;
-%sca = -7.9736;
-height = (baros - seaPre) * sca;
 
-% all pair DTW
+
+%% all pair DTW
 allPairDTW = cell(nrNode);
 for i = 1:nrNode
     for j = 1:nrNode
@@ -151,7 +115,7 @@ sortedTraces = nestedSortStruct(traces, {'score'});
 fprintf('computation time %.2f\n', toc);
 
 %% Generate result output
-fid = fopen([outPath outFileName], 'w');
+fid = fopen([OUTPATH OUTFILENAME], 'w');
 
 for i=1:min( MAX_RESULTS, length(sortedTraces) )
     score = sortedTraces(i).score;

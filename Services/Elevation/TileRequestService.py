@@ -4,10 +4,10 @@ import math
 class TileRequester:
 	
 	def __init__(self, resolution=4):
-		elev_service = ElevationRequester(resolution)
-		self.tileResolution = elev_service.tileResolution
+		self.elev_service = ElevationRequester(resolution)
+		self.tileResolution = self.elev_service.tileResolution*self.elev_service.numVertexPerEdge;
 	
-	def _getBoundedBox(center_lat, center_lon, miles):
+	def _getBoundedBox(self, center_lat, center_lon, miles):
 		df = miles/69.0
 		dl = df/math.cos(math.radians(center_lat))
 		return [center_lat + df, center_lon - dl, center_lat - df, center_lon + dl]                
@@ -33,4 +33,4 @@ class TileRequester:
 		elif(len(bounds) != 4):
 			raise Exception('Bad arguments')
 		tileSet = self._getMinimalTileSet(bounds)
-		elev_service.request(tileSet)
+		self.elev_service.query(tileSet)

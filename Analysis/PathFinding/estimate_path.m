@@ -14,12 +14,10 @@ sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
 add_paths;
 
 %% Create SensorData object
-%sensor_data = SensorData(sensorfile);
+sensor_data = SensorData(sensorfile);
 
 %% Create MapData object
 map_data = MapData(mapfile);
-
-return;
 
 %% Output settings
 % (eventually will be removed and placed in calling script)

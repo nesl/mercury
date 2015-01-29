@@ -1,4 +1,4 @@
-classdef MapData
+classdef MapData < handle
     %MAPDATA Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -9,12 +9,12 @@ classdef MapData
         map_ind2node;
         num_nodes;
         node_neighbors;
+        
         % elevation information
         segment_elevations;
         segment_latlngs;
         LATLNG_DSAMPLE = 1;
-        ELEV_HPF_FREQN = 0.01;
-        ELEV_HPF_ORDER = 1;
+        ELEV_HPF_FREQN = 1e-5;
         
     end
     
@@ -28,8 +28,8 @@ classdef MapData
             fileInfo = fileInfo(3:end);
             obj.endNodePairs = [];
             obj.num_nodes = 0;
-            obj.map_node2ind = containers.Map;
-            obj.map_ind2node = containers.Map;
+            obj.map_node2ind = containers.Map('KeyType','int32','ValueType','int32');
+            obj.map_ind2node = [];
 
             % --- pre-fetch all segment nodes ---
             for i = 1:size(fileInfo)
@@ -87,17 +87,29 @@ classdef MapData
             N =  obj.node_neighbors{nidx};
         end
         
-        function elev = getAbsoluteElevation(obj, na_idx, nb_idx)
+        function latlng = getSegLatLng(obj, na_idx, nb_idx)
             % find the data for a-->b, if it doesn't exist, flip b-->a
-            if ~isempty( obj.segment_elevations{
-            elev = obj.segment_elevations{na_idx, nb_idx};
+            if ~isempty( obj.segment_latlngs{na_idx, nb_idx} )
+                latlng = obj.segment_latlngs{na_idx, nb_idx};
+            else
+                latlng = flipud( obj.segment_latlngs{nb_idx, na_idx} );
+            end
         end
         
-        function elev_filt = getFilteredElevation(obj, na_idx, nb_idx)
+        function elev = getSegElevation(obj, na_idx, nb_idx)
+            % find the data for a-->b, if it doesn't exist, flip b-->a
+            if ~isempty( obj.segment_elevations{na_idx, nb_idx} )
+                elev = obj.segment_elevations{na_idx, nb_idx};
+            else
+                elev = flipud( obj.segment_elevations{nb_idx, na_idx} );
+            end
+        end
+        
+        function elev_filt = getSegFilteredElevation(obj, na_idx, nb_idx)
             % high pass filter to remove weather-based variations
-            elev_raw = obj.segment_elevations{na_idx, nb_idx};
-            % "sampling" rate
-            [B,A] = butter(obj.ELEV_HPF_ORDER, obj.ELEV_HPF_FREQN);
+            elev_raw = obj.getElevation(na_idx, nb_idx);
+            % filter
+            [B,A] = butter(1, obj.ELEV_HPF_FREQN, 'high');
             elev_filt = filtfilt(B, A, elev_raw);
         end
         
@@ -106,19 +118,19 @@ classdef MapData
             
             % loop through all nodes
             for nidx=1:( length(nodelist)-1 )
-                seg_elev = obj.segment_elevations{nodelist(nidx), nodelist(nidx+1)};
+                seg_elev = obj.getSegElevation(nodelist(nidx), nodelist(nidx+1));
                 elevs = [elevs; seg_elev];
             end
             
         end
         
-        function latlng = nodesToLatLng(obj, nodelist)
-            latlng = [];
+        function latlngs = nodesToLatLng(obj, nodelist)
+            latlngs = [];
             
             % loop through all nodes
             for nidx=1:( length(nodelist)-1 )
-                seg_elev = obj.segment_elevations{nodelist(nidx), nodelist(nidx+1)};
-                
+                seg_latlng = obj.getSegLatLng(nodelist(nidx), nodelist(nidx+1));
+                latlngs = [latlngs; seg_latlng];
             end
             
         end

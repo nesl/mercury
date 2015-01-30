@@ -26,6 +26,7 @@ map_data = MapData(mapfile);
 %% Timing information
 tic;
 
+
 %% all pair DTW
 allPairDTW = cell(nrNode);
 for i = 1:nrNode

@@ -13,6 +13,7 @@ classdef SensorData < handle
         % additional data
         gps_speed;
         gps_angles;
+        est_turns;
         
         % signal segmentation
         segment_start;
@@ -72,6 +73,9 @@ classdef SensorData < handle
             % GPS time alignment - assume that the baro and gps samples at
             % the END are roughly matched up in time
             obj.gps_offset = gps(end,1) - baro(end,1);
+            
+            % estimate turns
+            obj.est_turns = estimateTurns(acc, gyro);
 
         end
                 
@@ -92,6 +96,9 @@ classdef SensorData < handle
             obj.setAbsoluteSegment(start_abs, stop_abs);
             
         end
+        
+        % ACCESS TURNS
+        % TODO !!!
         
         % PRESSURE TO ELEVATION CONVERSION
         function obj = setSeaPressure(obj, sea_level)

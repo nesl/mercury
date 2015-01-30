@@ -25,6 +25,10 @@ classdef SensorData < handle
         % filtering
         BARO_FNORM = 1e-5;
         
+        % pressure to elevation conversion
+        PRESSURE_SEALEVEL;
+        PRESSURE_M2HPA; % m / hPa
+        
     end
     
     methods
@@ -70,9 +74,8 @@ classdef SensorData < handle
             obj.gps_offset = gps(end,1) - baro(end,1);
 
         end
-        
+                
         % SIGNAL SEGMENTATION
-        
         function obj = setAbsoluteSegment(obj, start_sec, stop_sec)
             % ensure we don't exceed the trim boundaries
             obj.segment_start = max( start_sec, obj.raw_baro(1,1) + obj.TRIM_SEC );
@@ -89,8 +92,22 @@ classdef SensorData < handle
             obj.setAbsoluteSegment(start_abs, stop_abs);
             
         end
+        
+        % PRESSURE TO ELEVATION CONVERSION
+        function obj = setSeaPressure(obj, sea_level)
+            obj.PRESSURE_SEALEVEL = sea_level;
+        end
+        
+        function obj = setPressureScalar(obj, scalar)
+            obj.PRESSURE_M2HPA = scalar;
+        end
 
         % ACCESSOR METHODS
+        function elev = getElevation(obj)
+            baro = obj.getBaro();
+            elev = [baro(:,1), (baro(:,2)-obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];
+        end
+        
         function filtered = getFilteredBaro(obj)
             % get raw barometer data
             baro = obj.getBaro();

@@ -15,50 +15,16 @@ add_paths;
 
 %% Create SensorData object
 sensor_data = SensorData(sensorfile);
+% test-specific settings
+sensor_data.setSeaPressure(1020);
+sensor_data.setPressureScalar(-8.15);
+sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
 %% Create MapData object
 map_data = MapData(mapfile);
 
-%% Output settings
-% (eventually will be removed and placed in calling script)
-% output files
-MAX_RESULTS = 20;
-OUTPATH = '../../Data/resultSets/';
-OUTFILENAME = 'case1_ucla_west_results.rset';
-
-GPS_SKIP_STEP = 1;
-
-tic
-
-
-
-            % segment barometer trajectory into window
-            [baroRaw, gpsRaw] = readTestCase(testCaseID);
-            WINDOW = 5; % sec
-            nrB = floor((baroRaw(end,1) - baroRaw(1,1)) / WINDOW);
-            baros = zeros(nrB, 1);
-            baroc = zeros(nrB, 1);
-            for i = 1:length(baroRaw)
-                ind = floor((baroRaw(i,1) - baroRaw(1,1)) / WINDOW) + 1;
-                if 1 <= ind && ind <= nrB
-                    baros(ind) = baros(ind) + baroRaw(i,2);
-                    baroc(ind) = baroc(ind) + 1;
-                end
-            end
-            baros = baros ./ baroc;
-            baros = baros(setdiff(1:nrB, find(isnan(baros))));
-            nrB = length(baros);   % since some invalid windows are taken out thus total # of windows changes
-
-            % for case 1
-            seaPre = 1020;
-            sca = -8.15;
-
-            % for case 2, 3
-            %seaPre = 1019.394;
-            %sca = -7.9736;
-            height = (baros - seaPre) * sca;
-
-
+%% Timing information
+tic;
 
 %% all pair DTW
 allPairDTW = cell(nrNode);
@@ -116,6 +82,15 @@ end
 sortedTraces = nestedSortStruct(traces, {'score'});
 
 fprintf('computation time %.2f\n', toc);
+
+
+%% Output settings
+% (eventually will be removed and placed in calling script)
+% output files
+MAX_RESULTS = 20;
+OUTPATH = '../../Data/resultSets/';
+OUTFILENAME = 'case1_ucla_west_results.rset';
+
 
 %% Generate result output
 fid = fopen([OUTPATH OUTFILENAME], 'w');

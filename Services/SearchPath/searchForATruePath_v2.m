@@ -8,19 +8,20 @@
 % and try to avoid the issue in previous version.
 
 % input files
-eleTrajDir = '../../Data/eleSegments/ucla_small/';
-baroFile = '../../Data/eleSegments/test_case/case2_baro_query.csv';
+eleTrajDir = '../../Data/EleSegmentSets/ucla_small/';
+testCaseID = 'case2';
 
 % output files
 MAX_RESULTS = 20;
 outPath = '../../Data/resultSets/';
+%outfileName = 'case1_ucla_west_results.rset';
 outFileName = 'case2_ucla_small_hilgard_results.rset';
 
-% TODO: this should be based on searchForATruePath.m but since the previous
-%  file has changed a lot, this file needs to sync with previous file first
+GPS_SKIP_STEP = 1;
 
 tic
 
+%CONSIDER: create a class to handle segment related stuff
 % load all the segments
 fileProfile = dir(eleTrajDir);
 fileProfile = fileProfile(3:end);
@@ -52,32 +53,38 @@ nextNodes = cell(nrNode, 1);
 for i = 1:numel(endNodePairs)
     nna = nodeName2ind( endNodePairs(i).na );
     nnb = nodeName2ind( endNodePairs(i).nb );
-    eleTrajs{nna, nnb} = csvread([eleTrajDir fileProfile(i).name]);
-    eleTrajs{nna, nnb} = eleTrajs{nna, nnb}(1:2:numel(eleTrajs{nna, nnb}));
+    tmp = csvread([eleTrajDir fileProfile(i).name]);
+    eleTrajs{nna, nnb} = tmp(1:GPS_SKIP_STEP:size(tmp, 1), :);  % filtered by rows
     eleTrajs{nnb, nna} = flipud(eleTrajs{nna, nnb});
     nextNodes{nna} = [nextNodes{nna} nnb];
     nextNodes{nnb} = [nextNodes{nnb} nna];
 end
-fprintf('finish reading all the trajectories\n')
+fprintf('finish reading all the trajectories, %d nodes, %d segments\n', nrNode, numel(endNodePairs))
 
 % segment barometer trajectory into window
-dataq = csvread(baroFile);
+[baroRaw, gpsRaw] = readTestCase(testCaseID);
 WINDOW = 5; % sec
-nrB = floor((dataq(end,1) - dataq(1,1)) / WINDOW);
+nrB = floor((baroRaw(end,1) - baroRaw(1,1)) / WINDOW);
 baros = zeros(nrB, 1);
 baroc = zeros(nrB, 1);
-for i = 1:size(dataq,1)
-    ind = floor((dataq(i,1) - dataq(1,1)) / WINDOW) + 1;
+for i = 1:length(baroRaw)
+    ind = floor((baroRaw(i,1) - baroRaw(1,1)) / WINDOW) + 1;
     if 1 <= ind && ind <= nrB
-        baros(ind) = baros(ind) + dataq(i,2);
+        baros(ind) = baros(ind) + baroRaw(i,2);
         baroc(ind) = baroc(ind) + 1;
     end
 end
 baros = baros ./ baroc;
 baros = baros(setdiff(1:nrB, find(isnan(baros))));
+nrB = length(baros);   % since some invalid windows are taken out thus total # of windows changes
 
+% for case 1
 seaPre = 1020;
 sca = -8.15;
+
+% for case 2, 3
+%seaPre = 1019.394;
+%sca = -7.9736;
 height = (baros - seaPre) * sca;
 
 % all pair DTW
@@ -86,20 +93,20 @@ for i = 1:nrNode
     for j = 1:nrNode
         if numel(eleTrajs{i, j}) > 0
             fprintf('calculate dtw of traj(%d, %d)\n', i, j);
-            allPairDTW{i, j} = all_pair_dtw_baro(eleTrajs{i,j}', height');
+            allPairDTW{i, j} = all_pair_dtw_baro(eleTrajs{i,j}(:,1), height);
         end
     end
 end
 fprintf('finish calculating all pairs of dtw\n');
 
-% dp then back tarcking
+%% dp + back-tracking
+
 traces = [];
 clear p
 
-for sp = 1:nrNode
-    % dp
+for sp = 1:nrNode  % for start point
     dp = inf(nrNode, nrB+1);  % dp(node, baro step) means the best score end at <baro step> and at <node>
-    dp(sp,1) = 0;
+    dp(sp,1) = 0;  % dp(sp, 1) is the only start point
     from = zeros(nrNode, nrB+1, 2);  % from(a, b) = [last node, last step]
     for i = 1:nrB
         for j = 1:nrNode
@@ -114,8 +121,7 @@ for sp = 1:nrNode
         end
         fprintf('sp=%d, time=%d\n', sp, i)
     end
-    
-    % back tracking
+
     for i = 1:nrNode
         if dp(i, nrB+1) ~= inf
             p.score = dp(i, nrB+1);
@@ -141,11 +147,8 @@ sortedTraces = nestedSortStruct(traces, {'score'});
 fprintf('computation time %.2f\n', toc);
 
 %% Generate result output
-MAX_RESULTS = 5;
-fpath = '../../Data/resultSets/';
-fname = 'ucla_west_results.rset';
+fid = fopen([outPath outFileName], 'w');
 
-fid = fopen([fpath fname], 'w');
 for i=1:min( MAX_RESULTS, length(sortedTraces) )
     score = sortedTraces(i).score;
     t = sortedTraces(i).trace(:,1);
@@ -159,4 +162,30 @@ for i=1:min( MAX_RESULTS, length(sortedTraces) )
     fprintf(fid,'\n');
 end
 
+return
 
+%% convert trace back to geography trace
+% CONSIDER: wrapped as a function (has difficulity as parameter import) or
+% the class method
+
+TRACE_NO = 1;
+nodeSeries = sortedTraces(TRACE_NO).trace;
+latLngs = [];
+for i = 1:length(nodeSeries)-1
+    a = nodeName2ind(num2str(nodeSeries(i   , 1)));
+    b = nodeName2ind(num2str(nodeSeries(i+1 , 1)));
+    eleTraj = eleTrajs{a, b};
+    
+    a = nodeSeries(i  , 2);
+    b = nodeSeries(i+1, 2) - 1;
+    baroHeightTraj = height(a:b);
+    
+    eleInds = dtw_find_path(eleTraj(:,1), baroHeightTraj);
+    latLngs = [latLngs ; eleTraj(eleInds, 2:3)];
+end
+
+numLatLngs = length(latLngs);
+estimatedTraj = [ ((1:numLatLngs) * WINDOW)' latLngs ];
+groundTruthTraj = gpsRaw(:,1:3);
+groundTruthTraj(:,1) = groundTruthTraj(:,1) - gpsRaw(1,1);  % make time offset of first gps record as 0
+gpsSeriesCompare(groundTruthTraj, estimatedTraj)

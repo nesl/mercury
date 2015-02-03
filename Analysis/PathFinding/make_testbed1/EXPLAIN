@@ -1,0 +1,8 @@
+The area of testbed1 is in the west of UCLA, bounded by Weyburn Ave, Gayley,
+Veteran and Strathmore, plus the Westwood Plaza. The purpose of the python script
+is to plot the segments of this area, or, create the .tfix file.
+
+The python script loads the osm segmented map and the crossPoints.txt.
+The file crossPoints.txt records all the interested cross points.
+It creates the .tfix file that the end points of each segment always stick on
+the intersections.

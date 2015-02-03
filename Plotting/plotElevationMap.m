@@ -2,7 +2,7 @@
 clc; close all; clear all;
 
 %% Data storage path
-fpath = '../Services/Elevation/storage/Ucla/';
+fpath = '../Services/Elevation/storage/Hawaii/';
 
 %% Load meta data
 fname = 'meta.txt';
@@ -16,7 +16,7 @@ alt = csvread([fpath fname]);
 %% Surface Plot
 cfigure(50,20);
 surf(lngvec, latvec, alt);
-colormap hsv
+colormap hot
 alpha(0.4);
 
 xlabel('Longitude (E/W)','FontSize',14);

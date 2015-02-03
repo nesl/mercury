@@ -141,7 +141,7 @@ wss.on("connection", function (ws) {
 		}
 	}
 	else if (page == 'fix') {
-		rPath = dataFolder + 'trajectorySetsFix/'
+		rPath = dataFolder + 'trajectorySets/'
 		if (cmd == 'ls') {
 			// request on list of osm dataset
 			re = [];

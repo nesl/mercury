@@ -18,11 +18,12 @@ start_time = 0;
 end_time = 0;
 
 %% Estimate Candidate Path
-[path_est, speed_est] = estimatePath(baroRaw, accRaw, gyroRaw);
-plot(speed_est);
-hold on;
-plot(gpsSpeed,'r');
-grid on;
+[turn_angles] = estimateTurns(baroRaw, accRaw, gyroRaw);
+% cfigure(30,12);
+% stem(turn_angles(:,1)/1e9 - turn_angles(1,1)/1e9, turn_angles(:,2),'or','LineWidth',2);
+% xlabel('Time (sec)','FontSize',12);
+% ylabel('Turn angle (degrees)','FontSize',12);
+% grid on;
 
 %% Surface Plot
 % cfigure(50,20);

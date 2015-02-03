@@ -1,4 +1,4 @@
-function [baroData, accData, gyroData, magData, gpsData, gpsSpeed] = parsesensors(fileID, varargin)
+function [baroData, accData, gyroData, magData, gpsData, gpsSpeed, gpsAngles] = parsesensors(fileID, varargin)
 
 % fileID refer to middle parts of file
 % e.g. baro_n501_20141127_174324.mag.csv
@@ -61,3 +61,6 @@ end
 % assign last index in speed to duplicate second to last
 gpsSpeed(end,2) = gpsSpeed(end-1,2);
 
+%% Calculate gpsAngles
+gpsAngles = 0;
+% TODO: !!!

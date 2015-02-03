@@ -91,7 +91,7 @@ end
 
 %% Analyze Data
 SR = (1/3600);
-NFFT = 128;
+NFFT = 256;
 NUM_STATIONS   = size(all_data, 2);
 mean_pressures = zeros( NUM_STATIONS, 1);
 var_pressures  = zeros( NUM_STATIONS, 1);
@@ -107,31 +107,33 @@ for s=1:NUM_STATIONS
 end
 
 %% Plot Distribution
-cfigure(20,12);
-[centers, prob] = calculatePdf( mean_pressures(mean_pressures > 50), 50 );
+cfigure(18,7);
+[centers, prob] = calculatePdf( mean_pressures(mean_pressures > 50), 70 );
 plot(centers, prob, 'o-b', 'LineWidth',2);
 grid on;
-xlabel('Pressure (hPa)', 'FontSize',18);
-ylabel('Probability','FontSize',18);
+xlabel('Pressure (hPa)', 'FontSize',16);
+ylabel('Probability','FontSize',16);
+xlim([800 1050]);
 saveplot('output/usPressureDistributuion');
 
 %% Plot Spectra
-cfigure(20,12);
-xvals = (1:(NFFT/2)).*SR*(3600); %mHz
+cfigure(18,7);
+xvals = (24*3600)*(SR/2)*(1:(NFFT/2))./(NFFT/2); % (1/day)
 yvals = fft_pressures(:,1:(NFFT/2));
 good_idxs = find(mean(yvals,2) < 200);
 yvals = yvals(good_idxs,:);
 
 mean_spectra = mean(yvals);
-perc90_spectra = prctile(yvals, 90);
-plot(xvals, mean_spectra, 'o-b', 'LineWidth',1);
+perc99_spectra = prctile(yvals, 99);
+plot(xvals, mean_spectra, 'o-b', 'LineWidth',2);
 hold on;
-plot(xvals, perc90_spectra, 's-r', 'LineWidth',1);
+plot(xvals, perc99_spectra, 's-m', 'LineWidth',2);
 grid on;
-xlabel('Frequency (hr^{-1})', 'FontSize',18);
-ylabel('Magnitude','FontSize',18);
-legend('Mean Pressure Spectra', '90th Percentile Spectra');
-xlim([0 30]);
+xlabel('Frequency (day^{-1})', 'FontSize',16);
+ylabel('Magnitude','FontSize',16);
+legend('Mean Pressure Spectra', '99th Percentile Spectra');
+xlim([0 3]);
+ylim([0 2000]);
 saveplot('output/usPressureSpectra');
 
 %% Plot variance within an hour?

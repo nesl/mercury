@@ -1,0 +1,3 @@
+Matlab codes for trying to reduce the complexity of all pairs of DTW into O(AB).
+A is the series we're interested in and we try to find each possible sub-segment
+of A to match to B. Current complexity is O(A^2 B).

@@ -2,13 +2,14 @@ classdef SensorData < handle
     %UNTITLED3 Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties (SetAccess = private, GetAccess = private)
+    properties (SetAccess = public, GetAccess = public)
         % raw data
         raw_baro;
         raw_acc;
         raw_gyro;
         raw_mag;
         raw_gps;
+        raw_gpsele;
         
         % additional data
         gps_speed;
@@ -28,7 +29,7 @@ classdef SensorData < handle
         
         % pressure to elevation conversion
         PRESSURE_SEALEVEL;
-        PRESSURE_M2HPA; % m / hPa
+        PRESSURE_M2HPA; % meter / hPa
         
     end
     
@@ -37,7 +38,7 @@ classdef SensorData < handle
         function obj = SensorData(filepath)
 
             % parse raw data
-            [baro, acc, gyro, mag, gps] = parseRawData(filepath);
+            [baro, acc, gyro, mag, gps, gpsele] = parseRawData(filepath);
             
             % ensure at least baro and gps are not empty
             if isempty(baro) || isempty(gps)
@@ -50,6 +51,7 @@ classdef SensorData < handle
             obj.raw_gyro = gyro;
             obj.raw_mag = mag;
             obj.raw_gps = gps;
+            obj.raw_gpsele = gpsele;
             
             % by default, the segment is slightly trimmed
             obj.segment_start = baro(1,1) + obj.TRIM_SEC;
@@ -112,7 +114,25 @@ classdef SensorData < handle
         % ACCESSOR METHODS
         function elev = getElevation(obj)
             baro = obj.getBaro();
-            elev = [baro(:,1), (baro(:,2)-obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];
+            elev = [baro(:,1), (baro(:,2) - obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];
+        end
+        
+        function elev = getElevationTimeWindow(obj)
+            elevRaw = obj.getElevation();
+            numWindow = floor( (elevRaw(end,1) - elevRaw(1,1)) / obj.TRIM_SEC );
+            elevSum = zeros(numWindow, 1);
+            elevCnt = zeros(numWindow, 1);
+            for i = 1:length(elevRaw)
+                idx = floor((elevRaw(i,1) - elevRaw(1,1)) / obj.TRIM_SEC) + 1;
+                if 1 <= idx && idx <= numWindow
+                    elevSum(idx) = elevSum(idx) + elevRaw(i,2);
+                    elevCnt(idx) = elevCnt(idx) + 1;
+                end
+            end
+            timestampAfterWindow = ( elevRaw(1,1) + ((1:numWindow) - 1) * obj.TRIM_SEC )';
+            elev = [  timestampAfterWindow  elevSum ./ elevCnt];
+            indxs = setdiff( 1:numWindow, find(isnan(elev(:,2))) );  % there might be windows which has no data points, remove them
+            elev = elev(indxs,:);  
         end
         
         function filtered = getFilteredBaro(obj)
@@ -162,6 +182,12 @@ classdef SensorData < handle
             speed = obj.gps_speed(indxs,:);
         end
         
+        function gps2ele = getGps2Ele(obj)
+            % find valid indices for this segment
+            indxs =  (obj.raw_gpsele(:,1)-obj.gps_offset) >= obj.segment_start & ...
+                          (obj.raw_gpsele(:,1)-obj.gps_offset) <= obj.segment_stop ;
+            gps2ele = obj.raw_gpsele(indxs,:);
+        end
     end
     
 end

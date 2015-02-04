@@ -11,8 +11,10 @@ classdef MapData < handle
         node_neighbors;
         
         % elevation information
+        node_latlng;
         segment_elevations;
         segment_latlngs;
+        segment_allPairDTW;
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
         
@@ -28,7 +30,7 @@ classdef MapData < handle
             fileInfo = fileInfo(3:end);
             obj.endNodePairs = [];
             obj.num_nodes = 0;
-            obj.map_node2idx = containers.Map('KeyType','int32','ValueType','int32');
+            obj.map_node2idx = containers.Map('KeyType','int64','ValueType','int32');
             obj.map_idx2node = [];
 
             % --- pre-fetch all segment nodes ---
@@ -36,36 +38,36 @@ classdef MapData < handle
                 % get node boundaries of this segment
                 fname = fileInfo(i).name;
                 split_idx = find(fname == '_');
-                node_a = str2double( fname(1:(split_idx-1)) );
-                node_b = str2double( fname((split_idx+1):end) );
+                node_a = str2num( fname(1:(split_idx-1)) );
+                node_b = str2num( fname((split_idx+1):end) );
                 
                 % if we haven't seen node a, add it to our dictionary!
                 if ~isKey(obj.map_node2idx, node_a)
                     obj.num_nodes = obj.num_nodes + 1;
                     obj.map_node2idx(node_a) = obj.num_nodes;
-                    obj.map_idx2node = [obj.map_idx2node str2double(node_a)];
+                    obj.map_idx2node = [obj.map_idx2node node_a];
                 end
                 
                 % if we haven't seen node b, add it to our dictionary!
                 if ~isKey(obj.map_node2idx, node_b)
                     obj.num_nodes = obj.num_nodes + 1;
                     obj.map_node2idx(node_b) = obj.num_nodes;
-                    obj.map_idx2node = [obj.map_idx2node str2double(node_b)];
+                    obj.map_idx2node = [obj.map_idx2node node_b];
                 end
                 
                 % append to array of node pairs
                 na_idx = obj.nodeToIdx(node_a);
                 nb_idx = obj.nodeToIdx(node_b);
                 obj.endNodePairs = [obj.endNodePairs; [na_idx nb_idx]];
-                
             end
+            
             
             % --- load all elevation and lat/lng data ---
             obj.segment_elevations = cell(obj.num_nodes);
             obj.segment_latlngs = cell(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
+            obj.node_latlng = zeros(obj.num_nodes, 2);
             
-
             % loop through all segments
             for i = 1:size(obj.endNodePairs,1)
                 na_idx = obj.endNodePairs(i,1);
@@ -81,12 +83,19 @@ classdef MapData < handle
                 % add to neighbor lists
                 obj.node_neighbors{na_idx} = [obj.node_neighbors{na_idx} nb_idx];
                 obj.node_neighbors{nb_idx} = [obj.node_neighbors{nb_idx} na_idx];
+                % fecth the lat/lng for end nodes
+                obj.node_latlng(na_idx, :) = raw(1, 2:3);
+                obj.node_latlng(nb_idx, :) = raw(end, 2:3);
             end
             
-            %fprintf('finish reading all the trajectories, %d nodes, %d segments\n', num_nodes, numel(endNodePairs))
+            %fprintf('finish reading all the trajectories, %d nodes, %d segments\n', num_nodes, numel())
         end
         
         % ACCESSORS
+        function num = getNumNodes(obj)
+            num = obj.num_nodes;
+        end
+        
         function segs = getAllSegments(obj)
             segs = obj.endNodePairs;
         end
@@ -132,25 +141,32 @@ classdef MapData < handle
             elev_filt = filtfilt(B, A, elev_raw);
         end
         
+        % get lat/lng for solely one node
+        function latlng = nodeIdxToLatLng(obj, idx)
+            latlng = obj.node_latlng(idx, :);
+        end
+        
+        % REMARK: might want to change the name nodes to nodeSeries
         % get all elevation for nodes in a list
         function elevs = nodesToElev(obj, nodelist)
             elevs = [];
             
             % loop through all nodes
             for nidx=1:( length(nodelist)-1 )
-                seg_elev = obj.getSegElevation(nodelist(nidx), nodelist(nidx+1));
+                seg_elev = obj.getSegElevation(  nodelist( nidx:(nidx+1) ) );
+                seg_elev
                 elevs = [elevs; seg_elev];
             end
             
         end
         
-        % get all latitude and longitude for nodes in a listt
-        function latlngs = nodesToLatLng(obj, nodelist)
+        % get all latitude and longitude for nodes in a list
+        function latlngs = nodesToLatLng(obj, nidxList)
             latlngs = [];
             
             % loop through all nodes
-            for nidx=1:( length(nodelist)-1 )
-                seg_latlng = obj.getSegLatLng(nodelist(nidx), nodelist(nidx+1));
+            for nidx=1:( length(nidxList)-1 )
+                seg_latlng = obj.getSegLatLng( nidxList( nidx:(nidx+1) ) );
                 latlngs = [latlngs; seg_latlng];
             end
             
@@ -166,6 +182,35 @@ classdef MapData < handle
             idx = obj.map_node2idx(node);
         end
         
+        % METHODS REGARDING ALL PAIRS DTW
+        function preProcessAllPairDTW(obj, elevFromBaro)
+            obj.segment_allPairDTW = cell(obj.num_nodes);
+            numPairs = size(obj.endNodePairs, 1);
+            for i = 1:numPairs
+                na_idx = obj.endNodePairs(i, 1);
+                nb_idx = obj.endNodePairs(i, 2);
+                fprintf('calculating dtw of traj(%d, %d)\n', na_idx, nb_idx);
+                obj.segment_allPairDTW{na_idx, nb_idx} = all_pair_dtw_baro( ...
+                    obj.getSegElevation(obj.endNodePairs(i,:)), elevFromBaro);
+            end
+        end
+        
+        % [ square_matrix ] = queryAllPairDTW(obj, na_idx, nb_idx)
+        % [   row_vector  ] = queryAllPairDTW(obj, na_idx, nb_idx, start_step)  // end_step=any
+        % [  single_value ] = queryAllPairDTW(obj, na_idx, nb_idx, start_step, end_step)
+        function res = queryAllPairDTW(obj, na_idx, nb_idx, varargin)
+            % switch index if there's no segment of <na_idx, nb_idx>
+            if numel(obj.segment_allPairDTW{na_idx, nb_idx}) == 0
+                t = na_idx;   na_idx = nb_idx;   nb_idx = t;
+            end
+            if numel(varargin) == 0
+                res = obj.segment_allPairDTW{na_idx, nb_idx};
+            elseif numel(varargin) == 1
+                res = obj.segment_allPairDTW{na_idx, nb_idx}( varargin{1}, varargin{1}:end );
+            else
+                res = obj.segment_allPairDTW{na_idx, nb_idx}( varargin{1}, varargin{2} );
+            end
+        end
     end
     
 end

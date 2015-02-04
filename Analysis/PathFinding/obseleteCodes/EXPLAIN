@@ -1,0 +1,13 @@
+WARNING: the data folder in the codes might not be correct.
+
+A historial folder stores the previous codes which tries to prove small concepts or
+parts of one certain algorithm work. 
+
+step1_*.m tested on the DTW algorithm based on performing DTW(baro data, true ele path)
+
+step2_*.m tested on including some false elevation trajectories, whether DTW can
+select the correct elevation trajectories.
+
+The step3_*.m has been renamed to searchATruePath.m and is currently the major code
+to execute. This version find the correct path searching from the map instead of
+given elevation trajectories.

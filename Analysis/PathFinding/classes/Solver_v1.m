@@ -173,7 +173,7 @@ classdef Solver_v1 < handle
             legendTexts = {'Ground'};
             for i = tracesIdxList
                 estiLatLng = obj.getLatLngPath(i);
-                color = hsl2rgb([ rand() , 1, 0.7 ]);
+                color = hsv2rgb([ rand() , 1, 0.7 ]);
                 plot( estiLatLng(:,1), estiLatLng(:,2), '-', 'Color', color );
                 legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
             end

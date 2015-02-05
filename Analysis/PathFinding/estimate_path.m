@@ -10,7 +10,8 @@ clear all; clc; close all;
 % case 1:
 mapfile =    '../../Data/EleSegmentSets/ucla_small/';
 sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
-
+outputWebFile = '../../Data/resultSets/case1_ucla_west_results.rset';
+% also seaPressure, pressureScalar, range
 
 %% Ensure library paths are added
 add_paths;
@@ -89,23 +90,22 @@ fprintf('computation time %.2f\n', toc);
 %}
 
 %% test solver
+
+
 tic
 solver = Solver_v1(map_data, sensor_data);
+solver.setOutputFilePath(outputWebFile);
 solver.solve();
 solver.getRawPath(1)
 solver.plotPathComparison(1)
+solver.toWeb();
 toc
 return;
 
-%% Output settings
-% (eventually will be removed and placed in calling script)
-% output files
-MAX_RESULTS = 20;
-OUTPATH = '../../Data/resultSets/';
-OUTFILENAME = 'case1_ucla_west_results.rset';
 
 
 %% Generate result output
+%{
 fid = fopen([OUTPATH OUTFILENAME], 'w');
 
 for i=1:min( MAX_RESULTS, length(sortedTraces) )
@@ -122,10 +122,10 @@ for i=1:min( MAX_RESULTS, length(sortedTraces) )
 end
 
 return
+%}
 
 %% convert trace back to geography trace
-% CONSIDER: wrapped as a function (has difficulity as parameter import) or
-% the class method
+%{
 
 TRACE_NO = 1;
 nodeSeries = sortedTraces(TRACE_NO).trace;
@@ -148,6 +148,7 @@ estimatedTraj = [ ((1:numLatLngs) * WINDOW)' latLngs ];
 groundTruthTraj = gpsRaw(:,1:3);
 groundTruthTraj(:,1) = groundTruthTraj(:,1) - gpsRaw(1,1);  % make time offset of first gps record as 0
 gpsSeriesCompare(groundTruthTraj, estimatedTraj)
+%}
 
 %% debug
 detrace = sortedTraces(1).trace;

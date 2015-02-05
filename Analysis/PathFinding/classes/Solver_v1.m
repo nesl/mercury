@@ -213,6 +213,34 @@ classdef Solver_v1 < handle
             
             legend(legendTexts);
         end
+        
+        % TO WEB
+        function toWeb(obj)
+            if length(obj.outputFilePath) == 0
+                error('set output file path to the solver first (in toWeb())');
+            end
+            fid = fopen(obj.outputFilePath, 'w');
+            gpsData = obj.sensor_data.getGps();
+            for i = 1:size(gpsData, 1)
+                fprintf(fid, '%f,%f,', gpsData(i,2), gpsData(i,3) );
+            end
+            fprintf(fid, '-1\n');
+            
+            numRes = min(obj.max_results, numel(obj.res_traces));
+            fprintf(fid, '%d\n', numRes);
+            for i = 1:numRes
+                squareError = obj.getSquareErrors(i);
+                fprintf(fid, '%f,%f,', obj.res_traces(i).dtwScore, squareError);
+                rawPath = obj.getRawPath(i);
+                for j=1:size(rawPath, 1)
+                    latlngs = obj.map_data.nodeIdxToLatLng( rawPath(j,2) );
+                    fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
+                end
+                fprintf(fid,'-1\n');
+            end
+            fprintf(['File created. Please check file "' obj.outputFilePath '"\n']);
+            fclose(fid);
+        end
     end
     
 end

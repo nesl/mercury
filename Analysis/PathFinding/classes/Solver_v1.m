@@ -96,8 +96,19 @@ classdef Solver_v1 < handle
             obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
         end
         
-        function forceInsertAPath(path)  % an row vector of nodeIdxs
-            % TODO
+        function forceInsertAPath(obj, path)  % an row vector of nodeIdxs
+            % this method force the agent to walk along the specified path.
+            % if there already are some result in the res_traces, the new
+            % path is gauranteed to be inserted into res_traces with
+            % replacing one of them.
+            
+            pathElev = obj.getPathElev(path);
+            tmp = all_pair_dtw(path, obj.elevFromBaro);
+            % in this approach how to compute rawPath?
+            % essentially you need basic 
+            % score
+            % Don't have the motivation to continue... work on the other
+            % day.... TODO
         end
         
         % RETRIEVE PATHS

@@ -1,8 +1,10 @@
 classdef Solver_v1 < handle
-    %SOLVER does the following thing:
-    %  1. Based on DTW information, it performs search/DP algorithm to find
-    %     the most likely n paths
-    %  2. It provides the function to compare with the ground-truth path
+    % SOLVER does the following thing:
+    %   1. Based on DTW information, it performs search/DP algorithm to find
+    %      the most likely n paths
+    %   2. It provides the function to compare with the ground-truth path
+    %
+    % This solver uses the basic DP algorithm.
     
     properties (SetAccess = public)
         % associated objects
@@ -94,6 +96,10 @@ classdef Solver_v1 < handle
             obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
         end
         
+        function forceInsertAPath(path)  % an row vector of nodeIdxs
+            % TODO
+        end
+        
         % RETRIEVE PATHS
         function rawPath = getRawPath(obj, traceIdx)
             rawPath = obj.res_traces(traceIdx).rawPath;
@@ -103,11 +109,11 @@ classdef Solver_v1 < handle
             dtwScore = obj.res_traces(traceIdx).dtwScore;
         end
         
-        function latlngs = getLatLngPath(obj, traceIdx)
+        function latlngs = getPathLatLng(obj, traceIdx)
             rawPath = obj.res_traces(traceIdx).rawPath;
             latlngs = [];
             for i = 1:length(rawPath)-1
-                elevMapSeg = obj.map_data.getSegElevation( rawPath(i:i+1, 2) );
+                elevMapSeg = obj.map_data.getSegElev( rawPath(i:i+1, 2) );
                 latlngMapSeg = obj.map_data.getSegLatLng( rawPath(i:i+1, 2) );
                 a = rawPath(i  , 1);
                 b = rawPath(i+1, 1) - 1;
@@ -120,7 +126,7 @@ classdef Solver_v1 < handle
         end
         
         function timeLatLngs = getTimeLatLngPath(obj, traceIdx)
-            timeLatLngs = [ obj.elevFromBaro(:,1)  obj.getLatLngPath(traceIdx) ];
+            timeLatLngs = [ obj.elevFromBaro(:,1)  obj.getPathLatLng(traceIdx) ];
         end
         
         % [ row vector ] = getSquareErrors(obj)  // get up to <max_result> results
@@ -147,10 +153,8 @@ classdef Solver_v1 < handle
             res = zeros(numRow, 0);
             for i = 1:numel(varargin)
                 if strcmp(varargin{i}, 'index') == 1
-                    'index'
                     res = [res (1:numRow)'];
                 elseif strcmp(varargin{i}, 'dtwScore') == 1
-                    'dtwScore'
                     tmp = zeros(numRow, 1);
                     for j = 1:numRow
                         tmp(j) = obj.res_traces(j).dtwScore;
@@ -169,20 +173,13 @@ classdef Solver_v1 < handle
             gpsData = obj.sensor_data.getGps();  % 2:lat, 3:lon
             clf
             hold on
-            plot( gpsData(:,2), gpsData(:,3), 'k*' );
+            plot( gpsData(:,3), gpsData(:,2), 'k*' );
             legendTexts = {'Ground'};
             for i = tracesIdxList
-                estiLatLng = obj.getLatLngPath(i);
+                estiLatLng = obj.getPathLatLng(i);
                 color = hsv2rgb([ rand() , 1, 0.7 ]);
-                plot( estiLatLng(:,1), estiLatLng(:,2), '-', 'Color', color );
+                plot( estiLatLng(:,2), estiLatLng(:,1), '-', 'Color', color );
                 legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
-            end
-            
-            rawPath = obj.getRawPath(tracesIdxList(1));
-            for i = 1:size(rawPath, 1)
-                latlng = obj.map_data.nodeIdxToLatLng(rawPath(i,2));
-                plot(latlng(1), latlng(2), 'ob');
-                latlng
             end
             legend(legendTexts);
         end
@@ -205,7 +202,7 @@ classdef Solver_v1 < handle
             
             for i = tracesIdxList
                 rawPath = obj.getRawPath(i);
-                tmpElev = obj.map_data.nodesToElev( rawPath(:,2) );
+                tmpElev = obj.map_data.getPathElev( rawPath(:,2) );
                 color = hsl2rgb([ rand() * 0.5 , 1, 0.7 ]);
                 plot(1:length(tmpElev), tmpElev, '-', 'Color', color);
                 legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
@@ -233,7 +230,7 @@ classdef Solver_v1 < handle
                 fprintf(fid, '%f,%f,', obj.res_traces(i).dtwScore, squareError);
                 rawPath = obj.getRawPath(i);
                 for j=1:size(rawPath, 1)
-                    latlngs = obj.map_data.nodeIdxToLatLng( rawPath(j,2) );
+                    latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
                     fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
                 end
                 fprintf(fid,'-1\n');

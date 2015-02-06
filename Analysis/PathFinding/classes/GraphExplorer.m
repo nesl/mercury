@@ -73,10 +73,20 @@ classdef GraphExplorer < handle
             % get turns
             turns = obj.map.getPathTurns(path_nodes);
             
-            % get path cost -- DTW on both turns and elevation
+            % get elevation cost
+            
+            % get turn cost
+            
+            % combine costs
+            
+            % TODO !!!
             
             
-            
+        end
+        
+        % DETERMINE THE COST OF ALL NEW PATHS
+        function calculateNewPathCosts(obj, new_leaf_nodes)
+            % TODO !!!
         end
         
         
@@ -84,6 +94,8 @@ classdef GraphExplorer < handle
         function pruneBranches(obj)
             
         end
+        
+        
     end
     
 end

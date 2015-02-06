@@ -11,6 +11,13 @@ classdef SensorData < handle
         raw_gps;
         raw_gpsele;
         
+        % sampling rates
+        SR_baro;
+        SR_acc;
+        SR_gyro;
+        SR_mag;
+        SR_gps;
+        
         % additional data
         gps_speed;
         gps_angles;
@@ -52,6 +59,13 @@ classdef SensorData < handle
             obj.raw_mag = mag;
             obj.raw_gps = gps;
             obj.raw_gpsele = gpsele;
+            
+            % get sampling rates
+            obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
+            obj.SR_acc =  mean(1./diff(obj.raw_acc(:,1)));
+            obj.SR_gyro = mean(1./diff(obj.raw_gyro(:,1)));
+            obj.SR_mag =  mean(1./diff(obj.raw_gps(:,1)));
+            obj.SR_gps =  mean(1./diff(obj.raw_gps(:,1)));
             
             % by default, the segment is slightly trimmed
             obj.segment_start = baro(1,1) + obj.TRIM_SEC;
@@ -115,6 +129,21 @@ classdef SensorData < handle
         function elev = getElevation(obj)
             baro = obj.getBaro();
             elev = [baro(:,1), (baro(:,2) - obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];
+        end
+        
+        function fElev = getElevationFiltered(obj)
+           elev = obj.getElevation();
+           [b,a] = butter(2, 0.001,'low');
+           fElev = filtfilt(b,a,elev);
+        end
+        
+        function dElev = getElevationDeriv(obj)
+            % get filtered, estimated height
+            elev = obj.getElevationFiltered();
+            
+            % take derivative of estimated height
+            dElev = gradient(elev(:,2), elev(:,1));
+
         end
         
         function elev = getElevationTimeWindow(obj)

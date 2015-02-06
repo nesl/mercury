@@ -23,8 +23,52 @@ sensor_data.setSeaPressure(1020);
 sensor_data.setPressureScalar(-8.15);
 sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
+%% test deriv. of elevation
+% e = sensor_data.getElevation();
+% ef = sensor_data.getElevationFiltered();
+% plot(ef(:,2) - mean(ef(:,2)));
+% hold on;
+% plot(e(:,2) - mean(e(:,2)), 'k');
+% ed = gradient(ef(:,2), ef(:,1));
+% plot(ed*30, 'r');
+% plot([0 length(ed)], [0 0], 'k--');
+
+
 %% Create MapData object
 map_data = MapData(mapfile);
+
+%% test map angles
+osm_list = [
+    122762254
+    122568569
+    566556466
+    122762256
+    122762258
+    122579087
+    1956573659
+    122762229
+    1717275967
+    122762231
+    122762234
+    122762238
+    122762242
+    122762246
+    122681077
+    122681080
+    122681083
+];
+
+
+nlist = map_data.getNodeIdxs(osm_list);
+angles = map_data.getPathAngles(nlist);
+turns = map_data.getPathTurns(nlist);
+
+plot(angles - mean(angles));
+hold on;
+plot(turns,'r');
+
+return;
+
 
 %% Timing information
 tic;

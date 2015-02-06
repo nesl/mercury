@@ -20,6 +20,12 @@ classdef Solver_greedy < handle
         % output settings
         max_results = 20;
         outputFilePath;
+        
+        % greedy solver parameters;
+        % trees will prune branches not in the X'th percentile, and the
+        % entire solver will prune trees not within the Y'th percentile.
+        PRUNE_PERCENTILE_TREE   = 0.90;
+        PRUNE_PERCENTILE_BRANCH = 0.90;
     end
     
     methods
@@ -40,57 +46,9 @@ classdef Solver_greedy < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
-            % all pair DTW
-            obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
-            obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
-            fprintf('finish calculating all pairs of dtw\n');
-
-            % dp
-            numMapNodes = obj.map_data.getNumNodes();
-            numElevBaro = size(obj.elevFromBaro, 1);
-            dp = ones(numMapNodes, numElevBaro+1) * inf;  % dp(node idx, elev step)
-            dp(:,1) = 0;
-            from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
-            for i = 1:numElevBaro
-                for j = 1:numMapNodes
-                    neighbors = obj.map_data.getNeighbors(j);
-                    for k = 1:numel(neighbors)
-                        nn = neighbors(k);  % neighbor node
-                        dtwArr = obj.map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
-                        ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
-                        % ind spans the same range as <i to numElevBaro>
-                        % (ind + i) maps to range (i+1):(numElevBaro+1), 
-                        dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
-                        from(nn, i+ind, :) = repmat([j i], length(ind), 1);
-                    end
-                end
-                fprintf('%d\n', i)
-            end
+            % TODO!!!!!
             
-            % back tracking
-            obj.res_traces = [];
-            for i = 1:numMapNodes
-                if dp(i, numElevBaro+1) ~= inf
-                    clear tmp_trace
-                    tmp_trace.dtwScore = dp(i, numElevBaro+1);
-                    cNodeIdx = i;  % current node index
-                    cElevStep = numElevBaro+1;  % current elevation step
-                    tmp_trace.rawPath = [numElevBaro+1 i];
-                    while cElevStep ~= 1
-                        pNodeIdx = from(cNodeIdx, cElevStep, 1);  % previous node index
-                        pElevStep = from(cNodeIdx, cElevStep, 2);  % previous elevation step
-                        cNodeIdx = pNodeIdx;
-                        cElevStep = pElevStep;
-                        tmp_trace.rawPath = [ [ pElevStep pNodeIdx ] ; tmp_trace.rawPath];
-                    end
-                    obj.res_traces = [obj.res_traces tmp_trace];
-                end
-            end
             
-            % TODO: suppose to truncate the # of res_traces into
-            % max_results, but for development and debugging purposes, we
-            % didn't do that
-            obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
         end
         
         % RETRIEVE PATHS

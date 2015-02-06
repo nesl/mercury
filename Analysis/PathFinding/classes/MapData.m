@@ -114,6 +114,13 @@ classdef MapData < handle
         %       +-- Seg -------+
         %       +-- path ------+
      
+        % get node indexes of OSM nodes
+        function nlist = getNodeIdxs(obj, osm_nodes)
+           nlist = zeros(length(osm_nodes), 1);
+           for i=1:length(osm_nodes)
+              nlist(i) = obj.nodeToIdx(osm_nodes(i)); 
+           end
+        end
         
         % get elevation for solely one node
         function elev = getNodeIdxElev(obj, idx)
@@ -192,6 +199,70 @@ classdef MapData < handle
             end
             
         end
+        
+        % get angle sequence for a given node list / path
+        function angles = getPathAngles(obj, nidxList)
+            if isempty(nidxList)
+                error('node list is empty (getPathTurns)');
+            end
+            
+            % initialize empty deltaAngle vector
+            angles = [];
+            
+            % starting point
+            latlng_last = [];
+           
+            for i=1:( length(nidxList) - 1 )
+                % get segment nodes
+                nidx_a = nidxList(i);
+                nidx_b = nidxList(i+1);
+                % get lat/lng array
+                segLatLng = obj.getSegLatLng([nidx_a nidx_b]);
+                
+                for j=1:size(segLatLng,1)
+                    % lat = y, lng = x
+                    latlng = segLatLng(j,:);
+                   % check for starting point
+                   if i==1 && j==1
+                       latlng_last = latlng;
+                       continue;
+                   end
+                   
+                   % check for zero movement (latlng too close to latlng_last)
+                   if (latlng - latlng_last < 0.01e-5)
+                       latlng_last = latlng;
+                       continue;
+                   end
+                   
+                   disp_norm = (latlng - latlng_last)./norm( latlng - latlng_last );
+                   theta = atan2d(disp_norm(1), disp_norm(2));
+                   
+                   angles = [angles; theta];
+                   
+                   % recycle this lat/lng pair
+                   latlng_last = latlng;
+                end
+                
+            end
+            
+            % add one more to the angles list to make it the same size
+            angles = [angles; angles(end)];
+            
+            % smooth out angles
+            [b,a] = butter(1,0.5);
+            angles = filtfilt(b,a,angles);
+        end
+        
+        % get turn sequence for a node list
+        function turns = getPathTurns(obj, nidxList)
+            % get absolute path angles
+            angles = obj.getPathAngles(nidxList);
+            % smooth out these angles
+            
+            turns = diff(angles);
+            
+        end
+        
         
         % get all latitude and longitude for nodes in a list
         function latlngs = getPathLatLng(obj, nidxList)

@@ -20,27 +20,34 @@ classdef GraphNode < handle
         end
         
         % is this a leaf?
-        function leaf = isLeaf(obj)
-            leaf = isempty(children);
+        function l = isLeaf(obj)
+            l = isempty(obj.children);
+        end
+        
+        % is this a root
+        function p = isParent(obj)
+            p = isnan(obj.parent);
         end
         
         % add children to this node
-        function  obj = addChild(child_nidx)
+        function  obj = addChild(child_obj)
+            child_idx = child_obj.node_idx;
             % add as a child if it's not one already
-            if ~isKey(obj.map_idx2child, child_nidx)
-                % new node
-                obj.children = [obj.children; GraphNode(obj, child_idx)];
-                obj.map_idx2child(child_nidx) = length(obj.children);
+            if ~isKey(obj.map_idx2child, child_idx)
+                % new child
+                obj.children = [obj.children; child_obj];
+                obj.map_idx2child(child_idx) = length(obj.children);
             end
         end
         
         % remove a child
-        function obj = removeChild(child_nidx)
-            if isKey(obj.map_idx2child, child_nidx)
+        function obj = removeChild(child_obj)
+            child_idx = child_obj.node_idx;
+            if isKey(obj.map_idx2child, child_idx)
                 % remove from cell array of children
-                obj.children(obj.map_idx2child(child_nidx)) = [];
+                obj.children(obj.map_idx2child(child_idx)) = [];
                 % remove dictionary entry
-                remove(obj.map_idx2child, child_nidx);
+                remove(obj.map_idx2child, child_idx);
             end
         end
         

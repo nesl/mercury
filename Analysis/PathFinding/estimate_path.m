@@ -28,69 +28,8 @@ map_data = MapData(mapfile);
 %% Timing information
 tic;
 
-
-%% all pair DTW
-%elevFromBaro = sensor_data.getElevationTimeWindow();
-%map_data.preProcessAllPairDTW(elevFromBaro(:,2));
-%fprintf('finish calculating all pairs of dtw\n');
-
-%% dp
-%{
-numMapNodes = map_data.getNumNodes();
-numElevBaro = size(elevFromBaro, 1);
-dp = ones(numMapNodes, numElevBaro+1) * inf;  % dp(node idx, elev step)
-dp(:,1) = 0;
-from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
-for i = 1:numElevBaro
-    for j = 1:numMapNodes
-        neighbors = map_data.getNeighbors(j);
-        for k = 1:numel(neighbors)
-            nn = neighbors(k);  % neighbor node
-            dtwArr = map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
-            ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
-            % ind spans the same range as <i to numElevBaro>
-            % (ind + i) maps to range (i+1):(numElevBaro+1), 
-            dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
-            from(nn, i+ind, :) = repmat([j i], length(ind), 1);
-        end
-    end
-    fprintf('%d\n', i)
-end
-%}
-
-%%
-% back tracking
-%{
-traces = [];
-clear p
-for i = 1:numMapNodes
-    if dp(i, numElevBaro+1) ~= inf
-        p.score = dp(i, numElevBaro+1);
-        nn = i;
-        ns = numElevBaro+1;
-        %p.trace = [ind2nodeName(i) nrB+1];
-        p.trace = [i numElevBaro+1];
-        %fprintf('%d %d\n', nn, ns);
-        while ns ~= 1
-            pn = from(nn, ns, 1);
-            ps = from(nn, ns, 2);
-            %fprintf('%d %d\n', pn, ps);
-            nn = pn;
-            ns = ps;
-            p.trace = [ [pn ps] ; p.trace];
-        end
-        traces = [traces p];
-    end
-end
-   
-sortedTraces = nestedSortStruct(traces, {'score'});
-
-fprintf('computation time %.2f\n', toc);
-%}
-
 %% test solver
-tic
-solver = Solver_v1(map_data, sensor_data);
+solver = Solver_greedy(map_data, sensor_data);
 solver.solve();
 solver.getRawPath(1)
 solver.plotPathComparison(1)

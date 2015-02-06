@@ -168,6 +168,11 @@ classdef SensorData < handle
                 obj.raw_mag(:,1) <= obj.segment_stop, : );
         end
         
+        function data = getTurns(obj)
+            % find valid indices for this segment
+            data =  obj.est_turns(obj.est_turns(:,1) >= obj.segment_start & ...
+                          obj.est_turns(:,1) <= obj.segment_stop, :);
+        
         function latlng = getGps(obj)
             % find valid indices for this segment
             indxs =  (obj.raw_gps(:,1)-obj.gps_offset) >= obj.segment_start & ...

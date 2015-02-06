@@ -1,4 +1,4 @@
-classdef Solver_v1 < handle
+classdef Solver_greedy < handle
     %SOLVER does the following thing:
     %  1. Based on DTW information, it performs search/DP algorithm to find
     %     the most likely n paths
@@ -17,7 +17,6 @@ classdef Solver_v1 < handle
                      % a trace includes .rawPath (step; node_idx columns)
                      %                  .dtwScore (sorted by this)
                      
-        
         % output settings
         max_results = 20;
         outputFilePath;
@@ -25,7 +24,7 @@ classdef Solver_v1 < handle
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_v1(map_data, sensor_data)  % they are passed by reference
+        function obj = Solver_greedy(map_data, sensor_data) 
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
         end

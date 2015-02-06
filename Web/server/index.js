@@ -42,7 +42,7 @@ wss.on("connection", function (ws) {
 
 
 	if (page == 'collect') {
-		var p = dataFolder + 'forMat/';
+		var p = dataFolder + 'rawData/';
 		if (cmd == 'ls') {
 			// request on list the gps trajectories
 			

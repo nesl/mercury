@@ -3,6 +3,11 @@
 function hslToRgb(h, s, l){
 	var r, g, b;
 
+	h = h % 1.0;
+	if (h < 0.0)
+		h += 1.0;
+	if (h >= 1.0)
+		h -= 1.0;
 	if(s == 0){
 		r = g = b = Math.round(l * 255); // achromatic
 	}else{

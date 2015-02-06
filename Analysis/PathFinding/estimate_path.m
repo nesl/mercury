@@ -10,7 +10,8 @@ clear all; clc; close all;
 % case 1:
 mapfile =    '../../Data/EleSegmentSets/ucla_small/';
 sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
-
+outputWebFile = '../../Data/resultSets/case1_ucla_west_results.rset';
+% also seaPressure, pressureScalar, range
 
 %% Ensure library paths are added
 add_paths;
@@ -30,63 +31,15 @@ tic;
 
 %% test solver
 solver = Solver_greedy(map_data, sensor_data);
+
+solver.setOutputFilePath(outputWebFile);
 solver.solve();
 solver.getRawPath(1)
 solver.plotPathComparison(1)
+solver.toWeb();
 toc
 return;
 
-%% Output settings
-% (eventually will be removed and placed in calling script)
-% output files
-MAX_RESULTS = 20;
-OUTPATH = '../../Data/resultSets/';
-OUTFILENAME = 'case1_ucla_west_results.rset';
-
-
-%% Generate result output
-fid = fopen([OUTPATH OUTFILENAME], 'w');
-
-for i=1:min( MAX_RESULTS, length(sortedTraces) )
-    score = sortedTraces(i).score;
-    t = sortedTraces(i).trace(:,1);
-    fprintf(fid, '%.1f,', score);
-    for j=1:length(t)
-        fprintf(fid, '%d', t(j));
-        if j ~= length(t)
-            fprintf(fid, ',');
-        end
-    end
-    fprintf(fid,'\n');
-end
-
-return
-
-%% convert trace back to geography trace
-% CONSIDER: wrapped as a function (has difficulity as parameter import) or
-% the class method
-
-TRACE_NO = 1;
-nodeSeries = sortedTraces(TRACE_NO).trace;
-latLngs = [];
-for i = 1:length(nodeSeries)-1
-    a = nodeName2ind(num2str(nodeSeries(i   , 1)));
-    b = nodeName2ind(num2str(nodeSeries(i+1 , 1)));
-    eleTraj = eleTrajs{a, b};
-    
-    a = nodeSeries(i  , 2);
-    b = nodeSeries(i+1, 2) - 1;
-    baroHeightTraj = height(a:b);
-    
-    eleInds = dtw_find_path(eleTraj(:,1), baroHeightTraj);
-    latLngs = [latLngs ; eleTraj(eleInds, 2:3)];
-end
-
-numLatLngs = length(latLngs);
-estimatedTraj = [ ((1:numLatLngs) * WINDOW)' latLngs ];
-groundTruthTraj = gpsRaw(:,1:3);
-groundTruthTraj(:,1) = groundTruthTraj(:,1) - gpsRaw(1,1);  % make time offset of first gps record as 0
-gpsSeriesCompare(groundTruthTraj, estimatedTraj)
 
 %% debug
 detrace = sortedTraces(1).trace;

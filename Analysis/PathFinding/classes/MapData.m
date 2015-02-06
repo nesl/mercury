@@ -11,6 +11,7 @@ classdef MapData < handle
         node_neighbors;
         
         % elevation information
+        node_elevation;
         node_latlng;
         segment_elevations;
         segment_latlngs;
@@ -66,6 +67,7 @@ classdef MapData < handle
             obj.segment_elevations = cell(obj.num_nodes);
             obj.segment_latlngs = cell(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
+            obj.node_elevation = zeros(obj.num_nodes, 2);
             obj.node_latlng = zeros(obj.num_nodes, 2);
             
             % loop through all segments
@@ -84,6 +86,8 @@ classdef MapData < handle
                 obj.node_neighbors{na_idx} = [obj.node_neighbors{na_idx} nb_idx];
                 obj.node_neighbors{nb_idx} = [obj.node_neighbors{nb_idx} na_idx];
                 % fecth the lat/lng for end nodes
+                obj.node_elevation(na_idx) = raw(1, 1);
+                obj.node_elevation(nb_idx) = raw(end, 1);
                 obj.node_latlng(na_idx, :) = raw(1, 2:3);
                 obj.node_latlng(nb_idx, :) = raw(end, 2:3);
             end
@@ -104,6 +108,65 @@ classdef MapData < handle
             N =  obj.node_neighbors{nidx};
         end
         
+        
+        % get --+-- NodeIdx ---+--+-- (Filtered) Elev ----+-- ()
+        %       +-- NodeIdxs --+  +------------- LatLng --+
+        %       +-- Seg -------+
+        %       +-- path ------+
+     
+        
+        % get elevation for solely one node
+        function elev = getNodeIdxElev(obj, idx)
+            if numel(idx) > 1
+                warning('receive multiple indexs in getNodeIdxElev(). Redirect to getNodeIdxsElev()');
+            end
+            elev = obj.getNodeIdxsElev(idx);
+        end
+        
+        % get lat/lng for solely one node
+        function latlng = getNodeIdxLatLng(obj, idx)
+            if numel(idx) > 1
+                warning('receive multiple indexs in getNodeIdxElev(). Redirect to getNodeIdxsElev()');
+            end
+            latlng = obj.getNodeIdxsLatLng(idx);
+        end
+        
+        % get elevation of multiple nodes
+        function elevs = getNodeIdxsElev(obj, idxs)
+            elevs = obj.node_elevation(idxs);
+        end
+        
+        % get lat/lng of multiple nodes
+        function latlngs = getNodeIdxsLatLng(obj, idxs)
+            latlngs = obj.node_latlng(idxs, :);
+        end
+        
+        
+        % get a single segment elevation
+        function elev = getSegElev(obj, seg)
+            na_idx = seg(1);
+            nb_idx = seg(2);
+            % find the data for a-->b, if it doesn't exist, flip b-->a
+            if ~isempty( obj.segment_elevations{na_idx, nb_idx} )
+                elev = obj.segment_elevations{na_idx, nb_idx};
+            elseif ~isempty( obj.segment_elevations{nb_idx,na_idx} )
+                elev = flipud( obj.segment_elevations{nb_idx, na_idx} );
+            else
+                error('specified segment does not exist (getSegElevation)');
+            end
+        end
+        
+        % get filtered (HPF) elevation segment
+        function elev_filt = getSegFilteredElevation(obj, seg)
+            na_idx = seg(1);
+            nb_idx = seg(2);
+            % high pass filter to remove weather-based variations
+            elev_raw = obj.getElevation(na_idx, nb_idx);
+            % filter
+            [B,A] = butter(1, obj.ELEV_HPF_FREQN, 'high');
+            elev_filt = filtfilt(B, A, elev_raw);
+        end
+        
         % get a single segment lat/lng
         function latlng = getSegLatLng(obj, seg)
             na_idx = seg(1);
@@ -118,50 +181,20 @@ classdef MapData < handle
             end
         end
         
-        % get a single segment elevation
-        function elev = getSegElevation(obj, seg)
-            na_idx = seg(1);
-            nb_idx = seg(2);
-            % find the data for a-->b, if it doesn't exist, flip b-->a
-            if ~isempty( obj.segment_elevations{na_idx, nb_idx} )
-                elev = obj.segment_elevations{na_idx, nb_idx};
-            elseif ~isempty( obj.segment_elevations{nb_idx,na_idx} )
-                elev = flipud( obj.segment_elevations{nb_idx, na_idx} );
-            else
-                error('specified segment does not exist (getSegElevation)');
-            end
-        end
-        
-        % get filtered (HPF) elevation segment
-        function elev_filt = getSegFilteredElevation(obj, na_idx, nb_idx)
-            % high pass filter to remove weather-based variations
-            elev_raw = obj.getElevation(na_idx, nb_idx);
-            % filter
-            [B,A] = butter(1, obj.ELEV_HPF_FREQN, 'high');
-            elev_filt = filtfilt(B, A, elev_raw);
-        end
-        
-        % get lat/lng for solely one node
-        function latlng = nodeIdxToLatLng(obj, idx)
-            latlng = obj.node_latlng(idx, :);
-        end
-        
-        % REMARK: might want to change the name nodes to nodeSeries
-        % get all elevation for nodes in a list
-        function elevs = nodesToElev(obj, nodelist)
+        % get elevation over the path specified the node idxs in a list
+        function elevs = getPathElev(obj, nidxList)
             elevs = [];
             
             % loop through all nodes
-            for nidx=1:( length(nodelist)-1 )
-                seg_elev = obj.getSegElevation(  nodelist( nidx:(nidx+1) ) );
-                seg_elev
+            for nidx=1:( length(nidxList)-1 )
+                seg_elev = obj.getSegElev(  nidxList( nidx:(nidx+1) ) );
                 elevs = [elevs; seg_elev];
             end
             
         end
         
         % get all latitude and longitude for nodes in a list
-        function latlngs = nodesToLatLng(obj, nidxList)
+        function latlngs = getPathLatLng(obj, nidxList)
             latlngs = [];
             
             % loop through all nodes
@@ -169,9 +202,54 @@ classdef MapData < handle
                 seg_latlng = obj.getSegLatLng( nidxList( nidx:(nidx+1) ) );
                 latlngs = [latlngs; seg_latlng];
             end
-            
         end
         
+        
+        % QUERY GEO INFORMATION
+        function meter = distanceToNodeIdx(obj, latlng, nodeIdx)
+            meter = latlng2m(latlng, obj.getNodeIdxLatLng(nodeIdx));
+        end
+        
+        function meter = distanceToSeg(obj, latlng, seg)
+            segLatLngs = obj.getSegLatLng(seg);
+            meter = inf;
+            for i = 1:size(segLatLngs, 1)
+                tdis = latlng2m(latlng, segLatLngs(i,:));
+                meter = min(tdis, meter);
+            end    
+        end
+        
+        function retIdx = getNearestNodeIdx(obj, latlng)
+            retIdx = 1;
+            dis = inf;
+            for nidx = 1:obj.num_nodes
+                tdis = latlng2m(latlng, obj.getNodeIdxLatLng(nidx));
+                if tdis < dis
+                    dis = tdis;
+                    retIdx = nidx;
+                end
+            end
+        end
+        
+        function retSeg = getNearestSeg(obj, latlng)
+            dis = inf;
+            segIdx = 1;
+            for i = 1:size(obj.endNodePairs, 1)
+                tdis = obj.distanceToSeg(latlng, obj.endNodePairs(i,:));
+                if tdis < dis
+                    segIdx = i;
+                    dis = tdis;
+                end
+            end
+            retSeg = obj.endNodePairs(segIdx, :);
+        end
+        
+        % TODO
+        % latlngsToApproximateNodeIdxs()
+        % shortestPath(na_idx, nb_idx)
+        % segmentLengthMeter()
+        
+        % INDEX SYSTEM CONVERSION
         % convert local node index to OSM index
         function node = idxToNode(obj, nidx)
             node = obj.map_idx2node(nidx);
@@ -191,7 +269,7 @@ classdef MapData < handle
                 nb_idx = obj.endNodePairs(i, 2);
                 fprintf('calculating dtw of traj(%d, %d)\n', na_idx, nb_idx);
                 obj.segment_allPairDTW{na_idx, nb_idx} = all_pair_dtw_baro( ...
-                    obj.getSegElevation(obj.endNodePairs(i,:)), elevFromBaro);
+                    obj.getSegElev(obj.endNodePairs(i,:)), elevFromBaro);
             end
         end
         

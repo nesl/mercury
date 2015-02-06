@@ -148,36 +148,44 @@ classdef SensorData < handle
             % find valid indices for this segment
             data = obj.raw_baro( obj.raw_baro(:,1) >= obj.segment_start & ...
                                  obj.raw_baro(:,1) <= obj.segment_stop, : );
+            data(:,1) = data(:,1) - obj.segment_start;
         end
         
         function data = getAcc(obj)
             % find valid indices for this segment
             data = obj.raw_acc( obj.raw_acc(:,1) >= obj.segment_start & ...
                 obj.raw_acc(:,1) <= obj.segment_stop, : );
+            data(:,1) = data(:,1) - obj.segment_start;
         end
         
         function data = getGyro(obj)
             % find valid indices for this segment
             data = obj.raw_gyro( obj.raw_gyro(:,1) >= obj.segment_start & ...
                 obj.raw_gyro(:,1) <= obj.segment_stop, : );
+            data(:,1) = data(:,1) - obj.segment_start;
         end
         
         function data = getMag(obj)
             % find valid indices for this segment
             data = obj.raw_mag( obj.raw_mag(:,1) >= obj.segment_start & ...
                 obj.raw_mag(:,1) <= obj.segment_stop, : );
+            data(:,1) = data(:,1) - obj.segment_start;
         end
         
         function data = getTurns(obj)
             % find valid indices for this segment
             data =  obj.est_turns(obj.est_turns(:,1) >= obj.segment_start & ...
                           obj.est_turns(:,1) <= obj.segment_stop, :);
-        
-        function latlng = getGps(obj)
+            data(:,1) = data(:,1) - obj.segment_start;
+        end
+
+        function data = getGps(obj)
             % find valid indices for this segment
+            % time, lat, lng, speed, error, source (maybe...)
             indxs =  (obj.raw_gps(:,1)-obj.gps_offset) >= obj.segment_start & ...
                           (obj.raw_gps(:,1)-obj.gps_offset) <= obj.segment_stop ;
-            latlng = obj.raw_gps(indxs,:);
+            data = obj.raw_gps(indxs,:);
+            data(:,1) = data(:,1) - (obj.segment_start + obj.gps_offset);
         end
         
         function speed = getGpsSpeed(obj)
@@ -185,6 +193,7 @@ classdef SensorData < handle
             indxs =  (obj.raw_gps(:,1)-obj.gps_offset) >= obj.segment_start & ...
                           (obj.raw_gps(:,1)-obj.gps_offset) <= obj.segment_stop ;
             speed = obj.gps_speed(indxs,:);
+            speed(:,1) = speed(:,1) - (obj.segment_start + obj.gps_offset);
         end
         
         function gps2ele = getGps2Ele(obj)
@@ -192,6 +201,7 @@ classdef SensorData < handle
             indxs =  (obj.raw_gpsele(:,1)-obj.gps_offset) >= obj.segment_start & ...
                           (obj.raw_gpsele(:,1)-obj.gps_offset) <= obj.segment_stop ;
             gps2ele = obj.raw_gpsele(indxs,:);
+            gps2ele(:,1) = gps2ele(:,1) - (obj.segment_start + obj.gps_offset);
         end
     end
     

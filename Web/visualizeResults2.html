@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://maps.googleapis.com/maps/api/js"></script>
+<script src="color.js"></script>
+<script>
+var fileSelectorWidth = 250;
+// google maps
+var map;
+var rcvRawData;
+var mapLayers;
+
+// --- INITIALIZE GOOGLE MAP ---
+function googleMapInitialize() {
+	var mapProp = {
+		center:new google.maps.LatLng(34.0638202,-118.451060),
+		zoom:16,
+		mapTypeId:google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
+}
+google.maps.event.addDomListener(window, 'load', googleMapInitialize);
+
+
+// --- HANDLE WINDOW RESIZING ---
+function regulateSize() {
+	var wh = window.innerHeight;
+	var ww = window.innerWidth;
+	$('#all').height(wh);
+	$('#googleMap').width(ww - fileSelectorWidth);
+	$('#rightPanel').width(fileSelectorWidth);
+}
+
+
+
+// --- GOOGLE MAP SHOW/HIDE PATHS ---
+function mapUnmarshal(rcvObj) {
+	latMin = 999.0;
+	latMax = -999.0;
+	lonMin = 999.0;
+	lonMax = -999.0;
+
+	mapLayers = [];
+
+	layer = [];
+	for (var i = 0; i < rcvObj.gndPath.length; i++) {
+		console.log(rcvObj.gndPath[i][0], rcvObj.gndPath[i][1]);
+		var marker = new google.maps.Marker({
+			position: new google.maps.LatLng(rcvObj.gndPath[i][0], rcvObj.gndPath[i][1]),
+			icon: {
+				path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+				strokeWeight: 1,
+				strokeColor: hslToRgb(0, 0, Number(i) / rcvObj.gndPath.length * 0.4 + 0.2),
+				scale: 2,
+			}
+		});
+		layer.push(marker);
+		latMin = Math.min(latMin, rcvObj.gndPath[i][0]);
+		latMax = Math.max(latMax, rcvObj.gndPath[i][0]);
+		lonMin = Math.min(lonMin, rcvObj.gndPath[i][1]);
+		lonMax = Math.max(lonMax, rcvObj.gndPath[i][1]);
+	}
+	mapLayers.push(layer);
+
+	for (i = 0; i < rcvObj.estiPaths.length; i++) {
+		layer = [];
+		pathData = rcvObj.estiPaths[i].path;
+		nodeSeries = [];
+		for (j = 0; j < pathData.length; j++) {
+			console.log(pathData[j][0], pathData[j][1]);
+			nodeSeries.push(new google.maps.LatLng(pathData[j][0], pathData[j][1]));
+			latMin = Math.min(latMin, pathData[j][0]);
+			latMax = Math.max(latMax, pathData[j][0]);
+			lonMin = Math.min(lonMin, pathData[j][1]);
+			lonMax = Math.max(lonMax, pathData[j][1]);
+		}
+		for (j = 0; j < pathData.length - 1; j++) {
+			var path_line = new google.maps.Polyline({
+				path: [nodeSeries[j], nodeSeries[j+1]],
+				geodesic: true,
+				strokeColor: hslToRgb(Number(i) / rcvObj.estiPaths.length, 0.8, Number(j) / pathData.length * 0.4 + 0.2),
+				strokeWeight: 6
+			});
+			layer.push(path_line);
+		}
+		mapLayers.push(layer);
+	}
+
+	// move to result area
+	map.panTo(new google.maps.LatLng((latMin + latMax) / 2.0, (lonMin + lonMax) / 2.0));
+}
+
+function mapClear() {
+	if (mapLayers != null) {
+		for (i = 0; i < mapLayers.length; i++) {
+			for (j = 0; j < mapLayers[i].length; j++)
+				mapLayers[i][j].setMap(null);
+		}
+	}
+	mapLayers = null;
+}
+
+function mapLayerShow(layerIdx) {
+	for (i = 0; i < mapLayers[layerIdx].length; i++)
+		mapLayers[layerIdx][i].setMap(map);
+}
+
+function mapLayerHide(layerIdx) {
+	for (i = 0; i < mapLayers[layerIdx].length; i++)
+		mapLayers[layerIdx][i].setMap(null);
+}
+
+// --- WEB SERVICE COMMUNICATION ---
+function loadPossibleResultSets() {
+	var ws = new WebSocket('ws://localhost:8888/res/ls');
+	var checkpoint = false;
+	ws.onopen = function() {
+		console.log("loading result set");
+	};
+	ws.onmessage = function (evt)  { 
+		var rcvStr = evt.data;
+		console.log("results received...");
+		//console.log("Message is received...", rcvStr);
+		var rcvObj = $.parseJSON(rcvStr);
+		for (var i = 0; i < rcvObj.length; i++) 
+			$("#resultList").append(new Option(rcvObj[i], rcvObj[i]));
+		checkpoint = true;
+	};
+	ws.onclose = function() { 
+		// websocket is closed.
+		console.log("Connection is closed..."); 
+		if (checkpoint == false)
+			alert("cannot connect to server");
+	};
+}
+
+function loadResultSet(filename) {
+	var checkpoint = false;
+	console.log(filename);
+
+	// request file data from server
+	var ws = new WebSocket('ws://localhost:8888/res2/load/' + filename);
+	ws.onopen = function() {
+		console.log("opening socket to load result set");
+	};
+	ws.onmessage = function (evt)  { 
+		var rcvStr = evt.data;
+		var rcvObj = $.parseJSON(rcvStr);
+		if (rcvObj != null) {
+			mapUnmarshal(rcvObj);
+			mapLayerShow(0);
+			mapLayerShow(1);
+			regenerateTracesPanel(rcvObj, filename);
+			checkpoint = true;
+		}
+	};
+	ws.onclose = function() { 
+		if (checkpoint == false)
+			alert("cannot connect to server");
+	};
+}
+
+
+
+// --- UI events ---
+function resultSetSelected(filename) {
+	mapClear();
+	// clear tracesPanel
+	loadResultSet(filename);
+}
+
+function checkboxClicked(checkboxIdx) {
+	console.log("check", checkboxIdx);
+}
+
+// --- UI ELEMENT GENERATION/REMOVAL ---
+function regenerateTracesPanel(rcvObj, filename) {
+	$('#tracesPanel').empty();
+
+	$('#tracesPanel').append('<div id="filename">' + filename + '</div>');
+	$('#filename').css('text-align', 'center');
+	$('#filename').css('padding', '20px 20px 20px 20px');
+	$('#filename').css('font-weight', 'bold');
+	$('#filename').css('font-size', '16px');
+
+	$('#tracesPanel').append('<div id="traceGnd" style="padding:0px 20px 10px 20px"></div>');
+	$('#traceGnd').append('<div><input type="checkbox" id="c0" checked />GroundTruth</div>');
+	$('#traceGnd').append('<div style="width:100%; height:2px; background-color:rgb(128, 128, 128)"></div>');
+	$('#traceGnd').append('<div style="font-size:10px; text-align:right"></div>');
+
+	for (var i = 0; i < rcvObj.estiPaths.length; i++) {
+		idname = 'trace' + i;
+		$('#tracesPanel').append('<div id="' + idname + '" style="padding:0px 20px 10px 20px"></div>');
+		checked = '';
+		if (i == 0)
+			checked = 'checked';
+		$('#' + idname).append('<div><input type="checkbox" id="c' + (i+1) + '" ' + checked + '/>Trace ' + (i+1) + '</div>');
+		$('#' + idname).append('<div style="width:100%; height:2px; background-color:' + hslToRgb(Number(i) / rcvObj.estiPaths.length, 0.8, 0.5) + '"></div>');
+		$('#' + idname).append('<div style="font-size:10px; text-align:right">DTW='
+				+ rcvObj.estiPaths[i].dtwScore + ', squreError='
+				+ rcvObj.estiPaths[i].squareError + '</div>');
+
+	}
+
+	for (i = 0; i <= rcvObj.estiPaths.length; i++) {
+		$('#c' + i).on('click', function(e) {
+			//console.log('click', e.target.id, $('#' + e.target.id), $('#' + this.id).attr('checked'), this.checked);
+			n = parseInt(this.id.substring(1));
+			if (this.checked)
+				mapLayerShow(n);
+			else
+				mapLayerHide(n);
+		});
+	}
+}
+
+</script>
+</head>
+
+<body style='margin:0; padding:0; overflow:hidden' body onresize="regulateSize()">
+<div id="all" style="width:100%; height:100%; position:relative">
+	<div id="googleMap" style="width:500px;height:100%;position:absolute"></div>
+	<div id='rightPanel' style='position:absolute; height:100%; right:0px'>
+		<div id="fileSelector" style="background-color: rgb(255, 233, 233); height:33%; width:100%; position:relative">
+			<select id='resultList' size="3" style='width:100%; height:100%' onchange="resultSetSelected(this.options[this.selectedIndex].value);">
+			</select>
+		</div>
+		<div id="tracesPanel" style="background-color: rgb(233, 233, 255); height:67%; width:100%; position:relative; overflow-y: scroll">
+		</div>
+	</div>
+</div>
+	
+<script>
+regulateSize();
+loadPossibleResultSets();
+</script>
+</body>
+
+</html> 

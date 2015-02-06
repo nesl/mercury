@@ -250,6 +250,49 @@ wss.on("connection", function (ws) {
 			});
 		}
 	}
+	else if (page == 'res2') {
+		rPath = dataFolder + 'resultSets/'
+		if (cmd == 'load') {
+			// request on list the gps trajectories
+			var filename = rPath + params[0];
+			console.log('loading file: ', filename);
+			lines = [];
+			fs.exists(filename, function(exists) {
+				if (exists) {
+					var rd = readline.createInterface({
+						input: fs.createReadStream(filename),
+						output: process.stdout,
+						terminal: false
+					});
+					rd.on('line', function(line) {
+						lines.push(line);
+					});
+					rd.on('close', function() {
+						re = {gndPath:[], estiPaths:[]}
+						tokens = lines[0].split(",");
+						for (var i = 0; i+2 <= tokens.length; i += 2) {
+							re.gndPath.push( [ parseFloat(tokens[i]) , parseFloat(tokens[i+1]) ] );
+							console.log(re.gndPath[ re.gndPath.length - 1]);
+						}
+						numEstiPaths = parseInt(lines[1]);
+						for (var i = 0; i < numEstiPaths; i++) {
+							tokens = lines[i+2].split(",");
+							tmpPath = {};
+							tmpPath.dtwScore = parseFloat(tokens[0]);
+							tmpPath.squareError = parseFloat(tokens[1]);
+							tmpPath.path = [];
+							for (var j = 2; j+2 <= tokens.length; j+=2)
+								tmpPath.path.push( [ parseFloat(tokens[j]), parseFloat(tokens[j+1]) ] );
+							re.estiPaths.push(tmpPath);
+						}
+						//console.log(re);
+						ws.send(JSON.stringify(re));
+						ws.close();
+					});
+				}
+			});
+		}
+	}
 	
 	ws.on("close", function () {
 		console.log("websocket connection close");

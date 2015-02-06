@@ -7,6 +7,8 @@ classdef GraphNode < handle
         parent;
         % node index (matlab, not osm)
         node_idx;
+        % full path
+        path;
         % node children
         children = {};
         map_idx2child = containers.Map('KeyType','int32','ValueType','int32');
@@ -17,6 +19,11 @@ classdef GraphNode < handle
         function obj = GraphNode(parent, nidx)
             obj.parent = parent;
             obj.node_idx = nidx;
+            if ~isnan(parent)
+                obj.path = [parent.path; nidx];
+            else
+                obj.path = nidx;
+            end
         end
         
         % is this a leaf?
@@ -25,9 +32,26 @@ classdef GraphNode < handle
         end
         
         % is this a root
-        function p = isParent(obj)
+        function p = isRoot(obj)
             p = isnan(obj.parent);
         end
+        
+        % upstream traversal to find loops
+        function visited = findUpstreamNode(obj, nidx, min_loop_len)
+            % find target node in path
+            idx = find(obj.path == nidx,1,'last');
+            if isempty(idx)
+                visited = false;
+                return;
+            elseif length(obj.path) - idx > min_loop_len
+                visited = false;
+                return;
+            else
+                visited = true;
+                return;
+            end
+        end
+
         
         % add children to this node
         function  obj = addChild(child_obj)

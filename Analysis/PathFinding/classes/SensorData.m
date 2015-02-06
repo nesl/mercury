@@ -28,8 +28,8 @@ classdef SensorData < handle
         BARO_FNORM = 1e-5;
         
         % pressure to elevation conversion
-        PRESSURE_SEALEVEL;
-        PRESSURE_M2HPA; % meter / hPa
+        PRESSURE_SEALEVEL = 1020;
+        PRESSURE_M2HPA = 8; % meter / hPa
         
     end
     
@@ -195,6 +195,50 @@ classdef SensorData < handle
                           (obj.raw_gpsele(:,1)-obj.gps_offset) <= obj.segment_stop ;
             gps2ele = obj.raw_gpsele(indxs,:);
             gps2ele(:,1) = gps2ele(:,1) - (obj.segment_start + obj.gps_offset);
+        end
+        
+        % VISUALIZATION
+        function plotElevation(obj)
+            gps2ele = obj.getGps2Ele();
+            baro = obj.getBaro();
+            elevFromBaro = obj.getElevation();
+            
+            clf
+                
+            subplot(2, 2, 1)
+            title('Barometer data');
+            plot(baro(:,1), baro(:,2), 'r-');
+            ylabel('Pressure (hPa)');
+            xlabel('Time (sec)');
+            
+            subplot(2, 2, 3)
+            title('Elevation from GPS lat/lng');
+            if size(gps2ele, 1) == 0
+                text(0, 0, 'Sorry, gpsele file have not generated');
+            else
+                plot(gps2ele(:,1), gps2ele(:,4), 'b-');
+            end
+            xlabel('Time (sec)');
+            ylabel('Elevation (meter)');
+            
+            subplot(2, 2, 2)
+            title('Use configured scaling coefficients');
+            if size(gps2ele, 1) == 0
+                text(0, 0, 'Sorry, gpsele file have not generated');
+            else
+                hold on
+                plot(gps2ele(:,1), gps2ele(:,4), 'b-');
+                plot(elevFromBaro(:,1), elevFromBaro(:,2), 'r-');
+            end
+            xlabel('Time (sec)');
+            ylabel('Elevation (meter)');
+            
+            subplot(2, 2, 4)
+            title('Best fit');
+            %TODO
+            text(0, 0, 'To be done.......');
+            xlabel('Time (sec)');
+            ylabel('Elevation (meter)');
         end
     end
     

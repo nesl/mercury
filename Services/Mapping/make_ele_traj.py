@@ -26,12 +26,16 @@ def linearSpace(latLngA, latLngB):
     return ret
 
 
+# historical options
+#tfixFilePath = '../../Data/trajectorySets/ucla_small.tfix'  # input part
+#outDir = '../../Data/EleSegmentSets/ucla_small/' # output folder
+tfixFilePath = '../../Data/trajectorySets/ucla_west.tfix'  
+outDir = '../../Data/EleSegmentSets/ucla_west/' 
 
-f = open('../../Data/trajectorySets/ucla_small.tfix')   # input part
+f = open(tfixFilePath)   # input part
 lines = f.readlines()
 f.close()
 
-outDir = '../../Data/EleSegmentSets/ucla_small/'   # output folder
 cnt = 0
 for line in lines:
     cnt += 1

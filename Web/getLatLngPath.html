@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://maps.googleapis.com/maps/api/js"></script>
+<script src="color.js"></script>
+<script>
+var fileSelectorWidth = 450;
+var optionPanelHeight = 40;
+var map;
+var mapData = [];
+var latlngs = [];
+
+function googleMapInitialize() {
+	var mapProp = {
+		center:new google.maps.LatLng(34.0638202,-118.451060),
+		zoom:16,
+		mapTypeId:google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
+
+	// attach click event listener on the map
+	google.maps.event.addListener(map, 'click', function( event ){
+		//console.log( "Latitude: "+event.latLng.lat()+" "+", longitude: "+event.latLng.lng() );
+		tlat = event.latLng.lat();
+		tlng = event.latLng.lng();
+		tlatlng = new google.maps.LatLng(tlat, tlng);
+
+		if (mapData.length > 0) {
+			pathSeg = new google.maps.Polyline({
+				path: [ mapData[mapData.length - 1].getPosition(), tlatlng ],
+				geodesic: true,
+				strokeColor: '#000000',
+				strokeWeight: 6,
+				map: map
+			});
+			mapData.push(pathSeg);
+		}
+
+		marker = new google.maps.Marker({
+			position: tlatlng,
+			icon: {
+				path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+				strokeWeight: 3,
+				strokeColor: hslToRgb(Number(latlngs.length) / 50.0, 0.8, 0.5),
+				scale: 4,
+			},
+			map: map
+		});
+		mapData.push(marker);
+
+		latlngs.push( [tlat, tlng] );
+		$('#bundo').removeAttr('disabled');
+		updateResult();
+	});
+}
+google.maps.event.addDomListener(window, 'load', googleMapInitialize);
+
+
+function regulateSize() {
+	var wh = window.innerHeight;
+	var ww = window.innerWidth;
+	$('#all').height(wh);
+	$('#googleMap').width(ww - fileSelectorWidth);
+	$('#rightPanel').width(fileSelectorWidth);
+	$('#optionPanel').height(optionPanelHeight);
+	$('#resultBox').height( $('#rightPanel').height() - $('#optionPanel').height() );
+	$('#resultTextBox').height( $('#resultBox').height() - $('#resultButtons').height() );
+}
+
+
+function reset() {
+	for (i = 0; i < mapData.length; i++)
+		mapData[i].setMap(null);
+	mapData = [];
+	latlngs = [];
+	updateResult();
+}
+
+function undo() {
+	latlngs.pop();
+	cnt = 2;
+	while (cnt > 0 && mapData.length > 0) {
+		mapData[ mapData.length - 1 ].setMap(null);
+		mapData.pop();
+		cnt--;
+	}
+	if (latlngs.length == 0)
+		$('#bundo').attr('disabled', 'disabled');
+	updateResult();
+}
+
+function updateResult() {
+	if ($('#optMatlab').prop('checked')) {
+		str = "[ ";
+		for (i = 0; i < latlngs.length; i++)
+			str += latlngs[i][0] + ' ' + latlngs[i][1] + "\n";
+		str += "]";
+	}
+	else {
+		str = "[";
+		for (i = 0; i < latlngs.length; i++)
+			str += '(' + latlngs[i][0] + ',' + latlngs[i][1] + '),\n';
+		str += "]";
+	}
+	$('#result').val(str);
+}
+
+</script>
+</head>
+
+<body style='margin:0; padding:0; overflow:hidden' body onresize="regulateSize()">
+<div id="all" style="width:100%; height:100%; position:relative">
+	<div id="googleMap" style="width:500px;height:100%;position:absolute"></div>
+	<div id='rightPanel' style='position:absolute; height:100%; right:0px'>
+		<div id="optionPanel" style="background-color: rgb(255, 255, 233); height:40px; width:100%; position:relative">
+			<div style='width:100%; text-align:center; vertical-align:middle; padding-top:5px'>
+				Format: <input type='radio' name='lang' id='optMatlab' checked onclick="updateResult()" />Matlab 
+				<input type='radio' name='lang' id='optPython' onclick="updateResult()" />Python
+			</div>
+		</div>
+		<div id="resultBox" style="width:100%; position:absolute; bottom:0; background-color:rgb(255,233,233); ">
+			<div id="resultTextBox" style='height:100%; width:100%; position:relative'>
+				<textarea id="result" style='height:100%; width:100%; -webkit-box-sizing: border-box;' readonly /></textarea>
+			</div>
+			<div id='resultButtons' style='position:relative; width:100%; bottom:0'>
+				<input id='breset' type='button' style='width:100%' value='Reset' onclick="reset()" /><br/>
+				<input id='bundo' type='button' style='width:100%' value='Undo' disabled onclick="undo()" /><br/>
+			</div>
+		</div>
+	</div>
+</div>
+	
+<script>
+regulateSize();
+</script>
+</body>
+
+</html> 

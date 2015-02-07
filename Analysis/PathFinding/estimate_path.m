@@ -7,8 +7,11 @@
 clear all; clc; close all;
 
 %% Inputs:
+% case 1:
 mapfile =    '../../Data/EleSegmentSets/ucla_small/';
 sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
+outputWebFile = '../../Data/resultSets/case1_ucla_west_results.rset';
+% also seaPressure, pressureScalar, range
 
 %% Ensure library paths are added
 add_paths;
@@ -28,45 +31,46 @@ tic;
 
 
 %% all pair DTW
-allPairDTW = cell(nrNode);
-for i = 1:nrNode
-    for j = 1:nrNode
-        if numel(eleTrajs{i, j}) > 0
-            fprintf('calculate dtw of traj(%d, %d)\n', i, j);
-            allPairDTW{i, j} = all_pair_dtw_baro(eleTrajs{i,j}(:,1), height);
-        end
-    end
-end
-fprintf('finish calculating all pairs of dtw\n');
+%elevFromBaro = sensor_data.getElevationTimeWindow();
+%map_data.preProcessAllPairDTW(elevFromBaro(:,2));
+%fprintf('finish calculating all pairs of dtw\n');
 
 %% dp
-dp = ones(nrNode, nrB+1) * inf;  % dp(node, baro step)
+%{
+numMapNodes = map_data.getNumNodes();
+numElevBaro = size(elevFromBaro, 1);
+dp = ones(numMapNodes, numElevBaro+1) * inf;  % dp(node idx, elev step)
 dp(:,1) = 0;
-from = zeros(nrNode, nrB+1, 2);  % from(a, b) = [last node, last step]
-for i = 1:nrB
-    for j = 1:nrNode
-        for k = 1:numel(nextNodes{j})
-            tn = nextNodes{j}(k);
-            ind = find( dp(j, i) + allPairDTW{j, tn}(i, i:nrB) < dp(tn, (i+1):(nrB+1)) );
-            % ind has the same range size as <i to nrB>
-            % ind + i  map to range (i+1):(nrB+1), 
-            dp(tn, i+ind) = dp(j, i) + allPairDTW{j, tn}(i, ind+i-1);
-            from(tn, i+ind, :) = ones(numel(ind), 1) * [j i];
+from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
+for i = 1:numElevBaro
+    for j = 1:numMapNodes
+        neighbors = map_data.getNeighbors(j);
+        for k = 1:numel(neighbors)
+            nn = neighbors(k);  % neighbor node
+            dtwArr = map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
+            ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
+            % ind spans the same range as <i to numElevBaro>
+            % (ind + i) maps to range (i+1):(numElevBaro+1), 
+            dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
+            from(nn, i+ind, :) = repmat([j i], length(ind), 1);
         end
     end
     fprintf('%d\n', i)
 end
+%}
 
 %%
 % back tracking
+%{
 traces = [];
 clear p
-for i = 1:nrNode
-    if dp(i, nrB+1) ~= inf
-        p.score = dp(i, nrB+1);
+for i = 1:numMapNodes
+    if dp(i, numElevBaro+1) ~= inf
+        p.score = dp(i, numElevBaro+1);
         nn = i;
-        ns = nrB+1;
-        p.trace = [ind2nodeName(i) nrB+1];
+        ns = numElevBaro+1;
+        %p.trace = [ind2nodeName(i) nrB+1];
+        p.trace = [i numElevBaro+1];
         %fprintf('%d %d\n', nn, ns);
         while ns ~= 1
             pn = from(nn, ns, 1);
@@ -74,7 +78,7 @@ for i = 1:nrNode
             %fprintf('%d %d\n', pn, ps);
             nn = pn;
             ns = ps;
-            p.trace = [[ind2nodeName(pn) ps]; p.trace];
+            p.trace = [ [pn ps] ; p.trace];
         end
         traces = [traces p];
     end
@@ -83,17 +87,25 @@ end
 sortedTraces = nestedSortStruct(traces, {'score'});
 
 fprintf('computation time %.2f\n', toc);
+%}
+
+%% test solver
 
 
-%% Output settings
-% (eventually will be removed and placed in calling script)
-% output files
-MAX_RESULTS = 20;
-OUTPATH = '../../Data/resultSets/';
-OUTFILENAME = 'case1_ucla_west_results.rset';
+tic
+solver = Solver_v1(map_data, sensor_data);
+solver.setOutputFilePath(outputWebFile);
+solver.solve();
+solver.getRawPath(1)
+solver.plotPathComparison(1)
+solver.toWeb();
+toc
+return;
+
 
 
 %% Generate result output
+%{
 fid = fopen([OUTPATH OUTFILENAME], 'w');
 
 for i=1:min( MAX_RESULTS, length(sortedTraces) )
@@ -110,10 +122,10 @@ for i=1:min( MAX_RESULTS, length(sortedTraces) )
 end
 
 return
+%}
 
 %% convert trace back to geography trace
-% CONSIDER: wrapped as a function (has difficulity as parameter import) or
-% the class method
+%{
 
 TRACE_NO = 1;
 nodeSeries = sortedTraces(TRACE_NO).trace;
@@ -136,6 +148,7 @@ estimatedTraj = [ ((1:numLatLngs) * WINDOW)' latLngs ];
 groundTruthTraj = gpsRaw(:,1:3);
 groundTruthTraj(:,1) = groundTruthTraj(:,1) - gpsRaw(1,1);  % make time offset of first gps record as 0
 gpsSeriesCompare(groundTruthTraj, estimatedTraj)
+%}
 
 %% debug
 detrace = sortedTraces(1).trace;

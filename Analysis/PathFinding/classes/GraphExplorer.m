@@ -57,6 +57,10 @@ classdef GraphExplorer < handle
                             % create a new child node
                             child_node = GraphNode(node, neighbor_idx);
                             node.addChild(child_node);
+                            % and calculate the cost of traveling to this
+                            % new leaf node
+                            new_path_cost = obj.calculatePathCost(child_node);
+                            child_node.cost = new_path_cost;
                         end
                     end
                end
@@ -64,28 +68,27 @@ classdef GraphExplorer < handle
         end
         
         % DETERMINE THE COST OF A GIVEN PATH
-        function calculatePathCost(obj, leaf_node)
+        function cost = calculatePathCost(obj, leaf_node)
             path_nodes = leaf_node.path;
             
             % get elevation
             mapElevationChanges = obj.map.getPathElevDeriv(path_nodes);
             estElevationChanges = obj.sensor.getElevationDeriv();
             
-            % get turns
-            mapTurns = obj.map.getPathTurns(path_nodes);
-            estTurns = obj.
-            
             % get elevation cost
-            
-            cost_elev = MSE_DTW(elevations, 
+            [~,~,cost_elev] = MSE_DTW(mapElevationChanges, estElevationChanges); 
             
             % get turn cost
+            % TODO: Currently I'm not going to add turns, so that I can see
+            % how well it does without them.  I'll add turns later, because
+            % they won't work w/ the walking in Case 1 anyways :)
+                        
+            % get turns
+            %mapTurns = obj.map.getPathTurns(path_nodes);
+            %estTurns = obj.sensor.get
             
             % combine costs
-            
-            % TODO !!!
-            
-            
+            cost = cost_elev;
         end
         
         % DETERMINE THE COST OF ALL NEW PATHS

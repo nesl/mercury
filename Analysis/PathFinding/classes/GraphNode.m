@@ -9,6 +9,8 @@ classdef GraphNode < handle
         node_idx;
         % full path
         path;
+        % path cost (leaf nodes only)
+        path_cost;
         % node children
         children = {};
         map_idx2child = containers.Map('KeyType','int32','ValueType','int32');

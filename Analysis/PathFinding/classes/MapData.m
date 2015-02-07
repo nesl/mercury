@@ -24,8 +24,13 @@ classdef MapData < handle
     
     methods
         % CONSTRUCTOR
-        function obj = MapData(mapfile)
-                        
+        % MapData(mapfile)
+        % MapData(mapfile, )
+        function obj = MapData(mapfile, varargin)
+            if numel(varargin) >= 1
+                obj.LATLNG_DSAMPLE = varargin{1};
+            end
+            
             % load all file info
             fileInfo = dir(mapfile);
             % get rid of "." and ".." files

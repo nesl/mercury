@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-caseNo = 2;
+caseNo = 3;
 
 %% Inputs:
 
@@ -30,6 +30,8 @@ if caseNo == 2
     sensor_data.setPressureScalar(-7.97);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
     sensor_data.setWindowSize(0.5);
+    % Create MapData object
+    map_data = MapData(mapfile);
 elseif caseNo == 3
     % sunset + hilgard
     %    distance: 1.26+1.33 mile (2.02 km)
@@ -44,13 +46,14 @@ elseif caseNo == 3
     sensor_data.setSeaPressure(1019.5);
     sensor_data.setPressureScalar(-7.97);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
-    sensor_data.setWindowSize(0.5);
+    sensor_data.setWindowSize(1);
+    % Create MapData object
+    map_data = MapData(mapfile, 2);
 else
     error('Kidding me? You didn''t choose a correct test case!');
 end
 
-%% Create MapData object
-map_data = MapData(mapfile);
+
 
 %% test solver
 tic

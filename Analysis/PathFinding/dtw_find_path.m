@@ -34,17 +34,20 @@ from = zeros(r+1, c+1);
 
 % from direction index:
 %
-%  1 --> target
-%       /   ^
-%      /    |
-%     /     |
-%    /      |
-%   2       3
+%       1 --> target
+%            /   ^
+%  dim      /    .
+%  of      /     .
+%  hele   /      .
+%  (j)   2       x
+%
+%      dim of hbaro (k)
 
 % store the DTW result back to D
 for j = 1:r; 
     for k = 1:c;
-        [D(j+1,k+1), from(j+1, k+1)] = min([D(j+1, k), D(j, k), D(j, k+1)]);
+        %[D(j+1,k+1), from(j+1, k+1)] = min([D(j+1, k), D(j, k), D(j, k+1)]);
+        [D(j+1,k+1), from(j+1, k+1)] = min([D(j+1, k), D(j, k)]);
         D(j+1,k+1) = D(j+1,k+1) + costMatrix(j,k);
     end
 end
@@ -58,15 +61,17 @@ lowerEleInd = ones(1, c) * r;
 backStep = [
     0  -1
    -1  -1
-   -1   0
+   %-1   0
 ];
 eind = r+1;  bind = c+1;  % index of elevation and barometer
+%[eind bind]
 while eind > 1 || bind > 1
     upperEleInd(bind-1) = max(upperEleInd(bind-1), eind-1);
     lowerEleInd(bind-1) = min(lowerEleInd(bind-1), eind-1);
     tfrom = from(eind, bind);
     eind = eind + backStep(tfrom, 1);
     bind = bind + backStep(tfrom, 2);
+    %[eind bind]
 end
 
 

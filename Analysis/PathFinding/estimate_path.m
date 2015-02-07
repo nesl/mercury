@@ -102,8 +102,42 @@ plot(deeleG, 'g')
 x = all_pair_dtw_baro(deeleG', height');
 x(1,end)
 
-%% tmp script for solver_v2
+%% tmp script for solver_v2 - explore the elevation difference between map nodes and both ends of barometer data
 beginElev = solver.elevFromBaro(1,2);
 endElev = solver.elevFromBaro(end,2);
-closeToBegin = find( abs( beginElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 1 )
-closeToEnd = find( abs( endElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 1 )
+closeToBegin = find( abs( beginElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 2 )
+closeToEnd = find( abs( endElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 2 )
+
+%% tmp script for solver_v2 - find the true solution
+startEndLatLng = [ 34.06440998442042 -118.45083475112915    % for correct path
+    34.06352119394332 -118.45004081726074
+]
+idxa = solver.map_data.getNearestNodeIdx(startEndLatLng(1,:))
+idxb = solver.map_data.getNearestNodeIdx(startEndLatLng(2,:))
+numSol = numel(solver.res_traces)
+for i = 1:numSol
+    rawData = solver.getRawPath(i);
+    if rawData(1,2) == idxa && rawData(end,2) == idxb
+        i
+    end
+end
+
+%% tmp script explore the weight function
+x = 0.1:0.1:10;
+y1 = x .^ 2;
+y2 = exp(x);
+clf
+hold on
+plot(x, y1, 'r');
+plot(x, y2, 'g');
+plot(x, y1+y2, 'b');
+
+%% tmp script for solver_v2 - it seems dtw is strange
+startEndLatLng = [ 34.06440998442042 -118.45083475112915    % for correct path
+    34.06352119394332 -118.45004081726074
+];
+idxa = solver.map_data.getNearestNodeIdx(startEndLatLng(1,:));
+idxb = solver.map_data.getNearestNodeIdx(startEndLatLng(2,:));
+rank = 31;
+hele = solver.map_data.getSegElev( [247 250] );
+tmp = all_pair_dtw_baro(hele, solver.elevFromBaro(118:161,1));

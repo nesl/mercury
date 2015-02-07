@@ -313,9 +313,23 @@ classdef MapData < handle
             error('hmm... it seems you give me a big challenge... (findShortestPath())');
         end
         
-        function nodeIdxs = findApproximatePathOverMap(obj, latlngs)
-            % it first find every latlng to the closest node, and then find
-            % the shortest path over 
+        function retNodeIdxs = findApproximatePathOverMap(obj, latlngs)
+            % this method finds the closest node of every lat/lng, and then
+            % based on this information to find the shortest path
+            numLatLngs = size(latlngs, 1);
+            closestNodeIdxs = zeros(1, numLatLngs);
+            for i = 1:numLatLngs
+                closestNodeIdxs(i) = obj.getNearestNodeIdx(latlngs(i,:));
+            end
+            criticalNodeIdxs = closestNodeIdxs(1);
+            for i = 1:(numel(closestNodeIdxs)-1)
+                if closestNodeIdxs(i+1) ~= closestNodeIdxs(i)
+                    criticalNodeIdxs = [criticalNodeIdxs closestNodeIdxs(i+1)];
+                end
+            end
+            for i = 1:numel(criticalNodeIdxs)
+                % TODO
+            end
         end
         
         % INDEX SYSTEM CONVERSION
@@ -368,7 +382,7 @@ classdef MapData < handle
         function meter = private_getSegmentLength(obj, na_idx, nb_idx)
             meter = 0;
             numElements = size( obj.segment_latlngs{na_idx, nb_idx}, 1);
-            for i = 1:numElements
+            for i = 1:(numElements-1)
                 meter = meter + latlng2m( obj.segment_latlngs{na_idx, nb_idx}(i,:), ...
                     obj.segment_latlngs{na_idx, nb_idx}(i+1, :) );
             end

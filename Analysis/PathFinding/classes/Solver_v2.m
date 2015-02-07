@@ -6,6 +6,15 @@ classdef Solver_v2 < handle
     %
     % This solver list all the possible start and end points and perform
     % DP algorithm.
+    %
+    % Summary of pruning strategies:
+    %   - (time) Select the possible starting points
+    %         [rank: 72->31, time:4000->400 sec]
+    %   - (time) Set the hard score threshold. Avoid the starting state of
+    %         dp with high cost
+    %         [time: 400->110 sec]
+    %   - (correctness) Forbid go-back case
+    %   - Remove similar paths in the result
     
     properties (SetAccess = public)
         % associated objects
@@ -24,6 +33,11 @@ classdef Solver_v2 < handle
         % output settings
         max_results = 20;
         outputFilePath;
+        
+        % pruning constants
+        INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
+        HARD_DTW_SCORE_THRESHOLD = 1000;
+        RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
     end
     
     methods
@@ -53,23 +67,42 @@ classdef Solver_v2 < handle
             numMapNodes = obj.map_data.getNumNodes();
             numElevBaro = size(obj.elevFromBaro, 1);
             obj.res_traces = [];
-                
-            for sp = 1:numMapNodes  % for start point
+            
+            % find the possible starting points
+            beginElev = obj.elevFromBaro(1,2);
+            tmpElevDiff = beginElev - obj.map_data.getNodeIdxsElev(1:obj.map_data.num_nodes);
+            startingNodeSet = find( abs(tmpElevDiff) <= obj.INITIAL_ELEVATION_DIFFERENCE_SCREEN );
+            
+            for sp = startingNodeSet  % for start point
                 % dp
                 dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, elev step)
                 dp(sp,1) = 0;
                 from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
                 for i = 1:numElevBaro
                     for j = 1:numMapNodes
-                        neighbors = obj.map_data.getNeighbors(j);
-                        for k = 1:numel(neighbors)
-                            nn = neighbors(k);  % neighbor node
-                            dtwArr = obj.map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
-                            ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
-                            % ind spans the same range as <i to numElevBaro>
-                            % (ind + i) maps to range (i+1):(numElevBaro+1), 
-                            dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
-                            from(nn, i+ind, :) = repmat([j i], length(ind), 1);
+                        if dp(j, i) <= obj.HARD_DTW_SCORE_THRESHOLD
+                            neighbors = obj.map_data.getNeighbors(j);
+                            for k = 1:numel(neighbors)
+                                nn = neighbors(k);  % neighbor node
+                                %dtwArr = obj.map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
+                                
+                                %ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
+                                % ind spans the same range as <i to numElevBaro>
+                                % (ind + i) maps to range (i+1):(numElevBaro+1), 
+                                %dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
+                                %from(nn, i+ind, :) = repmat([j i], length(ind), 1);
+                                
+                                for l = (i+1):(numElevBaro+1)
+                                    lastNode = from(j, i, 1);
+                                    if lastNode ~= nn  % next node is not previous node   <prev> -- <cur> -- <next>
+                                        tmpScore = dp(j, i) + obj.map_data.queryAllPairDTW(j, nn, i, l-1);
+                                        if tmpScore < dp(nn, l)
+                                            dp(nn, l) = tmpScore;
+                                            from(nn, l, :) = [j i];
+                                        end
+                                    end
+                                end
+                            end
                         end
                     end
                     fprintf('sp=%d, time=%d\n', sp, i)
@@ -99,6 +132,27 @@ classdef Solver_v2 < handle
             % max_results, but for development and debugging purposes, we
             % didn't do that
             obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
+            
+            obj.tmp();
+        end
+        
+        function tmp(obj)
+            % remove similar traces
+            keptTraces = [];
+            for i = 1:numel(obj.res_traces)
+                findSimilarPath = 0;
+                for j = 1:numel(keptTraces)
+                    if obj.private_similarityOfTwoRawPaths( ...
+                            obj.res_traces(i).rawPath, keptTraces(j).rawPath ) >= obj.RAW_PATH_SIMILARITY_THRESHOLD
+                        findSimilarPath = 1;
+                        break
+                    end
+                end
+                if findSimilarPath == 0
+                    keptTraces = [keptTraces obj.res_traces(i)];
+                end
+            end
+            obj.res_traces = keptTraces;
         end
         
         function forceInsertAPath(obj, path)  % an row vector of nodeIdxs
@@ -178,7 +232,7 @@ classdef Solver_v2 < handle
         
         % [ row vector ] = getSquareErrors(obj)  // get up to <max_result> results
         % [single value] = getSquareErrors(obj, traceIdx)
-        function squareErrors = getSquareErrors(obj, varargin)  % UNTESTED
+        function squareErrors = getSquareErrors(obj, varargin) 
             indxs = 1:min(obj.max_results, numel(obj.res_traces));
             if numel(varargin) >= 1
                 indxs = varargin{1}:varargin{1};
@@ -195,7 +249,7 @@ classdef Solver_v2 < handle
         
         % arguments should be passed as strings, including
         % 'index', 'dtwScore' and 'squareError'
-        function res = resultSummarize(obj, varargin)
+        function res = summarizeResult(obj, varargin)
             numRow = min(obj.max_results, numel(obj.res_traces));
             res = zeros(numRow, 0);
             for i = 1:numel(varargin)
@@ -284,6 +338,27 @@ classdef Solver_v2 < handle
             end
             fprintf(['File created. Please check file "' obj.outputFilePath '"\n']);
             fclose(fid);
+        end
+        
+        
+        % +-----------------+
+        % | PRIVATE METHODS |
+        % +-----------------+
+        
+        % compute the similarity two rawPaths
+        function score = private_similarityOfTwoRawPaths(obj, rawPathA, rawPathB)
+            % score = (LCS * LCS) / (length(A) + length(B))
+            lenA = size(rawPathA, 1);
+            lenB = size(rawPathB, 1);
+            dp = zeros(lenA+1, lenB+1);
+            dp(1, 1) = 1;
+            for i = 1:lenA
+                for j = 1:lenB
+                    dp(i+1, j+1) = max( [ dp(i,j+1) dp(i+1, j) (dp(i,j) + (rawPathA(i,2)==rawPathB(j,2))) ] );
+                end
+            end
+            lcs = dp(end, end);
+            score = lcs * lcs / lenA / lenB;
         end
     end
     

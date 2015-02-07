@@ -24,8 +24,10 @@ c = numel(hbaro);
 
 re = nan(c);
 
-costMatrix = (repmat(hele, 1, c) - repmat(hbaro, r, 1)) .^ 2;
+%costMatrix = (repmat(hele, 1, c) - repmat(hbaro, r, 1)) .^ 2;
+costMatrix = exp(repmat(hele, 1, c) - repmat(hbaro, r, 1));
 %costMatrix
+size(costMatrix)
 
 % costs
 for i = 1:c
@@ -49,3 +51,6 @@ for i = 1:c
     re(i, i:end) = D(end, 2:end);
 end
 
+re = costMatrix;
+size(costMatrix)
+size(re)

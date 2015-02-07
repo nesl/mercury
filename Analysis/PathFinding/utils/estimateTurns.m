@@ -1,4 +1,4 @@
-function [turn_angles] = estimateTurns(accRaw, gyroRaw)
+function [turns] = estimateTurns(accRaw, gyroRaw)
 % [turn_angles] = estimateTurns(accRaw, gyroRaw)
 
 %% Get Sampling Rates
@@ -47,67 +47,8 @@ for i=1:size(gyroRaw,1) %time
     turns(i,2) = sum(gyroFilt(w_idx:i,2));
 end
 
-% -------- turn detection ----------
-i = 1;
-while i < size(turns,1)
-    % skip over everything under the threshold
-    while abs(turns(i,2)) < TURN_THRESH && i < size(turns,1)
-        if i >= size(turns,1)
-            break;
-        end
-        i = i+1;
-    end
-    
-    % once the threshold is passed, find the next peak
-    while abs(turns(i,2)) > abs(turns(i-1,2)) && i < size(turns,1)
-        if i >= size(turns,1)
-            break;
-        end
-        i = i+1;
-    end
-    
-    % we found a peak! calculate time since last event
-    dT = turns(i,1)-last_time;
-    % recycle last_time variable for the next event
-    last_time = turns(i,1);
-    
-    
-    % append to event array
-    turn_events = [turn_events;
-        turns(i,1) turns(i,2)
-        ];
-    
-    % backoff
-    for j=1:backoff
-        if i >= size(turns,1)
-            break;
-        end
-        i = i+1;
-    end
-    
-    % and ride it back down
-    while abs(turns(i,2)) < abs(turns(i-1,2)) && i < size(turns,1)
-        if i >= size(turns,1)
-            break;
-        end
-        i = i+1;
-    end
-end
-
-% predict turn angles
-turn_angles = turn_events;
-turn_angles(:,2) = turn_angles(:,2)*1.3; % fudge factor to estimate angle
-
-% plot
-%{
-cfigure(30,12);
-stem(turn_angles(:,1)/1e9 - turn_angles(1,1)/1e9, turn_angles(:,2),'or','LineWidth',2);
-xlabel('Time (sec)','FontSize',12);
-ylabel('Turn angle (degrees)','FontSize',12);
-grid on;
-hold on;
-plot(turns(:,1)/1e9 - turns(1,1)/1e9, turns(:,2),'sb');
-%}
+SCALE = 100;
+turns(:,2) = turns(:,2)*SCALE;
 
 end
 

@@ -38,6 +38,9 @@ classdef SensorData < handle
         PRESSURE_SEALEVEL;
         PRESSURE_M2HPA; % meter / hPa
         
+        % downsampling
+        DOWNSAMPLE = 100;
+        
     end
     
     methods
@@ -59,6 +62,9 @@ classdef SensorData < handle
             obj.raw_mag = mag;
             obj.raw_gps = gps;
             obj.raw_gpsele = gpsele;
+            
+            % downsample barometer
+            obj.raw_baro = obj.raw_baro(1:obj.DOWNSAMPLE:end, :);
             
             % get sampling rates
             obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
@@ -91,7 +97,9 @@ classdef SensorData < handle
             obj.gps_offset = gps(end,1) - baro(end,1);
             
             % estimate turns
-            obj.est_turns = estimateTurns(acc, gyro);
+            turns_full = estimateTurns(acc, gyro);
+            % downsample estimated turns
+            obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
         end
                 
@@ -142,8 +150,10 @@ classdef SensorData < handle
             elev = obj.getElevationFiltered();
             
             % take derivative of estimated height
-            dElev = gradient(elev(:,2), elev(:,1));
-
+            % scaling factor
+            SCALE = 3000;
+            de = SCALE*diff( elev(:,2) );
+            dElev = [elev(:,1) [de; de(end)]];
         end
         
         function elev = getElevationTimeWindow(obj)

@@ -25,14 +25,11 @@ sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
 %% test deriv. of elevation
 % e = sensor_data.getElevation();
-% ef = sensor_data.getElevationFiltered();
-% plot(ef(:,2) - mean(ef(:,2)));
+% ed = sensor_data.getElevationDeriv();
+% plot(e(:,2) - mean(e(:,2)));
 % hold on;
-% plot(e(:,2) - mean(e(:,2)), 'k');
-% ed = gradient(ef(:,2), ef(:,1));
-% plot(ed*30, 'r');
+% plot(ed(:,2), 'r');
 % plot([0 length(ed)], [0 0], 'k--');
-
 
 %% Create MapData object
 map_data = MapData(mapfile);
@@ -60,12 +57,12 @@ osm_list = [
 
 
 nlist = map_data.getNodeIdxs(osm_list);
-angles = map_data.getPathAngles(nlist);
-turns = map_data.getPathTurns(nlist);
+e = map_data.getPathElev(nlist);
+de = map_data.getPathElevDeriv(nlist);
 
-plot(angles - mean(angles));
+plot(e - mean(e));
 hold on;
-plot(turns,'r');
+plot(de,'r');
 
 return;
 

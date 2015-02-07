@@ -188,7 +188,7 @@ classdef MapData < handle
             end
         end
         
-        % get elevation over the path specified the node idxs in a list
+        % get elevation over the path specified by node idxs in a list
         function elevs = getPathElev(obj, nidxList)
             elevs = [];
             
@@ -198,6 +198,17 @@ classdef MapData < handle
                 elevs = [elevs; seg_elev];
             end
             
+        end
+        
+        % get elevation changes (derivative) over the path specified by
+        % node idxs in a list
+        function dElevs = getPathElevDeriv(obj, nidxList)
+            elevs = obj.getPathElev(nidxList);
+            % filter elevations and take derivative
+            [b,a] = butter(2, 0.1);
+            fElevs = filtfilt(b,a,elevs);
+            SCALE = 20;
+            dElevs = SCALE*diff(fElevs);
         end
         
         % get angle sequence for a given node list / path

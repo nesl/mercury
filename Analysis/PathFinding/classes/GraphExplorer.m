@@ -68,12 +68,16 @@ classdef GraphExplorer < handle
             path_nodes = leaf_node.path;
             
             % get elevation
-            elevations = obj.map.getPathElev(path_nodes);
+            mapElevationChanges = obj.map.getPathElevDeriv(path_nodes);
+            estElevationChanges = obj.sensor.getElevationDeriv();
             
             % get turns
-            turns = obj.map.getPathTurns(path_nodes);
+            mapTurns = obj.map.getPathTurns(path_nodes);
+            estTurns = obj.
             
             % get elevation cost
+            
+            cost_elev = MSE_DTW(elevations, 
             
             % get turn cost
             
@@ -99,4 +103,17 @@ classdef GraphExplorer < handle
     end
     
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -75,8 +75,8 @@ classdef GraphExplorer < handle
             mapElevationChanges = obj.map.getPathElevDeriv(path_nodes);
             estElevationChanges = obj.sensor.getElevationDeriv();
             
-            % get elevation cost
-            [~,~,cost_elev] = MSE_DTW(mapElevationChanges, estElevationChanges); 
+            % get greedy elevation cost
+            [~,~,cost_elev] = MSE_greedy(estElevationChanges, mapElevationChanges); 
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see
@@ -90,16 +90,21 @@ classdef GraphExplorer < handle
             % combine costs
             cost = cost_elev;
         end
+               
         
-        % DETERMINE THE COST OF ALL NEW PATHS
-        function calculateNewPathCosts(obj, new_leaf_nodes)
-            % TODO !!!
-        end
-        
-        
-        
-        function pruneBranches(obj)
+        function prunePaths(obj)
+            % what are our candidate path costs right now?
+            path_costs = [];
+            path_idxs = [];
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    path_costs = [path_costs; obj.all_nodes{n}.path_cost];
+                    path_idxs = [path_idxs; n];
+                end
+            end
             
+            % what's our threshold for tossing out bad paths?
+            % TODO:
         end
         
         

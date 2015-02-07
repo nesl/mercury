@@ -29,13 +29,8 @@ normalRotations = [gyroFilt(:,1) sum(gyroFilt(:,2:4).*grav_vec_resize(:,2:4), 2)
 
 %% Turn Detection
 % windowed, bounded integration
-TURN_THRESH = 10; % degrees
 turns = [normalRotations(:,1) zeros(size(normalRotations,1),1)];
 win_size = 50*5; % 5 sec (integral window time)
-backoff = 50*4; % 4 sec (temporal backoff)
-turn_events = [];
-
-last_time = turns(1,1);
 
 % windowed integration (summation)
 for i=1:size(gyroRaw,1) %time
@@ -47,7 +42,7 @@ for i=1:size(gyroRaw,1) %time
     turns(i,2) = sum(gyroFilt(w_idx:i,2));
 end
 
-SCALE = 100;
+SCALE = 1;
 turns(:,2) = turns(:,2)*SCALE;
 
 end

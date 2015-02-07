@@ -141,7 +141,7 @@ classdef SensorData < handle
         
         function fElev = getElevationFiltered(obj)
            elev = obj.getElevation();
-           [b,a] = butter(2, 0.001,'low');
+           [b,a] = butter(2, 0.1,'low');
            fElev = filtfilt(b,a,elev);
         end
         
@@ -151,7 +151,7 @@ classdef SensorData < handle
             
             % take derivative of estimated height
             % scaling factor
-            SCALE = 3000;
+            SCALE = 30;
             de = SCALE*diff( elev(:,2) );
             dElev = [elev(:,1) [de; de(end)]];
         end

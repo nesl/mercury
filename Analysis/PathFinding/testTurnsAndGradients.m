@@ -42,17 +42,25 @@ nlist = [
 
 
 %% Map change in elevation and angles
-mapElevDeriv = map_data.getPathElev(nlist);
+mapElevDeriv = map_data.getPathElevDeriv(nlist);
 mapTurns = map_data.getPathTurns(nlist);
 
 %% Sensor change in elevation and angles
-estElevDeriv = sensor_data.getElevation();
+estElevDeriv = sensor_data.getElevationDeriv();
 estTurns = sensor_data.getTurns();
 
-%% PLOTS
+%% PLOT ELEV. DERIVATIVES
 close all
 plot(mapElevDeriv, 'b');
 hold on;
 plot(estElevDeriv(:,2),'--r');
 xlabel('index (not equal timing)');
 ylabel('Change in Elevation');
+hold off;
+
+%% PLOT TURNS
+plot(mapTurns, 'b');
+hold on;
+plot(estTurns(:,2),'--r');
+xlabel('index (not equal timing)');
+ylabel('Turns');

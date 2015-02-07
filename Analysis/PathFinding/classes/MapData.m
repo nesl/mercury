@@ -16,6 +16,7 @@ classdef MapData < handle
         segment_elevations;
         segment_latlngs;
         segment_allPairDTW;
+        segment_length;
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
         
@@ -23,8 +24,13 @@ classdef MapData < handle
     
     methods
         % CONSTRUCTOR
-        function obj = MapData(mapfile)
-                        
+        % MapData(mapfile)
+        % MapData(mapfile, )
+        function obj = MapData(mapfile, varargin)
+            if numel(varargin) >= 1
+                obj.LATLNG_DSAMPLE = varargin{1};
+            end
+            
             % load all file info
             fileInfo = dir(mapfile);
             % get rid of "." and ".." files
@@ -82,6 +88,8 @@ classdef MapData < handle
                 % store lat/lng from a-->b only
                 obj.segment_latlngs{na_idx, nb_idx} = ...
                     raw(1:obj.LATLNG_DSAMPLE:end,2:3);
+                % calculate the geo length in meter
+                obj.segment_length{na_idx, nb_idx} = obj.private_getSegmentLength(na_idx, nb_idx);
                 % add to neighbor lists
                 obj.node_neighbors{na_idx} = [obj.node_neighbors{na_idx} nb_idx];
                 obj.node_neighbors{nb_idx} = [obj.node_neighbors{nb_idx} na_idx];
@@ -111,7 +119,7 @@ classdef MapData < handle
         
         % get --+-- NodeIdx ---+--+-- (Filtered) Elev ----+-- ()
         %       +-- NodeIdxs --+  +------------- LatLng --+
-        %       +-- Seg -------+
+        %       +-- Seg -------+  +------------- Length --+
         %       +-- path ------+
      
         
@@ -181,6 +189,20 @@ classdef MapData < handle
             end
         end
         
+        % get length of one segment
+        function meter = getSegLength(obj, seg)
+            na_idx = seg(1);
+            nb_idx = seg(2);
+            % find the data for a-->b, if it doesn't exist, flip b-->a
+            if ~isempty( obj.segment_length{na_idx, nb_idx} )
+                meter = obj.segment_length{na_idx, nb_idx};
+            elseif ~isempty( obj.segment_length{nb_idx, na_idx} )
+                meter = obj.segment_length{nb_idx, na_idx};
+            else
+                error('specified segment does not exist (getSegLength)');
+            end
+        end
+        
         % get elevation over the path specified the node idxs in a list
         function elevs = getPathElev(obj, nidxList)
             elevs = [];
@@ -204,8 +226,15 @@ classdef MapData < handle
             end
         end
         
+        % get length of a path
+        function meter = getPathLength(obj, nidxList)
+            meter = 0;
+            for nidx=1:( length(nidxList)-1 )
+                meter = meter + obj.getSegLength( nidxList( nidx:(nidx+1) ) );
+            end
+        end
         
-        % QUERY GEO INFORMATION
+        % QUERY BY GEO INFORMATION
         function meter = distanceToNodeIdx(obj, latlng, nodeIdx)
             meter = latlng2m(latlng, obj.getNodeIdxLatLng(nodeIdx));
         end
@@ -244,10 +273,69 @@ classdef MapData < handle
             retSeg = obj.endNodePairs(segIdx, :);
         end
         
-        % TODO
-        % latlngsToApproximateNodeIdxs()
-        % shortestPath(na_idx, nb_idx)
-        % segmentLengthMeter()
+        function nodeIdxs = findShortestPath(obj, ns_idx, ne_idx)  %% UNTESTED
+            dis = containers.Map();
+            from = containers.Map();
+            dis(ns_idx) = 0;
+            trackList = ns_idx;
+            for i = 1:1000
+                % find next shortest-distance node
+                len = length(trackList);
+                chooseIdx = i;
+                minDis = dis( trackList(chooseIdx) );
+                for j = (i+1):len
+                    tmpDis = dis( trackList(j) );
+                    if tmpDis < minDis
+                        minDis = tmpDis;
+                        chooseIdx = j;
+                    end
+                end
+                trackList([i chooseIdx]) = trackList([chooseIdx i]);
+                if trackList(i) == ne_idx  % reach goal
+                    % back-tracking
+                    nodeIdxs = trackList(i);
+                    while nodeIdxs(1) ~= ns_idx
+                        nodeIdxs = [ from(nodeIdxs(1)) nodeIdxs ];
+                    end
+                    return;
+                end
+                
+                % if it doesn't return, means that we need to keep search
+                curIdx = trackList(i);
+                curDis = minDis;
+                for neighbor = obj.getNeighbors()
+                    nextDis = curDis + obj.getSegLength(curIdx, neighbor);
+                    if ~iskey(dis, neighbor)
+                        dis(neighbor) = inf;
+                        trackList = [trackList neighbor];
+                    end
+                    if dis(neighbor) > nextDis
+                        dis(neighbor) = nextDis;
+                        from(neighbor) = curIdx;
+                    end
+                end
+            end
+            error('hmm... it seems you give me a big challenge... (findShortestPath())');
+        end
+        
+        function retNodeIdxs = findApproximatePathOverMap(obj, latlngs)
+            % this method finds the closest node of every lat/lng, and then
+            % based on this information to find the shortest path
+            numLatLngs = size(latlngs, 1);
+            closestNodeIdxs = zeros(1, numLatLngs);
+            for i = 1:numLatLngs
+                closestNodeIdxs(i) = obj.getNearestNodeIdx(latlngs(i,:));
+            end
+            criticalNodeIdxs = closestNodeIdxs(1);
+            for i = 1:(numel(closestNodeIdxs)-1)
+                if closestNodeIdxs(i+1) ~= closestNodeIdxs(i)
+                    criticalNodeIdxs = [criticalNodeIdxs closestNodeIdxs(i+1)];
+                end
+            end
+            for i = 1:numel(criticalNodeIdxs)
+                % TODO
+            end
+        end
         
         % INDEX SYSTEM CONVERSION
         % convert local node index to OSM index
@@ -287,6 +375,21 @@ classdef MapData < handle
                 res = obj.segment_allPairDTW{na_idx, nb_idx}( varargin{1}, varargin{1}:end );
             else
                 res = obj.segment_allPairDTW{na_idx, nb_idx}( varargin{1}, varargin{2} );
+            end
+        end
+        
+        
+        % +-----------------+
+        % | PRIVATE METHODS |
+        % +-----------------+
+        
+        % get segment length
+        function meter = private_getSegmentLength(obj, na_idx, nb_idx)
+            meter = 0;
+            numElements = size( obj.segment_latlngs{na_idx, nb_idx}, 1);
+            for i = 1:(numElements-1)
+                meter = meter + latlng2m( obj.segment_latlngs{na_idx, nb_idx}(i,:), ...
+                    obj.segment_latlngs{na_idx, nb_idx}(i+1, :) );
             end
         end
     end

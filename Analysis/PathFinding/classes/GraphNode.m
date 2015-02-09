@@ -14,6 +14,11 @@ classdef GraphNode < handle
         % node children
         children = {};
         map_idx2child = containers.Map('KeyType','int32','ValueType','int32');
+        % blacklist of children that should not be visited again
+        blacklist_nodes = [];
+        % is this node a dead end? i.e. have all children been blacklisted?
+        deadend = false;
+        
     end
     
     methods
@@ -37,6 +42,40 @@ classdef GraphNode < handle
         function p = isRoot(obj)
             p = isnan(obj.parent);
         end
+        
+        
+        % prune and blacklist this child from its parent
+        function prune(obj)
+            obj.parent.blacklist(obj.node_idx);
+        end
+        
+        % blacklist a child of this node
+        function blacklist(obj, child_idx)
+            if iskey(obj.map_idx2child, child_idx)
+                % blacklist the child node
+                obj.blacklist_nodes = [obj.blacklist_nodes; child_idx];
+                % remove the child
+                obj.children{ obj.map_idx2child(child_idx) } = [];
+                % remove the dictionary entry
+                remove(obj.map_idx2child, child_idx);
+            end
+        end
+        
+        % is this node blacklisted?
+        function val = isChildBlacklisted(obj, child_idx)
+            val = ~isempty( find(obj.blacklist_nodes == child_idx) );
+        end
+        
+        % set this node as a dead end (all children blacklisted)
+        function setDeadend(obj)
+            obj.deadend = true;
+        end
+        
+        % is this node a deadend?
+        function val = isDeadend(obj)
+            val = obj.deadend;
+        end
+            
         
         % upstream traversal to find loops
         function visited = findUpstreamNode(obj, nidx, min_loop_len)

@@ -9,8 +9,8 @@ classdef GraphExplorer < handle
         % sensor data object
         sensor;
         
-        % branch pruning percentile
-        PRUNE_PERCENTILE_BRANCH = 100;
+        % branch pruning, 0-1
+        PRUNE_FACTOR_BRANCH = 0;
         
         % branch loop reduction
         MIN_BRANCH_LOOP_LENGTH = 10;
@@ -30,7 +30,10 @@ classdef GraphExplorer < handle
         function obj = GraphExplorer(map, sensor, root_idx, pruning)
             obj.map = map;
             obj.sensor = sensor;
-            obj.PRUNE_PERCENTILE_BRANCH = pruning;
+            if pruning < 0 || pruning >= 1
+                error('prune factor bust be >=0 and < 1');
+            end
+            obj.PRUNE_FACTOR_BRANCH = pruning;
             
             % create root node
             obj.root = GraphNode(nan, root_idx);
@@ -43,11 +46,17 @@ classdef GraphExplorer < handle
             for n=1:length(obj.all_nodes)
                 node = obj.all_nodes{n};
                 % explore from all leaves in this graph
-                if node.isLeaf()
+                if node.isLeaf() && ~node.isDeadend()
                     % get neighbors
                     N = obj.map.getNeighbors(node.node_idx);
                     % loop through all neighbors
+                    nodeIsDeadend = true;
                     for i=1:length(N)
+                        % if this is a blacklisted neigbor, ignore it
+                        if node.isChildBlacklisted(N(i))
+                            continue;
+                        end
+                        nodeIsDeadend = false;
                         % have we visited this node recently?
                         neighbor_idx = N(i);
                         visited = node.findUpstreamNode(neighbor_idx,...
@@ -62,6 +71,13 @@ classdef GraphExplorer < handle
                             new_path_cost = obj.calculatePathCost(child_node);
                             child_node.cost = new_path_cost;
                         end
+                    end
+                    
+                    % if 'nodeIsDeadend' was never set to true, all node
+                    % children have been blacklisted and we can ignore this
+                    % node in the future
+                    if nodeIsDeadend
+                        node.setDeadend()
                     end
                end
             end
@@ -104,7 +120,30 @@ classdef GraphExplorer < handle
             end
             
             % what's our threshold for tossing out bad paths?
-            % TODO:
+            % throw away any path that exceeds (1-factor)*min_cost
+            min_cost = min(path_costs);
+            
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    
+                    % cost_scale
+                    cost_scale = obj.all_nodes{n}.path_cost/min_cost;
+                    
+                    % if it's too big, throw it out!
+                    if cost_scale >= obj.PRUNE_FACTOR_BRANCH
+                        obj.pruneLeaf(n);
+                    end
+                    
+                end
+            end
+            
+        end
+        
+        % pruning a leaf
+        function pruneLeaf(obj, n)
+            % blacklist this child for it's parent node
+            obj.all_nodes{n}.prune();
+            obj.all_nodes{n} = [];
         end
         
         

@@ -14,18 +14,19 @@ c1_arr = [];
 
 for L = 10:5:200
     p1 = s1(1:L);
-    p1 = p1 + 0.05*randn(size(p1)) - 0.5;
+    p1 = p1 + 0.05*randn(size(p1)) - 0;
     p1 = imresize(p1, [1 round(L*1.5)]);
-    p2 = 5+ s2(1:40);
+    p2 = 5+ s2(1:L);
     p2 = p2 + 0.05*randn(size(p2));
+    p2 = imresize(p2, [1 round(L*1.5)]);
     
-    % plot(s1);
-    % hold on;
-    % plot(p1,'r','LineWidth',3);
-    % plot(p2,'m--','LineWidth',2);
-    % hold off;
-    % figure()
-    
+%     plot(s1);
+%     hold on;
+%     plot(p1,'r','LineWidth',3);
+%     plot(p2,'m--','LineWidth',2);
+%     hold off;
+%     figure()
+        
     c2 = DTW_greedy(s1,p2);
     c1 = DTW_greedy(s1,p1);
     % plot(c1(end,:),'r');

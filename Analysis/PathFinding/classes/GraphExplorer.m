@@ -16,7 +16,7 @@ classdef GraphExplorer < handle
         MIN_BRANCH_LOOP_LENGTH = 10;
     
         % score of best branch
-        best_score = inf;
+        cost = inf;
         
         % root node
         root;
@@ -37,7 +37,17 @@ classdef GraphExplorer < handle
             
             % create root node
             obj.root = GraphNode(nan, root_idx);
-            all_nodes = [all_nodes; obj.root];
+            obj.all_nodes = [obj.all_nodes; obj.root];
+        end
+        
+        % TAKE ONE STEP / ITERATION
+        function step(obj)
+           % explore new nodes
+           obj.exploreNewNodes();
+           
+           % prune bad branches
+           obj.prunePaths();
+           
         end
         
         % EXPLORING NEW NODES
@@ -122,6 +132,7 @@ classdef GraphExplorer < handle
             % what's our threshold for tossing out bad paths?
             % throw away any path that exceeds (1-factor)*min_cost
             min_cost = min(path_costs);
+            obj.cost = min_cost;
             
             for n=1:length(obj.all_nodes)
                 if obj.all_nodes{n}.isLeaf()

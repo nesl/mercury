@@ -47,12 +47,17 @@ classdef Solver_v2 < handle
             obj.sensor_data = sensor_data;
         end
         
+        % EARLY PRUNING SETTINGS
+        function obj = setHardDTWScoreThreshold(obj, score)
+            obj.HARD_DTW_SCORE_THRESHOLD = score;
+        end
+        
         % OUTPUT SETTINGS
-        function setOutputFilePath(obj, path)
+        function obj = setOutputFilePath(obj, path)
             obj.outputFilePath = path;
         end
         
-        function setNumPathsToKeep(obj, num)
+        function obj = setNumPathsToKeep(obj, num)
             obj.max_results = num;
         end
         
@@ -110,7 +115,7 @@ classdef Solver_v2 < handle
 
                 % back tracking
                 for i = 1:numMapNodes
-                    if dp(i, numElevBaro+1) ~= inf
+                    if dp(i, numElevBaro+1) < obj.HARD_DTW_SCORE_THRESHOLD
                         clear tmp_trace
                         tmp_trace.dtwScore = dp(i, numElevBaro+1);
                         cNodeIdx = i;  % current node index

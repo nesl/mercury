@@ -32,7 +32,7 @@ if caseNo == 2
     sensor_data.setWindowSize(0.5);
     % Create MapData object
     map_data = MapData(mapfile);
-    solver = Solver_v2(map_data, sensor_data);
+    solver = Solver_dp2(map_data, sensor_data);
 elseif caseNo == 3
     % sunset + hilgard
     %    distance: 1.26+1.33 mile (2.02 km)
@@ -50,7 +50,7 @@ elseif caseNo == 3
     sensor_data.setWindowSize(1);  % finer case: 0.5
     % Create MapData object
     map_data = MapData(mapfile, 2);  % finer case: 1
-    solver = Solver_v2(map_data, sensor_data);
+    solver = Solver_dp2(map_data, sensor_data);
     solver.setHardDTWScoreThreshold(2500);  % finer case: to smaller?
 else
     error('Kidding me? You didn''t choose a correct test case!');

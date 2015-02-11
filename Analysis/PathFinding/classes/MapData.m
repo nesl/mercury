@@ -72,6 +72,7 @@ classdef MapData < handle
             % --- load all elevation and lat/lng data ---
             obj.segment_elevations = cell(obj.num_nodes);
             obj.segment_latlngs = cell(obj.num_nodes);
+            obj.segment_length = cell(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
             obj.node_elevation = zeros(obj.num_nodes, 2);
             obj.node_latlng = zeros(obj.num_nodes, 2);
@@ -82,12 +83,12 @@ classdef MapData < handle
                 nb_idx = obj.endNodePairs(i,2);
                 % read csv data
                 raw = csvread([mapfile fileInfo(i).name]);
+                rawNumRows = size(raw, 1);
+                rawIdx = [1:obj.LATLNG_DSAMPLE:(rawNumRows-1)  rawNumRows];  % in case of down sampling, always make sure to include the end node
                 % store elevation from a-->b only
-                obj.segment_elevations{na_idx, nb_idx} = ...
-                    raw(1:obj.LATLNG_DSAMPLE:end, 1);
+                obj.segment_elevations{na_idx, nb_idx} = raw(rawIdx, 1);
                 % store lat/lng from a-->b only
-                obj.segment_latlngs{na_idx, nb_idx} = ...
-                    raw(1:obj.LATLNG_DSAMPLE:end,2:3);
+                obj.segment_latlngs{na_idx, nb_idx} = raw(rawIdx, 2:3);
                 % calculate the geo length in meter
                 obj.segment_length{na_idx, nb_idx} = obj.private_getSegmentLength(na_idx, nb_idx);
                 % add to neighbor lists
@@ -113,7 +114,7 @@ classdef MapData < handle
         end
         
         function N = getNeighbors(obj, nidx)
-            N =  obj.node_neighbors{nidx};
+            N = obj.node_neighbors{nidx};
         end
         
         
@@ -273,10 +274,11 @@ classdef MapData < handle
             retSeg = obj.endNodePairs(segIdx, :);
         end
         
-        function nodeIdxs = findShortestPath(obj, ns_idx, ne_idx)  %% UNTESTED
-            dis = containers.Map();
-            from = containers.Map();
+        function nodeIdxs = findShortestPath(obj, ns_idx, ne_idx)
+            dis = containers.Map('KeyType','int32','ValueType','double');
+            from = containers.Map('KeyType','int32','ValueType','int32');
             dis(ns_idx) = 0;
+            from(ns_idx) = 0;
             trackList = ns_idx;
             for i = 1:1000
                 % find next shortest-distance node
@@ -290,7 +292,10 @@ classdef MapData < handle
                         chooseIdx = j;
                     end
                 end
+                %i
+                %trackList
                 trackList([i chooseIdx]) = trackList([chooseIdx i]);
+                %trackList
                 if trackList(i) == ne_idx  % reach goal
                     % back-tracking
                     nodeIdxs = trackList(i);
@@ -303,22 +308,33 @@ classdef MapData < handle
                 % if it doesn't return, means that we need to keep search
                 curIdx = trackList(i);
                 curDis = minDis;
-                for neighbor = obj.getNeighbors()
-                    nextDis = curDis + obj.getSegLength(curIdx, neighbor);
-                    if ~iskey(dis, neighbor)
+                %[curIdx curDis]
+                %obj.getNeighbors(curIdx)
+                %[-1 -1 obj.num_nodes size(obj.segment_length)]
+                for neighbor = obj.getNeighbors(curIdx)
+                    nextDis = curDis + obj.getSegLength( [curIdx neighbor] );
+                    %keys(dis)
+                    %keys(from)
+                    %neighbor
+                    if ~isKey(dis, neighbor)
                         dis(neighbor) = inf;
                         trackList = [trackList neighbor];
+                        %fprintf('add %d\n', neighbor);
                     end
                     if dis(neighbor) > nextDis
                         dis(neighbor) = nextDis;
                         from(neighbor) = curIdx;
                     end
+                    %keys(dis)
+                    %keys(from)
+                    %neighbor
+                    %[ 0 0 curIdx curDis neighbor dis(neighbor) from(neighbor)]
                 end
             end
             error('hmm... it seems you give me a big challenge... (findShortestPath())');
         end
         
-        function retNodeIdxs = findApproximatePathOverMap(obj, latlngs)
+        function retNodeIdxs = findApproximatePathOverMapByLatLng(obj, latlngs)
             % this method finds the closest node of every lat/lng, and then
             % based on this information to find the shortest path
             numLatLngs = size(latlngs, 1);
@@ -332,9 +348,17 @@ classdef MapData < handle
                     criticalNodeIdxs = [criticalNodeIdxs closestNodeIdxs(i+1)];
                 end
             end
-            for i = 1:numel(criticalNodeIdxs)
-                % TODO
+            retNodeIdxs = obj.findApproximatePathOverMapByNodeIdxs(criticalNodeIdxs);
+        end
+        
+        function retNodeIdxs = findApproximatePathOverMapByNodeIdxs(obj, nodeIdxs)
+            numNodes = numel(nodeIdxs);
+            retNodeIdxs = [];
+            for i = 1:(numNodes-1)
+                tmpSegPath = obj.findShortestPath( nodeIdxs(i), nodeIdxs(i+1) );
+                retNodeIdxs = [retNodeIdxs tmpSegPath(1:end-1)];
             end
+            retNodeIdxs = [retNodeIdxs nodeIdxs(end)];
         end
         
         % INDEX SYSTEM CONVERSION

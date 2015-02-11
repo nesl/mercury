@@ -38,6 +38,10 @@ classdef Solver_dp2 < handle
         INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
         HARD_DTW_SCORE_THRESHOLD = 1000;
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
+        
+        % parameters for finding the oracle path
+        NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
+        DISTANCE_THRESHOLD_TO_BE_CONSIDERED_AS_VISITED = 20; % meter, this constraint is very important to avoid false path
     end
     
     methods
@@ -166,16 +170,18 @@ classdef Solver_dp2 < handle
             % path is gauranteed to be inserted into res_traces with
             % replacing one of them.
             
-            % TODO: UNTESTED
+            % TODO: UNTESTED (testing)
             
             numVisitedNodes = length(path);
             numElevBaro = size(obj.elevFromBaro, 1);
+            numMapNodes = obj.map_data.getNumNodes();
             dp = inf(numVisitedNodes, numElevBaro+1);  % dp(a, b) = score of [last node_idx in sub-path, last step]
-            from = zeros(numMapNodes, numElevBaro+1);  % from(a, b) = last step
+            dp(1, 1) = 0;
+            from = zeros(numVisitedNodes, numElevBaro+1);  % from(a, b) = last step @ previous node_idx
             for i = 1:(numVisitedNodes-1)
                 for j = 1:numElevBaro
                     for k = (j+1):(numElevBaro+1)
-                        t = map_data.queryAllPairDTW(path(i), path(i+1), j, k-1);
+                        t = obj.map_data.queryAllPairDTW(path(i), path(i+1), j, k-1);
                         if dp(i, j) + t < dp(i+1, k)
                             dp(i+1, k) = dp(i, j) + t;
                             from(i+1, k) = j;
@@ -187,10 +193,10 @@ classdef Solver_dp2 < handle
             clear tmp_trace
             tmp_trace.dtwScore = dp(end, end);
             cElevStep = numElevBaro+1;  % current elevation step
-            tmp_trace.rawPath = [numElevBaro+1 i];
-            for i = (numElevBaro-1):-1:1
+            tmp_trace.rawPath = [numElevBaro+1 path(end)];
+            for i = (numVisitedNodes-1):-1:1
                 cElevStep = from(i+1, cElevStep);
-                tmp_trace.rawPath = [ [cElevStep i] ; tmp_trace.rawPath ];
+                tmp_trace.rawPath = [ [cElevStep path(i)] ; tmp_trace.rawPath ];
             end
             if numel(obj.res_traces) >= obj.max_results
                 obj.res_traces = obj.res_traces(1:(obj.max_results-1));
@@ -204,6 +210,34 @@ classdef Solver_dp2 < handle
                     end
                 end
             end
+        end
+        
+        function forceInsertOraclePath(obj)
+            gpsData = obj.sensor_data.getGps();
+            numRows = size(gpsData, 1);
+            closestNodeIdxs = [];
+            for i = 1:numRows
+                tmpNodeIdx = obj.map_data.getNearestNodeIdx( gpsData(i, 2:3) );
+                tmpDis = obj.map_data.distanceToNodeIdx( gpsData(i, 2:3), tmpNodeIdx );
+                if tmpDis < obj.DISTANCE_THRESHOLD_TO_BE_CONSIDERED_AS_VISITED
+                    closestNodeIdxs = [closestNodeIdxs tmpNodeIdx];
+                end
+            end
+            compactPath = [];  % an array of nodes which we are very certain we've visited
+            curNodeIdx = 0;
+            curCnt = 0;
+            for i = 1:length(closestNodeIdxs)
+                if closestNodeIdxs(i) ~= curNodeIdx
+                    curNodeIdx = closestNodeIdxs(i);
+                    curCnt = 0;
+                end
+                curCnt = curCnt + 1;
+                if curCnt == obj.NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED  % not >=, as it'll be inserted multiple times
+                    compactPath = [ compactPath curNodeIdx ];
+                end
+            end
+            finalPath = obj.map_data.findApproximatePathOverMapByNodeIdxs(compactPath); 
+            obj.forceInsertAPath(finalPath);
         end
         
         % RETRIEVE PATHS

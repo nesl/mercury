@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-caseNo = 3;
+caseNo = 2;
 
 %% Inputs:
 
@@ -29,9 +29,9 @@ if caseNo == 2
     sensor_data.setSeaPressure(1019.5);
     sensor_data.setPressureScalar(-7.97);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
-    sensor_data.setWindowSize(0.5);
+    sensor_data.setWindowSize(3);   % correct:0.5
     % Create MapData object
-    map_data = MapData(mapfile);
+    map_data = MapData(mapfile, 6);   %correct:1
     solver = Solver_dp2(map_data, sensor_data);
 elseif caseNo == 3
     % sunset + hilgard
@@ -67,8 +67,11 @@ solver.getRawPath(1)
 solver.plotPathComparison(1)
 solver.toWeb();
 toc
+
 return;
 
+%% test and insert the oracle path based on the true gps
+solver.forceInsertOraclePath();  
 
 %% tmp script for solver_v2 - explore the elevation difference between map nodes and both ends of barometer data
 beginElev = solver.elevFromBaro(1,2);

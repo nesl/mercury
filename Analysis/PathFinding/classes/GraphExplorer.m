@@ -62,7 +62,7 @@ classdef GraphExplorer < handle
                         % have we visited this node recently?
                         neighbor_idx = N(i);
                         visited = node.findUpstreamNode(neighbor_idx,...
-                                obj.MIN_BRANCH_LOOP_LENGTH);
+                            obj.MIN_BRANCH_LOOP_LENGTH);
                         % if not, let's add it as a child
                         if ~visited
                             % create a new child node
@@ -83,7 +83,7 @@ classdef GraphExplorer < handle
                     if nodeIsDeadend
                         node.setDeadend()
                     end
-               end
+                end
             end
         end
         
@@ -98,13 +98,13 @@ classdef GraphExplorer < handle
             estElevations = estElevations(:,2) + obj.elevation_offset;
             
             % get greedy elevation cost (template, partial)
-            cost_elev = DTW_greedy(estElevationChanges, mapElevationChanges); 
+            cost_elev = DTW_greedy(estElevations, mapElevations);
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see
             % how well it does without them.  I'll add turns later, because
             % they won't work w/ the walking in Case 1 anyways :)
-                        
+            
             % get turns
             %mapTurns = obj.map.getPathTurns(path_nodes);
             %estTurns = obj.sensor.get
@@ -112,7 +112,7 @@ classdef GraphExplorer < handle
             % combine costs
             cost = cost_elev;
         end
-               
+        
         
         function prunePaths(obj)
             % what are our candidate path costs right now?
@@ -168,8 +168,8 @@ classdef GraphExplorer < handle
         end
         
         % PLOTTING
-        function lines = getLinesToPlot(obj)
-            lines = {};
+        function paths = getAllPathLatLng(obj)
+            paths = {};
             % add paths to all leaves
             for n=1:length(obj.all_nodes)
                 if obj.all_nodes{n}.isLeaf()
@@ -178,7 +178,26 @@ classdef GraphExplorer < handle
                     % convert indices to lat/lng
                     path_latlng = obj.map.getPathLatLng(path_idxs);
                     % append to array
-                    lines = [lines; path_latlng];
+                    paths = [paths; path_latlng];
+                end
+            end
+        end
+        
+        function path = getBestPathLatLng(obj)
+            path = [];
+            % add paths to all leaves
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    % is this the best path?
+                    if obj.all_nodes{n}.path_cost == obj.cost
+                        % get path of indices
+                        path_idxs = obj.all_nodes{n}.getPath();
+                        % convert indices to lat/lng
+                        path_latlng = obj.map.getPathLatLng(path_idxs);
+                        % append to array
+                        path = path_latlng;
+                        return;
+                    end
                 end
             end
         end

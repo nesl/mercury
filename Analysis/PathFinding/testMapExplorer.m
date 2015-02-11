@@ -61,7 +61,7 @@ for i=1:100
     end
     
     % plot everything
-    paths = e.getLinesToPlot();
+    paths = e.getAllPathLatLng();
     for p=1:length(paths);
         path = paths{p};
         % long, lat
@@ -69,7 +69,11 @@ for i=1:100
         hold on;
     end
     
-    pause();
+    % plot best path
+    best = e.getBestPathLatLng();
+    plot(best(:,2), best(:,1), 'g', 'LineWidth',2);
+    
+    pause(0.1);
     
     % clear plot
     hold off;

@@ -136,7 +136,7 @@ classdef SensorData < handle
         % ACCESSOR METHODS
         function start = getElevationStart(obj)
             elev_all = obj.getElevation();
-            start = median(elev_all(1:5));
+            start = median(elev_all(1:5,2));
         end
         
         function elev = getElevation(obj)

@@ -27,6 +27,13 @@ classdef SensorData < handle
         raw_gps;
         raw_gpsele;
         
+        % sampling rates
+        SR_baro;
+        SR_acc;
+        SR_gyro;
+        SR_mag;
+        SR_gps;
+        
         % additional data
         gps_speed;
         gps_angles;
@@ -50,6 +57,9 @@ classdef SensorData < handle
         PRESSURE_SEALEVEL = 1020;
         PRESSURE_M2HPA = 8; % meter / hPa
         
+        % downsampling
+        DOWNSAMPLE = 100;
+        
     end
     
     methods
@@ -71,6 +81,16 @@ classdef SensorData < handle
             obj.raw_mag = mag;
             obj.raw_gps = gps;
             obj.raw_gpsele = gpsele;
+            
+            % downsample barometer
+            obj.raw_baro = obj.raw_baro(1:obj.DOWNSAMPLE:end, :);
+            
+            % get sampling rates
+            obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
+            obj.SR_acc =  mean(1./diff(obj.raw_acc(:,1)));
+            obj.SR_gyro = mean(1./diff(obj.raw_gyro(:,1)));
+            obj.SR_mag =  mean(1./diff(obj.raw_gps(:,1)));
+            obj.SR_gps =  mean(1./diff(obj.raw_gps(:,1)));
             
             % by default, the segment is slightly trimmed
             obj.segment_start = baro(1,1) + obj.TRIM_SEC;
@@ -99,7 +119,9 @@ classdef SensorData < handle
             obj.relative_offset = (baro(1,1) - obj.motion_offset) - 0;  % abs->relative = t_abs - t_relative
             
             % estimate turns
-            obj.est_turns = estimateTurns(acc, gyro);
+            turns_full = estimateTurns(acc, gyro);
+            % downsample estimated turns
+            obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
         end
                 
@@ -135,9 +157,31 @@ classdef SensorData < handle
         end
         
         % ACCESSOR METHODS
+        function start = getElevationStart(obj)
+            elev_all = obj.getElevation();
+            start = median(elev_all(1:5,2));
+        end
+        
         function elev = getElevation(obj)
             baro = obj.getBaro();
             elev = [baro(:,1), (baro(:,2) - obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];
+        end
+        
+        function fElev = getElevationFiltered(obj)
+           elev = obj.getElevation();
+           [b,a] = butter(2, 0.1,'low');
+           fElev = filtfilt(b,a,elev);
+        end
+        
+        function dElev = getElevationDeriv(obj)
+            % get filtered, estimated height
+            elev = obj.getElevationFiltered();
+            
+            % take derivative of estimated height
+            % scaling factor
+            SCALE = 30;
+            de = SCALE*diff( elev(:,2) );
+            dElev = [elev(:,1) [de; de(end)]];
         end
         
         function elev = getElevationTimeWindow(obj)
@@ -203,6 +247,13 @@ classdef SensorData < handle
             data(:,1) = data(:,1) - motion_start_time;
         end
         
+        function data = getTurns(obj)
+            % find valid indices for this segment
+            data =  obj.est_turns(obj.est_turns(:,1) >= obj.segment_start & ...
+                          obj.est_turns(:,1) <= obj.segment_stop, :);
+            data(:,1) = data(:,1) - obj.segment_start;
+        end
+
         function data = getGps(obj)
             % find valid indices for this segment
             % time, lat, lng, speed, error, source (maybe...)

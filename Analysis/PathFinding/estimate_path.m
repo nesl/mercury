@@ -28,12 +28,22 @@ sensor_data.setSeaPressure(1020);
 sensor_data.setPressureScalar(-8.15);
 sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
+%% test deriv. of elevation
+% e = sensor_data.getElevation();
+% ed = sensor_data.getElevationDeriv();
+% plot(e(:,2) - mean(e(:,2)));
+% hold on;
+% plot(ed(:,2), 'r');
+% plot([0 length(ed)], [0 0], 'k--');
+
 %% Create MapData object
 map_data = MapData(mapfile);
+
 
 %% test solver
 tic
 solver = Solver_v2(map_data, sensor_data);
+
 solver.setOutputFilePath(outputWebFile);
 solver.solve();
 solver.getRawPath(1)

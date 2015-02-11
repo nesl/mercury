@@ -10,7 +10,7 @@ classdef GraphExplorer < handle
         % branch pruning, 0-1
         PRUNE_FACTOR_BRANCH = 0;
         % branch loop reduction
-        MIN_BRANCH_LOOP_LENGTH = 10;
+        MIN_BRANCH_LOOP_LENGTH = 5;
         % minimum number of leaves to keep
         MIN_LEAVES = 4;
         % score of best branch

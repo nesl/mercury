@@ -17,7 +17,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.20;
+        PRUNE_RATE = 0.50;
         
         % debugging options
         DBG = false;
@@ -120,6 +120,7 @@ classdef Solver_greedy < handle
                             hold on;
                         end
                     end
+                    
                     
                 end
                 

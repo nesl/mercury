@@ -36,6 +36,10 @@ true_idxs = [
     250
     ];
 
+bad_idxs = [
+    
+];
+
 %% Full map elevation
 elev_map_full = map_data.getPathElev(true_idxs);
 

@@ -42,7 +42,7 @@ end
 % cost/( length^e )
 
 % where the exponent 'e' is a design variable.  Something between 0 and 1?
-EXP = 1.5;
+EXP = 1.0;
 match_costs = Costs(end,:);
 lengths = 1:size(Costs,2);
 length_weights = -lengths.^EXP;

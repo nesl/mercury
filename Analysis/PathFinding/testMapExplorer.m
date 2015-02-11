@@ -25,15 +25,40 @@ sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
 %% Create MapData object
 map_data = MapData(mapfile);
+map_lines = map_data.getAllSegLatLng();
+
+% correct path indices
+%     1    72
+%     15    70
+%     27    49
+%     37    46
+%     56    50
+%     67   254
+%     78   251
+%     88   248
+%    118   247
+%    162   250
 
 %% Create a single map explorer
-e = GraphExplorer(map_data, sensor_data, 100, 0.5);
+e = GraphExplorer(map_data, sensor_data, 72, 0.5);
 
 %% Explore and plot
 figure();
 
 for i=1:100
     fprintf('Iteration: %d\n', i);
+    
+    % explore
+    e.exploreNewNodes();
+    % prune
+    e.prunePaths();
+    
+    % plot map
+    for s=1:length(map_lines)
+        latlng = map_lines{s};
+        plot(latlng(:,2), latlng(:,1), 'Color', [0.8 0.8 0.8]);
+        hold on;
+    end
     
     % plot everything
     paths = e.getLinesToPlot();
@@ -44,42 +69,37 @@ for i=1:100
         hold on;
     end
     
-    % explore
-    e.exploreNewNodes();
-    % prune
-    
     pause();
     
     % clear plot
     hold off;
 end
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

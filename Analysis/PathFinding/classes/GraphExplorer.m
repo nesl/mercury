@@ -14,6 +14,9 @@ classdef GraphExplorer < handle
         
         % branch loop reduction
         MIN_BRANCH_LOOP_LENGTH = 10;
+        
+        % minimum number of leaves to keep
+        MIN_LEAVES = 4;
     
         % score of best branch
         cost = inf;
@@ -123,32 +126,46 @@ classdef GraphExplorer < handle
                 end
             end
             
+            % how many leaves can we keep? log2( # leaves ), no fewer than 4
+            num_leaves_kept = max( obj.MIN_LEAVES, ceil(log2(length(path_costs))) );
+            sorted_costs = sort(path_costs);
+            
             % what's our threshold for tossing out bad paths?
             % throw away any path that exceeds (1-factor)*min_cost
-            min_cost = min(path_costs);
-            obj.cost = min_cost;
+            obj.cost = sorted_costs(1);
             
-            for n=1:length(obj.all_nodes)
-                if obj.all_nodes{n}.isLeaf()
-                    
-                    % cost_scale
-                    cost_scale = obj.all_nodes{n}.path_cost/min_cost;
-                    
-                    % if it's too big, throw it out!
-                    if cost_scale >= obj.PRUNE_FACTOR_BRANCH
-                        obj.pruneLeaf(n);
+            % do we have to prune? do we have more than we're keeping?
+            if length(path_costs) > num_leaves_kept
+                
+                % array of leaves to be pruned
+                leaves_to_prune = [];
+                
+                for n=1:length(obj.all_nodes)
+                    if obj.all_nodes{n}.isLeaf()
+                        
+                        % if it's too big, throw it out!
+                        if obj.all_nodes{n}.path_cost > sorted_costs(num_leaves_kept)
+                            leaves_to_prune = [leaves_to_prune; n];
+                        end
+                        
                     end
-                    
                 end
+                
+                % prune leaves
+                obj.pruneLeaves(leaves_to_prune);
+                
             end
             
         end
         
-        % pruning a leaf
-        function pruneLeaf(obj, n)
-            % blacklist this child for it's parent node and toss it out
-            obj.all_nodes{n}.prune();
-            obj.all_nodes{n} = [];
+        % prune a batch of leaves
+        function pruneLeaves(obj, leaf_idxs)
+            % prune leaf
+            for i=1:length(leaf_idxs)
+                obj.all_nodes{ leaf_idxs(i) }.prune();
+            end
+            % remove leaf from object list
+            obj.all_nodes(leaf_idxs) = [];
         end
         
         % PLOTTING

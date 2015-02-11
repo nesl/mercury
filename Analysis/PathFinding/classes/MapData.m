@@ -104,6 +104,15 @@ classdef MapData < handle
             segs = obj.endNodePairs;
         end
         
+        function lines = getAllSegLatLng(obj)
+            lines = {};
+            segs = obj.getAllSegments();
+            for sidx=1:length(segs)
+                latlng = obj.getSegLatLng(segs(sidx,:));
+                lines = [lines; {latlng}];
+            end
+        end
+        
         function N = getNeighbors(obj, nidx)
             N =  obj.node_neighbors{nidx};
         end

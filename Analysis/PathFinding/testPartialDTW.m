@@ -45,26 +45,29 @@ elev_est_full = elev_est_full(:,2);
 delta = elev_map_full(1) - elev_est_full(1);
 elev_est_full = elev_est_full + delta;
 
-% plot(elev_map_full);
-% hold on;
-% plot(elev_est_full,'r');
+plot(elev_map_full);
+hold on;
+plot(elev_est_full,'r');
 
+figure();
 
 costs = [];
 
-for L=1:1:length(elev_map_full)
+for L=1:5:length(elev_map_full)
     partial = elev_map_full(1:L);
     
     cost = DTW_greedy(elev_est_full, partial);
     
     costs = [costs; cost];
     
-    plot(elev_est_full);
-    hold on;
-    plot(partial,'r','LineWidth',2);
-    pause()
+%     plot(elev_est_full);
+%     hold on;
+%     plot(partial,'r','LineWidth',2);
     
     fprintf('L = %d / %d, score = %.2f\n', L, length(elev_map_full), cost);
+    
+    %pause()
+    
     
 end
 

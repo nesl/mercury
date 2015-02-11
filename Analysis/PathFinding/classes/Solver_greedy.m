@@ -9,30 +9,28 @@ classdef Solver_greedy < handle
         map_data;
         sensor_data;
         
-        % elevations from barometer
-        elevFromBaro;
-        
-        % output result
-        res_traces;  % which is always sorted
-                     % a trace includes .rawPath (step; node_idx columns)
-                     %                  .dtwScore (sorted by this)
-                     
         % output settings
         max_results = 20;
         outputFilePath;
         
-        % greedy solver parameters;
-        % trees will prune branches not in the X'th percentile, and the
-        % entire solver will prune trees not within the Y'th percentile.
-        PRUNE_PERCENTILE_TREE   = 0.90;
-        PRUNE_PERCENTILE_BRANCH = 0.90;
+        % solver objects
+        graph_explorers = {};
+        
+        % pruning rules
+        PRUNE_RATE = 0.20;
+        
+        % debugging options
+        DBG = false;
+        
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_greedy(map_data, sensor_data) 
+        function obj = Solver_greedy(map_data, sensor_data, debug)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
+            obj.DBG = debug;
+            
         end
         
         % OUTPUT SETTINGS
@@ -46,7 +44,93 @@ classdef Solver_greedy < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
-            % TODO!!!!!
+            
+            if obj.DBG
+                figure();
+            end
+            
+            % --- for each node, create a GraphExplorer ---
+            num_nodes = obj.map_data.getNumNodes();
+            for n=1:num_nodes
+                obj.graph_explorers = [obj.graph_explorers;
+                    {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+            end
+            
+            % --- search for realistic paths and prune ---
+            PRUNE_DELAY = 1;
+            time_till_prune = PRUNE_DELAY;
+            
+            for iter=1:100
+                fprintf('Iteration %d\n', iter);
+                fprintf('    Starting Explorers: %d\n', length(obj.graph_explorers));
+                explorer_costs = zeros(size(obj.graph_explorers));
+                
+                for e=1:length(obj.graph_explorers)
+                    fprintf('           > Explorer %d/%d\n', e, length(obj.graph_explorers));
+                    % explore new nodes
+                    obj.graph_explorers{e}.exploreNewNodes();
+                    % prune bad paths
+                    obj.graph_explorers{e}.prunePaths();
+                    % store explorer costs
+                    explorer_costs(e) = obj.graph_explorers{e}.cost;
+                end
+                
+                time_till_prune = time_till_prune - 1;
+                if time_till_prune == 0
+                    time_till_prune = PRUNE_DELAY;
+                    % get rid of graph explorers that aren't doing well
+                    sorted_costs = sort(explorer_costs);
+                    thresh_idx = max(1, round(obj.PRUNE_RATE*length(obj.graph_explorers)) );
+                    threshold = sorted_costs( thresh_idx );
+                    
+                    explorers_to_remove = [];
+                    for e=1:length(obj.graph_explorers)
+                        if obj.graph_explorers{e}.cost > threshold
+                            % remove this explorer!
+                            explorers_to_remove = [explorers_to_remove; e];
+                        end
+                    end
+                    % batch explorer remove
+                    obj.graph_explorers(explorers_to_remove) = [];
+                    
+                end
+                
+                % PLOT DEBUGGING
+                if obj.DBG
+                    % clear plot
+                    hold off;
+                    
+                    % plot map
+                    map_lines = obj.map_data.getAllSegLatLng();
+                    for s=1:length(map_lines)
+                        latlng = map_lines{s};
+                        plot(latlng(:,2), latlng(:,1), 'Color', [0.8 0.8 0.8]);
+                        hold on;
+                    end
+                    
+                    % plot everything
+                    for e=1:length(obj.graph_explorers)
+                        [paths,scores] = obj.graph_explorers{e}.getAllPathLatLng();
+                        for p=1:length(paths);
+                            path = paths{p};
+                            score = scores(p);
+
+                            % long, lat
+                            plot(path(:,2), path(:,1), 'Color', obj.graph_explorers{e}.color, 'LineWidth',2);
+                            hold on;
+                        end
+                    end
+                    
+                end
+                
+                % pause so we can see plot
+                pause(0.1);
+                
+                
+                
+                
+            end
+            
             
             
         end
@@ -72,7 +156,7 @@ classdef Solver_greedy < handle
                 dtwIdxBaro2Map = dtw_find_path( elevMapSeg, elevBaroSeg );
                 latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
             end
-
+            
             %latlngs = [ latlngs; obj.map_data.nodeIdxToLatLng( rawPath(end, 2) ) ];
         end
         

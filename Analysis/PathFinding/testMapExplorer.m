@@ -61,27 +61,32 @@ for i=1:100
     end
     
     % plot everything
-    paths = e.getAllPathLatLng();
+    [paths,scores] = e.getAllPathLatLng();
+    cspace = autumn(length(paths));
     for p=1:length(paths);
         path = paths{p};
+        score = scores(p);
+        if score == min(scores)
+            color = 'm';
+            width = 4;
+        else
+            color = cspace(p,:);
+            width = 2;
+        end
         % long, lat
-        plot(path(:,2), path(:,1), 'r');
+        plot(path(:,2), path(:,1), 'Color', color, 'LineWidth',width);
         hold on;
     end
     
-    % plot best path
-    best = e.getBestPathLatLng();
-    plot(best(:,2), best(:,1), 'g', 'LineWidth',2);
     
-    pause(0.1);
+    pause();
     
     % clear plot
     hold off;
 end
 
 
-
-
+    
 
 
 

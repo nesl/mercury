@@ -25,6 +25,12 @@ costMatrix = (repmat(partial, 1, num_cols) - repmat(template', num_rows, 1)) .^ 
 %% Find shortest path using dynamic programming
 [~, ~, Costs] = dp(costMatrix);
 
+% First, if the partial is too small, just set the cost to be 0 (bad match)
+if length(partial) == 1
+    greedy_cost = 0;
+    return;
+end
+
 % the greedy (partial) cost is the minimum cost solution that matches up to
 % SOME point of the template, not necessarily the end of the template.
 % However, if we don't reward longer matches somehow, we'll end up with
@@ -36,11 +42,25 @@ costMatrix = (repmat(partial, 1, num_cols) - repmat(template', num_rows, 1)) .^ 
 % cost/( length^e )
 
 % where the exponent 'e' is a design variable.  Something between 0 and 1?
-EXP = 1;
+EXP = 1.5;
 match_costs = Costs(end,:);
 lengths = 1:size(Costs,2);
-length_weights = 1./( lengths.^EXP );
-greedy_cost = min( match_costs.*length_weights );
+length_weights = -lengths.^EXP;
+greedy_cost = min( length_weights./match_costs );
 
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -21,6 +21,8 @@ classdef GraphExplorer < handle
         elevation_offset = 0;
         % keep track of nodes
         all_nodes = {};
+        % color for plotting and debugging
+        color = [];
     end
     
     methods
@@ -40,6 +42,9 @@ classdef GraphExplorer < handle
             % calculate the elevation offset required to make the map and
             % estimated elevations begin at the same height.
             obj.elevation_offset = obj.map.getNodeIdxElev(root_idx) - obj.sensor.getElevationStart();
+            
+            % random color for plotting :)
+            obj.color = rand(1,3);
         end
         
         % EXPLORING NEW NODES
@@ -168,8 +173,9 @@ classdef GraphExplorer < handle
         end
         
         % PLOTTING
-        function paths = getAllPathLatLng(obj)
+        function [paths,scores] = getAllPathLatLng(obj)
             paths = {};
+            scores = [];
             % add paths to all leaves
             for n=1:length(obj.all_nodes)
                 if obj.all_nodes{n}.isLeaf()
@@ -179,30 +185,11 @@ classdef GraphExplorer < handle
                     path_latlng = obj.map.getPathLatLng(path_idxs);
                     % append to array
                     paths = [paths; path_latlng];
+                    scores = [scores; obj.all_nodes{n}.path_cost];
                 end
             end
         end
-        
-        function path = getBestPathLatLng(obj)
-            path = [];
-            % add paths to all leaves
-            for n=1:length(obj.all_nodes)
-                if obj.all_nodes{n}.isLeaf()
-                    % is this the best path?
-                    if obj.all_nodes{n}.path_cost == obj.cost
-                        % get path of indices
-                        path_idxs = obj.all_nodes{n}.getPath();
-                        % convert indices to lat/lng
-                        path_latlng = obj.map.getPathLatLng(path_idxs);
-                        % append to array
-                        path = path_latlng;
-                        return;
-                    end
-                end
-            end
-        end
-        
-        
+
     end
     
 end

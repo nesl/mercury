@@ -26,11 +26,16 @@ classdef GraphNode < handle
         function obj = GraphNode(parent, nidx)
             obj.parent = parent;
             obj.node_idx = nidx;
-            if ~isnan(parent)
+            if ~isempty(parent)
                 obj.path = [parent.path; nidx];
             else
                 obj.path = nidx;
             end
+        end
+        
+        % get the path
+        function p = getPath(obj)
+            p = obj.path;
         end
         
         % is this a leaf?
@@ -51,10 +56,12 @@ classdef GraphNode < handle
         
         % blacklist a child of this node
         function blacklist(obj, child_idx)
-            if iskey(obj.map_idx2child, child_idx)
+            if isKey(obj.map_idx2child, child_idx)
                 % blacklist the child node
                 obj.blacklist_nodes = [obj.blacklist_nodes; child_idx];
                 % remove the child
+                %    never "delete" the child object, or the map idx2child
+                %    will be wrong and need to be fixed! so we just clear it.
                 obj.children{ obj.map_idx2child(child_idx) } = [];
                 % remove the dictionary entry
                 remove(obj.map_idx2child, child_idx);
@@ -67,7 +74,7 @@ classdef GraphNode < handle
         end
         
         % set this node as a dead end (all children blacklisted)
-        function setDeadend(obj)
+        function obj = setDeadend(obj)
             obj.deadend = true;
         end
         
@@ -95,18 +102,18 @@ classdef GraphNode < handle
 
         
         % add children to this node
-        function  obj = addChild(child_obj)
+        function  obj = addChild(obj, child_obj)
             child_idx = child_obj.node_idx;
             % add as a child if it's not one already
             if ~isKey(obj.map_idx2child, child_idx)
                 % new child
-                obj.children = [obj.children; child_obj];
+                obj.children = [obj.children; {child_obj}];
                 obj.map_idx2child(child_idx) = length(obj.children);
             end
         end
         
         % remove a child
-        function obj = removeChild(child_obj)
+        function obj = removeChild(obj, child_obj)
             child_idx = child_obj.node_idx;
             if isKey(obj.map_idx2child, child_idx)
                 % remove from cell array of children

@@ -133,7 +133,7 @@ classdef MapData < handle
         % get lat/lng for solely one node
         function latlng = getNodeIdxLatLng(obj, idx)
             if numel(idx) > 1
-                warning('receive multiple indexs in getNodeIdxElev(). Redirect to getNodeIdxsElev()');
+                warning('receive multiple indexs in getNodeIdxElev(). Redirect to getNodeIdxsLatLng()');
             end
             latlng = obj.getNodeIdxsLatLng(idx);
         end
@@ -204,9 +204,13 @@ classdef MapData < handle
         % node idxs in a list
         function dElevs = getPathElevDeriv(obj, nidxList)
             elevs = obj.getPathElev(nidxList);
-            % filter elevations and take derivative
-            [b,a] = butter(2, 0.1);
-            fElevs = filtfilt(b,a,elevs);
+            % filter elevations and take derivative (can't filter <= 6)
+            if length(elevs) > 6
+                [b,a] = butter(2, 0.1);
+                fElevs = filtfilt(b,a,elevs);
+            else
+                fElevs = elevs;
+            end
             SCALE = 20;
             dElevs = SCALE*diff(fElevs);
         end

@@ -35,19 +35,9 @@ classdef GraphExplorer < handle
             end
             obj.PRUNE_FACTOR_BRANCH = pruning;
             
-            % create root node
-            obj.root = GraphNode(nan, root_idx);
-            obj.all_nodes = [obj.all_nodes; obj.root];
-        end
-        
-        % TAKE ONE STEP / ITERATION
-        function step(obj)
-           % explore new nodes
-           obj.exploreNewNodes();
-           
-           % prune bad branches
-           obj.prunePaths();
-           
+            % create root node (empty parent)
+            obj.root = GraphNode([], root_idx);
+            obj.all_nodes = [obj.all_nodes; {obj.root}];
         end
         
         % EXPLORING NEW NODES
@@ -79,7 +69,9 @@ classdef GraphExplorer < handle
                             % and calculate the cost of traveling to this
                             % new leaf node
                             new_path_cost = obj.calculatePathCost(child_node);
-                            child_node.cost = new_path_cost;
+                            child_node.path_cost = new_path_cost;
+                            % add to list of all nodes
+                            obj.all_nodes = [obj.all_nodes; {child_node}];
                         end
                     end
                     
@@ -100,9 +92,11 @@ classdef GraphExplorer < handle
             % get elevation
             mapElevationChanges = obj.map.getPathElevDeriv(path_nodes);
             estElevationChanges = obj.sensor.getElevationDeriv();
+            % ignore timestamps
+            estElevationChanges = estElevationChanges(:,2);
             
-            % get greedy elevation cost
-            [~,~,cost_elev] = MSE_greedy(estElevationChanges, mapElevationChanges); 
+            % get greedy elevation cost (template, partial)
+            cost_elev = DTW_greedy(estElevationChanges, mapElevationChanges); 
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see
@@ -152,9 +146,25 @@ classdef GraphExplorer < handle
         
         % pruning a leaf
         function pruneLeaf(obj, n)
-            % blacklist this child for it's parent node
+            % blacklist this child for it's parent node and toss it out
             obj.all_nodes{n}.prune();
             obj.all_nodes{n} = [];
+        end
+        
+        % PLOTTING
+        function lines = getLinesToPlot(obj)
+            lines = {};
+            % add paths to all leaves
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    % get path of indices
+                    path_idxs = obj.all_nodes{n}.getPath();
+                    % convert indices to lat/lng
+                    path_latlng = obj.map.getPathLatLng(path_idxs);
+                    % append to array
+                    lines = [lines; path_latlng];
+                end
+            end
         end
         
         

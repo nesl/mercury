@@ -134,6 +134,11 @@ classdef SensorData < handle
         end
 
         % ACCESSOR METHODS
+        function start = getElevationStart(obj)
+            elev_all = obj.getElevation();
+            start = median(elev_all(1:5));
+        end
+        
         function elev = getElevation(obj)
             baro = obj.getBaro();
             elev = [baro(:,1), (baro(:,2) - obj.PRESSURE_SEALEVEL)*obj.PRESSURE_M2HPA];

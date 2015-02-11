@@ -5,25 +5,20 @@ classdef GraphExplorer < handle
     properties
         % "parent" map object
         map;
-        
         % sensor data object
         sensor;
-        
         % branch pruning, 0-1
         PRUNE_FACTOR_BRANCH = 0;
-        
         % branch loop reduction
         MIN_BRANCH_LOOP_LENGTH = 10;
-        
         % minimum number of leaves to keep
         MIN_LEAVES = 4;
-    
         % score of best branch
         cost = inf;
-        
         % root node
         root;
-        
+        % elevation offset
+        elevation_offset = 0;
         % keep track of nodes
         all_nodes = {};
     end
@@ -41,6 +36,10 @@ classdef GraphExplorer < handle
             % create root node (empty parent)
             obj.root = GraphNode([], root_idx);
             obj.all_nodes = [obj.all_nodes; {obj.root}];
+            
+            % calculate the elevation offset required to make the map and
+            % estimated elevations begin at the same height.
+            obj.elevation_offset = obj.map.getNodeIdxElev(root_idx) - obj.sensor.getElevationStart();
         end
         
         % EXPLORING NEW NODES
@@ -93,10 +92,10 @@ classdef GraphExplorer < handle
             path_nodes = leaf_node.path;
             
             % get elevation
-            mapElevationChanges = obj.map.getPathElevDeriv(path_nodes);
-            estElevationChanges = obj.sensor.getElevationDeriv();
-            % ignore timestamps
-            estElevationChanges = estElevationChanges(:,2);
+            mapElevations = obj.map.getPathElev(path_nodes);
+            estElevations = obj.sensor.getElevation();
+            % ignore timestamps and add offset
+            estElevations = estElevations(:,2) + obj.elevation_offset;
             
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevationChanges, mapElevationChanges); 

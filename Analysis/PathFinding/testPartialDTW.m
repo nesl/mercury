@@ -1,43 +1,78 @@
 %% Housekeeping
 clc; close all; clear all;
 
-%% Fake signals
-t = 0:0.05:10;
-s1 = sin(t).^2 + 2*cos(0.5*t + 0.2);
-s2 = -cos(t) - sin(0.2*t) - t + 0.1*t.^2 - 3;
+%% Input files
+% case 1:
+mapfile =    '../../Data/EleSegmentSets/ucla_small/';
+sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
+outputWebFile = '../../Data/resultSets/case1_ucla_west_results.rset';
+% also seaPressure, pressureScalar, range
 
-%% Partial DTW
-L_arr = [];
-c2_arr = [];
-c1_arr = [];
+%% Ensure library paths are added
+add_paths;
 
+%% Create SensorData object
+sensor_data = SensorData(sensorfile);
+% test-specific settings
+sensor_data.setSeaPressure(1025);
+sensor_data.setPressureScalar(-8.15);
+sensor_data.setAbsoluteSegment(1418102835, 1418103643);
 
-for L = 10:5:200
-    p1 = s1(1:L);
-    p1 = p1 + 0.05*randn(size(p1)) - 0;
-    p1 = imresize(p1, [1 round(L*1.5)]);
-    p2 = 5+ s2(1:L);
-    p2 = p2 + 0.05*randn(size(p2));
-    p2 = imresize(p2, [1 round(L*1.5)]);
+%% Create MapData object
+map_data = MapData(mapfile);
+map_lines = map_data.getAllSegLatLng();
+
+% correct path
+true_idxs = [
+72
+70
+49
+46
+50
+254
+251
+248
+247
+250
+];
     
-%     plot(s1);
-%     hold on;
-%     plot(p1,'r','LineWidth',3);
-%     plot(p2,'m--','LineWidth',2);
-%     hold off;
-%     figure()
-        
-    c2 = DTW_greedy(s1,p2);
-    c1 = DTW_greedy(s1,p1);
-    % plot(c1(end,:),'r');
-    % hold on;
-    % plot(c2(end,:),'m');
-    
-    c2_arr = [c2_arr; c2];
-    c1_arr = [c1_arr; c1];
-    L_arr = [L_arr; L];
-end
+%% Full map elevation
+elev_map_full = map_data.getPathElev(true_idxs);
 
-plot(L_arr, c1_arr, 'r');
+%% Full sensor elevation
+elev_est_full = sensor_data.getElevation();
+elev_est_full = elev_est_full(:,2);
+delta = elev_est_full(1) - elev_map_full(1);
+
+plot(elev_map_full + delta);
 hold on;
-plot(L_arr, c2_arr, 'm--');
+plot(elev_est_full,'r');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

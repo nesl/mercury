@@ -37,38 +37,51 @@ true_idxs = [
     ];
 
 bad_idxs = [
-    
+    344
+    336
+    257
+    3
+    1
 ];
 
 %% Full map elevation
-elev_map_full = map_data.getPathElev(true_idxs);
+true_elev_map = map_data.getPathElev(true_idxs);
+bad_elev_map = map_data.getPathElev(bad_idxs);
 
 %% Full sensor elevation
 elev_est_full = sensor_data.getElevation();
 elev_est_full = elev_est_full(:,2);
-delta = elev_map_full(1) - elev_est_full(1);
-elev_est_full = elev_est_full + delta;
+delta_good = true_elev_map(1) - elev_est_full(1);
+delta_bad = bad_elev_map(1) - elev_est_full(1);
+good_elev_est = elev_est_full + delta_good;
+bad_elev_est = elev_est_full + delta_bad;
 
-plot(elev_map_full);
-hold on;
-plot(elev_est_full,'r');
+% plot(true_elev_map, 'b');
+% hold on;
+% plot(bad_elev_map,'r');
+% plot(good_elev_est,'k');
+
 
 figure();
 
-costs = [];
+costs_g = [];
+costs_b = [];
 
-for L=1:5:length(elev_map_full)
-    partial = elev_map_full(1:L);
+for L=1:5:100
+    partial_good = true_elev_map(1: round(L/100*length(true_elev_map)) );
+    partial_bad = bad_elev_map(1: round(L/100*length(bad_elev_map)) );
     
-    cost = DTW_greedy(elev_est_full, partial);
+    cg = DTW_greedy(elev_est_full, partial_good);
+    cb = DTW_greedy(elev_est_full, partial_bad);
     
-    costs = [costs; cost];
+    costs_g = [costs_g; cg];
+    costs_b = [costs_b; cb];
     
 %     plot(elev_est_full);
 %     hold on;
 %     plot(partial,'r','LineWidth',2);
     
-    fprintf('L = %d / %d, score = %.2f\n', L, length(elev_map_full), cost);
+    fprintf('L = %d / %d\n', L, 100);
     
     %pause()
     
@@ -76,7 +89,9 @@ for L=1:5:length(elev_map_full)
 end
 
 
-plot(costs);
+plot(costs_g, 'b');
+hold on;
+plot(costs_b, 'r');
 
 
 

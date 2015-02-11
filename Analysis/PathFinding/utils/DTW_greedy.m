@@ -1,6 +1,6 @@
 function [ greedy_cost ] = DTW_greedy( template, partial )
-%DTW_GREEDY Summary of this function goes here
-%   Detailed explanation goes here
+% TEMPLATE = sensor
+% PARTIAL = segment of the map
 
 %% Ensure inputs are column vectors
 if ~iscolumn(template)
@@ -25,11 +25,6 @@ costMatrix = (repmat(partial, 1, num_cols) - repmat(template', num_rows, 1)) .^ 
 %% Find shortest path using dynamic programming
 [~, ~, Costs] = dp(costMatrix);
 
-% First, if the partial is too small, just set the cost to be 0 (bad match)
-if length(partial) == 1
-    greedy_cost = 0;
-    return;
-end
 
 % the greedy (partial) cost is the minimum cost solution that matches up to
 % SOME point of the template, not necessarily the end of the template.
@@ -37,16 +32,24 @@ end
 % trivially short solutions and our solver won't want to explore new paths.
 
 % Therefore, the GREEDY cost should be the combination of cost and length
-% that minimizes an expression like the following:
 
-% cost/( length^e )
+% what is the entropy of this partial candidate? if we have a good match
+% with a higher entropy, that's more significant than a good match with a
+% low entropy.  
+ent = entropy(partial./max(partial));
 
-% where the exponent 'e' is a design variable.  Something between 0 and 1?
-EXP = 1.0;
+% costs to various template segments
 match_costs = Costs(end,:);
+
+% length weights
 lengths = 1:size(Costs,2);
-length_weights = -lengths.^EXP;
-greedy_cost = min( length_weights./match_costs );
+MIN_PARTIAL = 10;
+length_weights = max( (lengths - MIN_PARTIAL), 0).^1.5;
+
+% final greedy cost
+[greedy_cost,idx] = min( -length_weights./(match_costs+1) );
+
+%fprintf(' %.2f * %d / %.5f = %.2f\n', ent, idx, match_costs(idx)+1, greedy_cost);
 
 end
 

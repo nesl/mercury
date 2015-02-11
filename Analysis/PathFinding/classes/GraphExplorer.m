@@ -12,7 +12,7 @@ classdef GraphExplorer < handle
         % branch loop reduction
         MIN_BRANCH_LOOP_LENGTH = 5;
         % minimum number of leaves to keep
-        MIN_LEAVES = 4;
+        MAX_LEAVES = 6;
         % score of best branch
         cost = inf;
         % root node
@@ -104,6 +104,15 @@ classdef GraphExplorer < handle
             
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
+             
+%             close all;
+%             plot(estElevations,'k');
+%             hold on;
+%             plot(mapElevations,'r');
+%             title(['Node ID: ' num2str(obj.root.node_idx)]);
+%             fprintf('score = %.2f\n', cost_elev);
+%             pause();
+            
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see
@@ -131,7 +140,6 @@ classdef GraphExplorer < handle
             end
             
             % how many leaves can we keep? log2( # leaves ), no fewer than 4
-            num_leaves_kept = max( obj.MIN_LEAVES, ceil(log2(length(path_costs))) );
             sorted_costs = sort(path_costs);
             
             % what's our threshold for tossing out bad paths?
@@ -139,7 +147,7 @@ classdef GraphExplorer < handle
             obj.cost = sorted_costs(1);
             
             % do we have to prune? do we have more than we're keeping?
-            if length(path_costs) > num_leaves_kept
+            if length(path_costs) > obj.MAX_LEAVES
                 
                 % array of leaves to be pruned
                 leaves_to_prune = [];
@@ -148,7 +156,7 @@ classdef GraphExplorer < handle
                     if obj.all_nodes{n}.isLeaf()
                         
                         % if it's too big, throw it out!
-                        if obj.all_nodes{n}.path_cost > sorted_costs(num_leaves_kept)
+                        if obj.all_nodes{n}.path_cost > sorted_costs(obj.MAX_LEAVES)
                             leaves_to_prune = [leaves_to_prune; n];
                         end
                         

@@ -40,7 +40,8 @@ map_lines = map_data.getAllSegLatLng();
 %    162   250
 
 %% Create a single map explorer
-e = GraphExplorer(map_data, sensor_data, 72, 0.5);
+e_good = GraphExplorer(map_data, sensor_data, 72, 0.5);
+e_bad  = GraphExplorer(map_data, sensor_data, 259, 0.5);
 
 %% Explore and plot
 figure();
@@ -49,40 +50,20 @@ for i=1:100
     fprintf('Iteration: %d\n', i);
     
     % explore
-    e.exploreNewNodes();
+    e_good.exploreNewNodes();
+    e_bad.exploreNewNodes();
     % prune
-    e.prunePaths();
+    e_good.prunePaths();
+    e_bad.prunePaths();
     
-    % plot map
-    for s=1:length(map_lines)
-        latlng = map_lines{s};
-        plot(latlng(:,2), latlng(:,1), 'Color', [0.8 0.8 0.8]);
-        hold on;
-    end
-    
-    % plot everything
-    [paths,scores] = e.getAllPathLatLng();
-    cspace = autumn(length(paths));
-    for p=1:length(paths);
-        path = paths{p};
-        score = scores(p);
-        if score == min(scores)
-            color = 'm';
-            width = 4;
-        else
-            color = cspace(p,:);
-            width = 2;
-        end
-        % long, lat
-        plot(path(:,2), path(:,1), 'Color', color, 'LineWidth',width);
-        hold on;
-    end
+    % best cost score
+    fprintf('good = %.2f, bad = %.2f\n', e_good.cost, e_bad.cost);
     
     
-    pause();
+    %pause();
     
     % clear plot
-    hold off;
+    %hold off;
 end
 
 

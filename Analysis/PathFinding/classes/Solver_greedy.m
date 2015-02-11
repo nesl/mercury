@@ -125,7 +125,7 @@ classdef Solver_greedy < handle
                 end
                 
                 % pause so we can see plot
-                pause(0.1);
+                pause(0.5);
                 
                 
                 

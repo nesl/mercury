@@ -1,4 +1,4 @@
-var WebSocketServer = require("nodejs-websocket").createServer;
+var WebSocketServer = require("ws").Server;
 var http = require("http");
 var fs = require('fs');
 var path = require("path");

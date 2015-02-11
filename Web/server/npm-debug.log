@@ -1,0 +1,65 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/nodejs',
+1 verbose cli   '/usr/bin/npm',
+1 verbose cli   'install',
+1 verbose cli   'ws',
+1 verbose cli   '--binroot',
+1 verbose cli   '/usr/bin/' ]
+2 info using npm@1.3.10
+3 info using node@v0.10.25
+4 verbose cache add [ 'ws', null ]
+5 verbose cache add name=undefined spec="ws" args=["ws",null]
+6 verbose parsed url { protocol: null,
+6 verbose parsed url   slashes: null,
+6 verbose parsed url   auth: null,
+6 verbose parsed url   host: null,
+6 verbose parsed url   port: null,
+6 verbose parsed url   hostname: null,
+6 verbose parsed url   hash: null,
+6 verbose parsed url   search: null,
+6 verbose parsed url   query: null,
+6 verbose parsed url   pathname: 'ws',
+6 verbose parsed url   path: 'ws',
+6 verbose parsed url   href: 'ws' }
+7 verbose cache add [ '/usr/bin/', null ]
+8 verbose cache add name=undefined spec="/usr/bin/" args=["/usr/bin/",null]
+9 verbose parsed url { protocol: null,
+9 verbose parsed url   slashes: null,
+9 verbose parsed url   auth: null,
+9 verbose parsed url   host: null,
+9 verbose parsed url   port: null,
+9 verbose parsed url   hostname: null,
+9 verbose parsed url   hash: null,
+9 verbose parsed url   search: null,
+9 verbose parsed url   query: null,
+9 verbose parsed url   pathname: '/usr/bin/',
+9 verbose parsed url   path: '/usr/bin/',
+9 verbose parsed url   href: '/usr/bin/' }
+10 silly lockFile 1457b75d-ws ws
+11 verbose lock ws /home/paul/.npm/1457b75d-ws.lock
+12 silly lockFile c1539f54-usr-bin /usr/bin/
+13 verbose lock /usr/bin/ /home/paul/.npm/c1539f54-usr-bin.lock
+14 silly lockFile 1457b75d-ws ws
+15 silly lockFile 1457b75d-ws ws
+16 verbose addNamed [ 'ws', '' ]
+17 verbose addNamed [ null, '*' ]
+18 silly lockFile e88fe629-ws ws@
+19 verbose lock ws@ /home/paul/.npm/e88fe629-ws.lock
+20 silly lockFile c1539f54-usr-bin /usr/bin/
+21 silly lockFile c1539f54-usr-bin /usr/bin/
+22 silly addNameRange { name: 'ws', range: '*', hasData: false }
+23 error addLocal Could not install /usr/bin/
+24 error Error: ENOENT, open '/usr/bin/package.json'
+25 error If you need help, you may report this log at:
+25 error     <http://github.com/isaacs/npm/issues>
+25 error or email it to:
+25 error     <npm-@googlegroups.com>
+26 error System Linux 3.13.0-37-generic
+27 error command "/usr/bin/nodejs" "/usr/bin/npm" "install" "ws" "--binroot" "/usr/bin/"
+28 error cwd /home/paul/Workspace/mercury/Web/server
+29 error node -v v0.10.25
+30 error npm -v 1.3.10
+31 error path /usr/bin/package.json
+32 error code ENOENT
+33 error errno 34
+34 verbose exit [ 34, true ]

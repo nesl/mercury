@@ -14,6 +14,7 @@ classdef Solver_greedy < handle
         outputFilePath;
         
         % solver objects
+        use_absolute_elevation = false;
         graph_explorers = {};
         
         % pruning rules
@@ -31,6 +32,11 @@ classdef Solver_greedy < handle
             obj.sensor_data = sensor_data;
             obj.DBG = debug;
             
+        end
+        
+        % ABSOLUTE ELEVATION OR RELATIVE
+        function useAbsoluteElevation(obj)
+            obj.use_absolute_elevation = true;
         end
         
         % OUTPUT SETTINGS
@@ -54,6 +60,11 @@ classdef Solver_greedy < handle
             for n=1:num_nodes
                 obj.graph_explorers = [obj.graph_explorers;
                     {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+                
+                % absolute or relative elvations
+                if obj.use_absolute_elevation
+                    obj.graph_explorers{n}.useAbsoluteElevation();
+                end
             end
             
             % --- search for realistic paths and prune ---
@@ -224,7 +235,6 @@ classdef Solver_greedy < handle
             for i = 1:size(rawPath, 1)
                 latlng = obj.map_data.nodeIdxToLatLng(rawPath(i,2));
                 plot(latlng(1), latlng(2), 'ob');
-                latlng
             end
             legend(legendTexts);
         end

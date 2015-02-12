@@ -18,6 +18,7 @@ classdef GraphExplorer < handle
         % root node
         root;
         % elevation offset
+        use_absolute_elevation = false;
         elevation_offset = 0;
         % keep track of nodes
         all_nodes = {};
@@ -45,6 +46,11 @@ classdef GraphExplorer < handle
             
             % random color for plotting :)
             obj.color = rand(1,3);
+        end
+        
+        % USE ABSOLUTE ELEVATION
+        function useAbsoluteElevation(obj)
+            obj.use_absolute_elevation = true;
         end
         
         % EXPLORING NEW NODES
@@ -100,7 +106,11 @@ classdef GraphExplorer < handle
             mapElevations = obj.map.getPathElev(path_nodes);
             estElevations = obj.sensor.getElevation();
             % ignore timestamps and add offset
-            estElevations = estElevations(:,2) + obj.elevation_offset;
+            if obj.use_absolute_elevation
+                estElevations = estElevations(:,2);
+            else
+                estElevations = estElevations(:,2) + obj.elevation_offset;
+            end
             
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
@@ -112,7 +122,7 @@ classdef GraphExplorer < handle
 %             title(['Node ID: ' num2str(obj.root.node_idx)]);
 %             fprintf('score = %.2f\n', cost_elev);
 %             pause();
-            
+%             
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see

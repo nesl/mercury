@@ -30,6 +30,7 @@ map_lines = map_data.getAllSegLatLng();
 %% Create Solver Object
 DEBUG = true;
 solver = Solver_greedy(map_data, sensor_data, DEBUG);
+solver.useAbsoluteElevation();
 
 %% Solve !
 solver.solve();

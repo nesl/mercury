@@ -18,7 +18,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.50;
+        PRUNE_RATE = 75;
         
         % debugging options
         DBG = false;
@@ -73,38 +73,43 @@ classdef Solver_greedy < handle
             
             for iter=1:100
                 fprintf('Iteration %d\n', iter);
-                fprintf('    Starting Explorers: %d\n', length(obj.graph_explorers));
-                explorer_costs = zeros(size(obj.graph_explorers));
                 
+                % --- explore and get path costs ---
+                all_path_costs = [];
                 for e=1:length(obj.graph_explorers)
-                    fprintf('           > Explorer %d/%d\n', e, length(obj.graph_explorers));
+                    fprintf('Explorer %d/%d\n', e, length(obj.graph_explorers));
                     % explore new nodes
                     obj.graph_explorers{e}.exploreNewNodes();
-                    % prune bad paths
-                    obj.graph_explorers{e}.prunePaths();
-                    % store explorer costs
-                    explorer_costs(e) = obj.graph_explorers{e}.cost;
+                    costs = obj.graph_explorers{e}.getPathCosts();
+                    all_path_costs = [all_path_costs; costs];
                 end
                 
-                time_till_prune = time_till_prune - 1;
-                if time_till_prune == 0
-                    time_till_prune = PRUNE_DELAY;
-                    % get rid of graph explorers that aren't doing well
-                    sorted_costs = sort(explorer_costs);
-                    thresh_idx = max(1, round(obj.PRUNE_RATE*length(obj.graph_explorers)) );
-                    threshold = sorted_costs( thresh_idx );
-                    
-                    explorers_to_remove = [];
-                    for e=1:length(obj.graph_explorers)
-                        if obj.graph_explorers{e}.cost > threshold
-                            % remove this explorer!
-                            explorers_to_remove = [explorers_to_remove; e];
-                        end
+                fprintf(' ------------ SUMMARY ----------- \n');
+                fprintf('    Explorers: %d \t Paths: %d\n', length(obj.graph_explorers), length(all_path_costs));
+
+                
+                % --- get threshold path cost ---
+                cost_thresh = prctile(all_path_costs, 100 - obj.PRUNE_RATE);
+                
+                % --- prune paths above the threshold ---
+                explorers_to_prune = [];
+                for e=1:length(obj.graph_explorers)
+                    % if the best cost of this explorer doesn't meet the
+                    % threshold, prune the whole thing.
+                    if obj.graph_explorers{e}.getBestCost() > cost_thresh
+                        explorers_to_prune = [explorers_to_prune; e];
+                    else
+                        obj.graph_explorers{e}.prunePathsWorseThan(cost_thresh);
                     end
-                    % batch explorer remove
-                    obj.graph_explorers(explorers_to_remove) = [];
-                    
                 end
+                obj.graph_explorers(explorers_to_prune) = [];
+                
+                % --- finish if less than max outputs ---
+                if length(all_path_costs)*(100 - obj.PRUNE_RATE) < obj.max_results
+                    fprintf(' SOLVER DONE!\n');
+                    return;
+                end
+                    
                 
                 % PLOT DEBUGGING
                 if obj.DBG

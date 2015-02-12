@@ -97,7 +97,7 @@ classdef GraphExplorer < handle
                 end
             end
         end
-        
+                
         % DETERMINE THE COST OF A GIVEN PATH
         function cost = calculatePathCost(obj, leaf_node)
             path_nodes = leaf_node.path;
@@ -137,8 +137,60 @@ classdef GraphExplorer < handle
             cost = cost_elev;
         end
         
+        % get explorer's best cost
+        function cost = getBestCost(obj)
+            costs = [];
+            
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    
+                    costs = [costs; obj.all_nodes{n}.path_cost];
+                    
+                end
+            end
+            
+            cost = min(costs);
+        end
         
-        function prunePaths(obj)
+        % get all path costs
+        function costs = getPathCosts(obj)
+            costs = [];
+            
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    
+                    costs = [costs; obj.all_nodes{n}.path_cost];
+                    
+                end
+            end
+
+        end
+        
+        % if the solver object wants to prune everything worse than a
+        % global threshold (not local as in auto), they'll use this
+        % function.
+        function prunePathsWorseThan(obj, thresh)
+            % array of leaves to be pruned
+            leaves_to_prune = [];
+            
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    
+                    % if it's too big, throw it out!
+                    if obj.all_nodes{n}.path_cost > thresh
+                        leaves_to_prune = [leaves_to_prune; n];
+                    end
+                    
+                end
+            end
+            
+            % prune leaves
+            obj.pruneLeaves(leaves_to_prune);
+        end
+        
+        % prune paths by looking at costs relative to this explorer,
+        % keeping at most MAX_LEAVES.
+        function autoPrunePaths(obj)
             % what are our candidate path costs right now?
             path_costs = [];
             path_idxs = [];

@@ -1,4 +1,4 @@
-classdef Solver_v1 < handle
+classdef Solver_greedy < handle
     %SOLVER does the following thing:
     %  1. Based on DTW information, it performs search/DP algorithm to find
     %     the most likely n paths
@@ -9,25 +9,28 @@ classdef Solver_v1 < handle
         map_data;
         sensor_data;
         
-        % elevations from barometer
-        elevFromBaro;
-        
-        % output result
-        res_traces;  % which is always sorted
-                     % a trace includes .rawPath (step; node_idx columns)
-                     %                  .dtwScore (sorted by this)
-                     
-        
         % output settings
         max_results = 20;
         outputFilePath;
+        
+        % solver objects
+        graph_explorers = {};
+        
+        % pruning rules
+        PRUNE_RATE = 0.50;
+        
+        % debugging options
+        DBG = false;
+        
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_v1(map_data, sensor_data)  % they are passed by reference
+        function obj = Solver_greedy(map_data, sensor_data, debug)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
+            obj.DBG = debug;
+            
         end
         
         % OUTPUT SETTINGS
@@ -41,57 +44,96 @@ classdef Solver_v1 < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
-            % all pair DTW
-            obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
-            obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
-            fprintf('finish calculating all pairs of dtw\n');
+            
+            if obj.DBG
+                figure();
+            end
+            
+            % --- for each node, create a GraphExplorer ---
+            num_nodes = obj.map_data.getNumNodes();
+            for n=1:num_nodes
+                obj.graph_explorers = [obj.graph_explorers;
+                    {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+            end
+            
+            % --- search for realistic paths and prune ---
+            PRUNE_DELAY = 1;
+            time_till_prune = PRUNE_DELAY;
+            
+            for iter=1:100
+                fprintf('Iteration %d\n', iter);
+                fprintf('    Starting Explorers: %d\n', length(obj.graph_explorers));
+                explorer_costs = zeros(size(obj.graph_explorers));
+                
+                for e=1:length(obj.graph_explorers)
+                    fprintf('           > Explorer %d/%d\n', e, length(obj.graph_explorers));
+                    % explore new nodes
+                    obj.graph_explorers{e}.exploreNewNodes();
+                    % prune bad paths
+                    obj.graph_explorers{e}.prunePaths();
+                    % store explorer costs
+                    explorer_costs(e) = obj.graph_explorers{e}.cost;
+                end
+                
+                time_till_prune = time_till_prune - 1;
+                if time_till_prune == 0
+                    time_till_prune = PRUNE_DELAY;
+                    % get rid of graph explorers that aren't doing well
+                    sorted_costs = sort(explorer_costs);
+                    thresh_idx = max(1, round(obj.PRUNE_RATE*length(obj.graph_explorers)) );
+                    threshold = sorted_costs( thresh_idx );
+                    
+                    explorers_to_remove = [];
+                    for e=1:length(obj.graph_explorers)
+                        if obj.graph_explorers{e}.cost > threshold
+                            % remove this explorer!
+                            explorers_to_remove = [explorers_to_remove; e];
+                        end
+                    end
+                    % batch explorer remove
+                    obj.graph_explorers(explorers_to_remove) = [];
+                    
+                end
+                
+                % PLOT DEBUGGING
+                if obj.DBG
+                    % clear plot
+                    hold off;
+                    
+                    % plot map
+                    map_lines = obj.map_data.getAllSegLatLng();
+                    for s=1:length(map_lines)
+                        latlng = map_lines{s};
+                        plot(latlng(:,2), latlng(:,1), 'Color', [0.8 0.8 0.8]);
+                        hold on;
+                    end
+                    
+                    % plot everything
+                    for e=1:length(obj.graph_explorers)
+                        [paths,scores] = obj.graph_explorers{e}.getAllPathLatLng();
+                        for p=1:length(paths);
+                            path = paths{p};
+                            score = scores(p);
 
-            % dp
-            numMapNodes = obj.map_data.getNumNodes();
-            numElevBaro = size(obj.elevFromBaro, 1);
-            dp = ones(numMapNodes, numElevBaro+1) * inf;  % dp(node idx, elev step)
-            dp(:,1) = 0;
-            from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
-            for i = 1:numElevBaro
-                for j = 1:numMapNodes
-                    neighbors = obj.map_data.getNeighbors(j);
-                    for k = 1:numel(neighbors)
-                        nn = neighbors(k);  % neighbor node
-                        dtwArr = obj.map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
-                        ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
-                        % ind spans the same range as <i to numElevBaro>
-                        % (ind + i) maps to range (i+1):(numElevBaro+1), 
-                        dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
-                        from(nn, i+ind, :) = repmat([j i], length(ind), 1);
+                            % long, lat
+                            plot(path(:,2), path(:,1), 'Color', obj.graph_explorers{e}.color, 'LineWidth',2);
+                            hold on;
+                        end
                     end
+                    
+                    
                 end
-                fprintf('%d\n', i)
+                
+                % pause so we can see plot
+                pause(0.5);
+                
+                
+                
+                
             end
             
-            % back tracking
-            obj.res_traces = [];
-            for i = 1:numMapNodes
-                if dp(i, numElevBaro+1) ~= inf
-                    clear tmp_trace
-                    tmp_trace.dtwScore = dp(i, numElevBaro+1);
-                    cNodeIdx = i;  % current node index
-                    cElevStep = numElevBaro+1;  % current elevation step
-                    tmp_trace.rawPath = [numElevBaro+1 i];
-                    while cElevStep ~= 1
-                        pNodeIdx = from(cNodeIdx, cElevStep, 1);  % previous node index
-                        pElevStep = from(cNodeIdx, cElevStep, 2);  % previous elevation step
-                        cNodeIdx = pNodeIdx;
-                        cElevStep = pElevStep;
-                        tmp_trace.rawPath = [ [ pElevStep pNodeIdx ] ; tmp_trace.rawPath];
-                    end
-                    obj.res_traces = [obj.res_traces tmp_trace];
-                end
-            end
             
-            % TODO: suppose to truncate the # of res_traces into
-            % max_results, but for development and debugging purposes, we
-            % didn't do that
-            obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
+            
         end
         
         % RETRIEVE PATHS
@@ -115,7 +157,7 @@ classdef Solver_v1 < handle
                 dtwIdxBaro2Map = dtw_find_path( elevMapSeg, elevBaroSeg );
                 latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
             end
-
+            
             %latlngs = [ latlngs; obj.map_data.nodeIdxToLatLng( rawPath(end, 2) ) ];
         end
         

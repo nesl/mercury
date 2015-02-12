@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-caseNo = 2;
+caseNo = 3;
 
 %% Inputs:
 
@@ -44,8 +44,8 @@ elseif caseNo == 3
     % Create SensorData object
     sensor_data = SensorData(sensorfile);
     % test-specific settings
-    sensor_data.setSeaPressure(1019.5);
-    sensor_data.setPressureScalar(-7.97);
+    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     % Create MapData object
@@ -73,32 +73,14 @@ return;
 %% test and insert the oracle path based on the true gps
 solver.forceInsertOraclePath();  
 
-%% tmp script for solver_v2 - explore the elevation difference between map nodes and both ends of barometer data
-beginElev = solver.elevFromBaro(1,2);
-endElev = solver.elevFromBaro(end,2);
-closeToBegin = find( abs( beginElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 2 )
-closeToEnd = find( abs( endElev - solver.map_data.getNodeIdxsElev(1:solver.map_data.num_nodes) ) <= 2 )
+%% test on coefficient of test case 3
+sensor_data = SensorData(sensorfile);
 
-%% tmp script for solver_v2 - find the true solution
-startEndLatLng = [ 34.06440998442042 -118.45083475112915    % for correct path
-    34.06352119394332 -118.45004081726074
-]
-idxa = solver.map_data.getNearestNodeIdx(startEndLatLng(1,:))
-idxb = solver.map_data.getNearestNodeIdx(startEndLatLng(2,:))
-numSol = numel(solver.res_traces)
-for i = 1:numSol
-    rawData = solver.getRawPath(i);
-    if rawData(1,2) == idxa && rawData(end,2) == idxb
-        i
-    end
-end
+% test-specific settings
 
-%% tmp script for solver_v2 - it seems dtw is strange
-startEndLatLng = [ 34.06440998442042 -118.45083475112915    % for correct path
-    34.06352119394332 -118.45004081726074
-];
-idxa = solver.map_data.getNearestNodeIdx(startEndLatLng(1,:));
-idxb = solver.map_data.getNearestNodeIdx(startEndLatLng(2,:));
-rank = 31;
-hele = solver.map_data.getSegElev( [247 250] );
-tmp = all_pair_dtw_baro(hele, solver.elevFromBaro(118:161,1));
+%% continue
+sensor_data.setSeaPressure(1018.7);
+sensor_data.setPressureScalar(-8.2);
+sensor_data.setAbsoluteSegment(1421002543, 1421002988);
+sensor_data.plotElevation();
+

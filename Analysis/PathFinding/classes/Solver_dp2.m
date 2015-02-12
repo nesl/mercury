@@ -137,15 +137,8 @@ classdef Solver_dp2 < handle
                 end
             end
             
-            % TODO: suppose to truncate the # of res_traces into
-            % max_results, but for development and debugging purposes, we
-            % didn't do that
             obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
             
-            obj.tmp();
-        end
-        
-        function tmp(obj)
             % remove similar traces
             keptTraces = [];
             for i = 1:numel(obj.res_traces)
@@ -162,6 +155,10 @@ classdef Solver_dp2 < handle
                 end
             end
             obj.res_traces = keptTraces;
+            
+            % TODO: suppose to truncate the # of res_traces into
+            % max_results, but for development and debugging purposes, we
+            % didn't do that
         end
         
         function forceInsertAPath(obj, path)  % an row vector of nodeIdxs
@@ -169,8 +166,6 @@ classdef Solver_dp2 < handle
             % if there already are some result in the res_traces, the new
             % path is gauranteed to be inserted into res_traces with
             % replacing one of them.
-            
-            % TODO: UNTESTED (testing)
             
             numVisitedNodes = length(path);
             numElevBaro = size(obj.elevFromBaro, 1);

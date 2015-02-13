@@ -1,20 +1,29 @@
-classdef Solver_dp2 < handle
+classdef Solver_dp3 < handle
     % SOLVER does the following thing:
     %   1. Based on DTW information, it performs search/DP algorithm to find
     %      the most likely n paths
-    %   2. It provides the function to compare with the ground-truth path
+    %   2. It allows to solve arbitrary path / oracle path and put into the
+    %      trajectory result list. Oracle path is a path extracted from gps
+    %      data.
+    %   3. It provides the function to compare with the ground-truth path
     %
-    % This solver list all the possible start and end points and perform
-    % DP algorithm.
+    % This solver list all the possible start points and perform DP
+    % algorithm. It focus on exploring early pruning strategies. It
+    % introduces the feature of computing on demand, so it shouldn't take
+    % too much time on computing (all sub-segments of) DTW.
     %
     % Summary of pruning strategies:
-    %   - (time) Select the possible starting points
-    %         [rank: 72->31, time:4000->400 sec]
-    %   - (time) Set the hard score threshold. Avoid the starting state of
-    %         dp with high cost
-    %         [time: 400->110 sec]
+    %   - (time) pruning by dp score over time to time (early time has
+    %         tighter pruning condition)
     %   - (correctness) Forbid go-back case
-    %   - Remove similar paths in the result
+    %   - (correctness) Remove similar paths in the result
+    %
+    % CONSIDERATION:
+    %   - Instead of just forbidding the go-back case, maybe we can put in
+    %     more general way: When a turn is making, then a penality is
+    %     introduced. Integrating turn detection will definitely help.
+    %     Another direction is to give a score based on how reasonable is
+    %     the shape of the path.
     
     properties (SetAccess = public)
         % associated objects
@@ -29,14 +38,14 @@ classdef Solver_dp2 < handle
                      % a trace includes .rawPath (step; node_idx columns)
                      %                  .dtwScore (sorted by this)
                      
-        
         % output settings
         max_results = 20;
         outputFilePath;
         
-        % pruning constants
-        INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
-        HARD_DTW_SCORE_THRESHOLD = 1000;
+        % DTW processing
+        subSegmentHandlers;  % this have to be 2-dim cell, each element is a SubSegmentDTWHandler
+        
+        % constants for removing similar output paths
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
         
         % parameters for finding the oracle path
@@ -46,15 +55,15 @@ classdef Solver_dp2 < handle
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_dp2(map_data, sensor_data)  % they are passed by reference
+        function obj = Solver_dp3(map_data, sensor_data)  % expected MapDataNoDTW and SensorData. they are passed by reference
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
         end
         
-        % EARLY PRUNING SETTINGS
-        function obj = setHardDTWScoreThreshold(obj, score)
-            obj.HARD_DTW_SCORE_THRESHOLD = score;
-        end
+        % EARLY PRUNING SETTINGS (consider obselete)
+        %function obj = setHardDTWScoreThreshold(obj, score)
+        %    obj.HARD_DTW_SCORE_THRESHOLD = score;
+        %end
         
         % OUTPUT SETTINGS
         function obj = setOutputFilePath(obj, path)
@@ -69,57 +78,69 @@ classdef Solver_dp2 < handle
         function solve(obj)
             % all pair DTW
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
-            obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
-            fprintf('finish calculating all pairs of dtw\n');
+            obj.subSegmentHandlers = obj.map_data.generateAllSubSegmentDTWHandlers(obj.elevFromBaro(:,2), 'pruningFunction' , @(x) (12 + 6*x));
+            fprintf('finish generating all sub-segment handlers\n');
 
-            
             numMapNodes = obj.map_data.getNumNodes();
             numElevBaro = size(obj.elevFromBaro, 1);
             obj.res_traces = [];
             
-            % find the possible starting points
-            beginElev = obj.elevFromBaro(1,2);
-            tmpElevDiff = beginElev - obj.map_data.getNodeIdxsElev(1:obj.map_data.num_nodes);
-            startingNodeSet = find( abs(tmpElevDiff) <= obj.INITIAL_ELEVATION_DIFFERENCE_SCREEN );
-            
-            for sp = startingNodeSet  % for start point
+            for initStartNodeIdx = 1:numMapNodes  % for start point
+                % REMOVE: suppose not to be here as it should be handled by
+                % other pruning strategy in dp3, but that's temporary put
+                % in here and see the performance.
+                tmpElevDiff = abs( obj.elevFromBaro(1,2) - obj.map_data.getNodeIdxElev(initStartNodeIdx) );
+                if tmpElevDiff > 2
+                	continue
+                end
+
                 % dp
-                dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, elev step)
-                dp(sp,1) = 0;
-                from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node, last step]
-                for i = 1:numElevBaro
-                    for j = 1:numMapNodes
-                        if dp(j, i) <= obj.HARD_DTW_SCORE_THRESHOLD
-                            neighbors = obj.map_data.getNeighbors(j);
-                            for k = 1:numel(neighbors)
-                                nn = neighbors(k);  % neighbor node
-                                %dtwArr = obj.map_data.queryAllPairDTW(j, nn, i);  % all pair DTW from (i,i) to (i,end)
-                                
-                                %ind = find( dp(j, i) + dtwArr < dp(nn, (i+1):end) );
-                                % ind spans the same range as <i to numElevBaro>
-                                % (ind + i) maps to range (i+1):(numElevBaro+1), 
-                                %dp(nn, i+ind) = dp(j, i) + dtwArr(ind);
-                                %from(nn, i+ind, :) = repmat([j i], length(ind), 1);
-                                
-                                for l = (i+1):(numElevBaro+1)
-                                    lastNode = from(j, i, 1);
-                                    if lastNode ~= nn  % next node is not previous node   <prev> -- <cur> -- <next>
-                                        tmpScore = dp(j, i) + obj.map_data.queryAllPairDTW(j, nn, i, l-1);
-                                        if tmpScore < dp(nn, l)
-                                            dp(nn, l) = tmpScore;
-                                            from(nn, l, :) = [j i];
+                dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, baro elev step)
+                dp(initStartNodeIdx,1) = 0;
+                from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node idx, last baro elev step]
+                
+                % GUIDELINE: think about we start from
+                %     dp(nIdxStart, bIdxStart) -------- consume baro data (bIdxStart:(bIdxEnd-1)) --------> dp(nIdxEnd, bIdxEnd)
+                %
+                % abbreviation: initial n stands for node, b stands for (from) barometer
+                % nIdxStart and nIdxEnd are neighbors
+                % the traveling time, or more precisely, consumption of barometer data, is (bIdxEnd - bIdxStart + 1)
+                
+                for bIdxStart = 1:numElevBaro  % starting barometer index
+                    for nIdxStart = 1:numMapNodes  % starting node index
+                        if dp(nIdxStart, bIdxStart) ~= inf
+                            for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
+                                targetSubSegHandler = obj.subSegmentHandlers{nIdxStart, nIdxEnd};
+                                earliestPossibleBaroIdxEnd = bIdxStart + targetSubSegHandler.getNumElementOfSeg();
+                                prevNodeIdx = from(nIdxStart, bIdxStart, 1);
+                                if prevNodeIdx ~= nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                    for bIdxEnd = earliestPossibleBaroIdxEnd:(numElevBaro+1)
+                                        tmpScore = dp(nIdxStart, bIdxStart) + targetSubSegHandler.query(bIdxStart, bIdxEnd-1);
+                                        
+                                        % purning: if tmpScore is inf, meaning that it is pruned by the
+                                        % pruning score when performing DTW. no need to continue anymore
+                                        if tmpScore == inf
+                                            %fprintf('pruned by DTWSweeper nIdxStart=%d, bIdxStart=%d, nIdxEnd=%d, bIdxEnd=%d, segLength=%d\n', nIdxStart, bIdxStart, nIdxEnd, bIdxEnd, targetSubSegHandler.getNumElementOfSeg());
+                                            %fprintf('oriScore=%f\n', dp(nIdxStart, bIdxStart));
+                                            %pause
+                                            break
+                                        end
+                                        
+                                        if tmpScore < dp(nIdxEnd, bIdxEnd)
+                                            dp(nIdxEnd, bIdxEnd) = tmpScore;
+                                            from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart];
                                         end
                                     end
                                 end
                             end
                         end
                     end
-                    fprintf('sp=%d, time=%d\n', sp, i)
+                    fprintf('sp=%d, time=%d\n', initStartNodeIdx, bIdxStart)
                 end
 
                 % back tracking
                 for i = 1:numMapNodes
-                    if dp(i, numElevBaro+1) < obj.HARD_DTW_SCORE_THRESHOLD
+                    if dp(i, numElevBaro+1) ~= inf
                         clear tmp_trace
                         tmp_trace.dtwScore = dp(i, numElevBaro+1);
                         cNodeIdx = i;  % current node index
@@ -137,11 +158,8 @@ classdef Solver_dp2 < handle
                 end
             end
             
-            if numel(obj.res_traces) == 0
-                warning('Solver didn''t find any possible path... try to relax the pruning condition');
-                return;
-            end
-            
+            fprintf('find out # of paths: ');
+            numel(obj.res_traces)
             obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
             
             % remove similar traces
@@ -172,22 +190,27 @@ classdef Solver_dp2 < handle
             % path is gauranteed to be inserted into res_traces with
             % replacing one of them.
             
-           
+            obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
+            obj.subSegmentHandlers = obj.map_data.generateAllSubSegmentDTWHandlers(obj.elevFromBaro(:,2), 'disablePruning');
+            fprintf('finish generating all sub-segment handlers\n');
+            
             numVisitedNodes = length(path);
             numElevBaro = size(obj.elevFromBaro, 1);
-            numMapNodes = obj.map_data.getNumNodes();
             dp = inf(numVisitedNodes, numElevBaro+1);  % dp(a, b) = score of [last node_idx in sub-path, last step]
             dp(1, 1) = 0;
             from = zeros(numVisitedNodes, numElevBaro+1);  % from(a, b) = last step @ previous node_idx
             for i = 1:(numVisitedNodes-1)
                 for j = 1:numElevBaro
                     for k = (j+1):(numElevBaro+1)
-                        t = obj.map_data.queryAllPairDTW(path(i), path(i+1), j, k-1);
+                        targetHandler = obj.subSegmentHandlers{ path(i), path(i+1) };
+                        t = targetHandler.query(j, k-1);
                         if dp(i, j) + t < dp(i+1, k)
                             dp(i+1, k) = dp(i, j) + t;
                             from(i+1, k) = j;
                         end
+                        fprintf('inner %d-%d-%d\n', i, j, k);
                     end
+                    fprintf('baro %d\n', j);
                 end
                 fprintf('pass %d-th of specified node\n', i);
             end
@@ -238,7 +261,9 @@ classdef Solver_dp2 < handle
                     compactPath = [ compactPath curNodeIdx ];
                 end
             end
-            finalPath = obj.map_data.findApproximatePathOverMapByNodeIdxs(compactPath); 
+            finalPath = obj.map_data.findApproximatePathOverMapByNodeIdxs(compactPath);
+            
+            fprintf('finish generating final path\n');
             obj.forceInsertAPath(finalPath);
         end
         

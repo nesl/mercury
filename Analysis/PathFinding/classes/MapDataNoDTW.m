@@ -1,6 +1,14 @@
-classdef MapData < handle
-    %MAPDATA Summary of this class goes here
-    %   Detailed explanation goes here
+classdef MapDataNoDTW < handle
+    % MapDataNoDTW is evolved from MapData class. It keeps all the
+    % functionailiry from MapData yet remove the features of pre-computing
+    % the all pair DTW part (now rename as all sub-segment DTW) as it
+    % delegate the DTW tasks back to the solver. However, it still helps
+    % for generating the SubSegmentDTWHandler 2-D cell to ease the load of
+    % solver.
+    %
+    % In general, it provides map consumer easy to get desired information.
+    % Please scroll down quickly and see the capitalized comment to get the
+    % overview of this class.
     
     properties (SetAccess = private)
         % node information
@@ -15,7 +23,6 @@ classdef MapData < handle
         node_latlng;
         segment_elevations;
         segment_latlngs;
-        segment_allPairDTW;
         segment_length;
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
@@ -26,7 +33,7 @@ classdef MapData < handle
         % CONSTRUCTOR
         % MapData(mapfile)
         % MapData(mapfile, latlngDownSampleStep)
-        function obj = MapData(mapfile, varargin)
+        function obj = MapDataNoDTW(mapfile, varargin)
             if numel(varargin) >= 1
                 obj.LATLNG_DSAMPLE = varargin{1};
             end
@@ -101,7 +108,7 @@ classdef MapData < handle
                 obj.node_latlng(nb_idx, :) = raw(end, 2:3);
             end
             
-            %fprintf('finish reading all the trajectories, %d nodes, %d segments\n', num_nodes, numel())
+            fprintf('finish reading all the trajectories, %d nodes, %d segments\n', obj.num_nodes, size(obj.endNodePairs, 1));
         end
         
         % ACCESSORS
@@ -123,6 +130,10 @@ classdef MapData < handle
         %       +-- Seg -------+  +------------- Length --+
         %       +-- path ------+
      
+        % GUIDELINE for data type:
+        %     nodeIdx -> scalar
+        %     seg     -> a 2-element row vector (e.g, [na_idx, nb_idx])
+        %     path    -> a row vector
         
         % get elevation for solely one node
         function elev = getNodeIdxElev(obj, idx)
@@ -275,6 +286,13 @@ classdef MapData < handle
         end
         
         function nodeIdxs = findShortestPath(obj, ns_idx, ne_idx)
+            % CONSIDER: Current version of this method is brute-forcely BFS
+            %           approach, and explore up to 1000 nodes to avoid
+            %           crashing. It pops out an error if violate the
+            %           protection condition. If decide to optimize this
+            %           function in the future, consider a* search with
+            %           euclidean distance as heuristic.
+            %           
             dis = containers.Map('KeyType','int32','ValueType','double');
             from = containers.Map('KeyType','int32','ValueType','int32');
             dis(ns_idx) = 0;
@@ -308,27 +326,16 @@ classdef MapData < handle
                 % if it doesn't return, means that we need to keep search
                 curIdx = trackList(i);
                 curDis = minDis;
-                %[curIdx curDis]
-                %obj.getNeighbors(curIdx)
-                %[-1 -1 obj.num_nodes size(obj.segment_length)]
                 for neighbor = obj.getNeighbors(curIdx)
                     nextDis = curDis + obj.getSegLength( [curIdx neighbor] );
-                    %keys(dis)
-                    %keys(from)
-                    %neighbor
                     if ~isKey(dis, neighbor)
                         dis(neighbor) = inf;
                         trackList = [trackList neighbor];
-                        %fprintf('add %d\n', neighbor);
                     end
                     if dis(neighbor) > nextDis
                         dis(neighbor) = nextDis;
                         from(neighbor) = curIdx;
                     end
-                    %keys(dis)
-                    %keys(from)
-                    %neighbor
-                    %[ 0 0 curIdx curDis neighbor dis(neighbor) from(neighbor)]
                 end
             end
             error('hmm... it seems you give me a big challenge... (findShortestPath())');
@@ -372,7 +379,18 @@ classdef MapData < handle
             idx = obj.map_node2idx(node);
         end
         
-        % METHODS REGARDING ALL PAIRS DTW
+        % METHODS REGARDING SUB-SEGMENT DTW
+        function cellOfHandlers = generateAllSubSegmentDTWHandlers(obj, elevFromBaro, varargin)
+            cellOfHandlers = cell(obj.num_nodes);
+            for i = 1:size(obj.endNodePairs, 1)
+                na_idx = obj.endNodePairs(i, 1);
+                nb_idx = obj.endNodePairs(i, 2);
+                cellOfHandlers{na_idx, nb_idx} = SubSegmentDTWHandler(obj.getSegElev( [na_idx nb_idx] ), elevFromBaro, varargin{:});
+                cellOfHandlers{nb_idx, na_idx} = SubSegmentDTWHandler(obj.getSegElev( [nb_idx na_idx] ), elevFromBaro, varargin{:});
+            end
+        end
+        
+        %{
         function preProcessAllPairDTW(obj, elevFromBaro)
             obj.segment_allPairDTW = cell(obj.num_nodes);
             numPairs = size(obj.endNodePairs, 1);
@@ -401,7 +419,7 @@ classdef MapData < handle
                 res = obj.segment_allPairDTW{na_idx, nb_idx}( varargin{1}, varargin{2} );
             end
         end
-        
+        %}
         
         % +-----------------+
         % | PRIVATE METHODS |

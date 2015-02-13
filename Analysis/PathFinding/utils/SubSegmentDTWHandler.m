@@ -23,7 +23,7 @@ classdef SubSegmentDTWHandler < handle
         %             suffix baro refers to data extracted from barometer sensor pr related.
         
         % The two series to be compared
-        height_from_seg;
+        height_from_seg;    % don't change values of these two variables as they'll become passing-by-reference
         height_from_baro;
         
         % attributes of two series
@@ -103,6 +103,7 @@ classdef SubSegmentDTWHandler < handle
             obj.num_elements_baro = numel(height_from_baro);
             obj.sweepers = cell(obj.num_elements_baro, 1);  % sparse and create on demand
             
+           
             for i = 1:numel(varargin)
                 if strcmp(varargin{i}, 'costFunction') == 1
                     obj.cost_function = varargin{i+1};
@@ -128,6 +129,8 @@ classdef SubSegmentDTWHandler < handle
                     obj.cacheable = 1;
                 elseif strcmp(varargin{i}, 'gpsOnlyTransitionAllowed') ==1
                     obj.gps_only_transition_allowed = 1;
+                else
+                    error('unrecorgnize parameter in constructor of SubSegmentDTWHandler');
                 end
             end
             
@@ -143,57 +146,66 @@ classdef SubSegmentDTWHandler < handle
         % QUERY
         function score = query(obj, baroStartIdx, baroEndIdx)
             % fast pruning by gps-only transition
-            if obj.gps_only_transition_allowed == 0 && baroEndIdx - baroStartIdx < obj.num_elements_seg
+            if obj.gps_only_transition_allowed == 0 && baroEndIdx - baroStartIdx + 1 < obj.num_elements_seg
                 score = inf;
                 return;
             end
             
-            % return by cache
-            if obj.cacheable == 0
+            
+            if obj.cacheable == 0 % if it is cache disabled
                 if obj.last_query_start_idx ~= baroStartIdx  % the worst case, previous data is completely useless
-                    obj.sweepers = DTWSweeper(); % TODO
+                    fprintf('sweeper renewed %d-%d\n', baroStartIdx, baroEndIdx);
+                    obj.sweepers = DTWSweeper(obj.height_from_seg, obj.cost_function, obj.pruning_function, 0, obj.gps_only_transition_allowed);
                     obj.sweepers_visited_idx = baroStartIdx - 1; % indicate that we even haven't begun to sweep
                     obj.result = zeros(obj.num_elements_seg + obj.ONE_DIM_ARRAY_REALLOCATE_GROWTH_SIZE, 1);
                 end
                 
                 % there's some data but may need to work hard to get the target index like phd... (sweeper may haven't gone that far)
-                while obj.seepers_visited_idx < baroEndIdx
-                    obj.sweepers_visited_idx = obj.seepers_visited_idx + 1;
+                while obj.sweepers_visited_idx < baroEndIdx
+                    obj.sweepers_visited_idx = obj.sweepers_visited_idx + 1;
                     resultIdx = obj.sweepers_visited_idx - baroStartIdx + 1;
                     if numel(obj.result) < resultIdx  % if the result array short on space, allocate more
                         obj.result( resultIdx + obj.ONE_DIM_ARRAY_REALLOCATE_GROWTH_SIZE ) = 0;
                     end
-                    obj.result(resultIdx) = obj.sweepers.processNext( obj.height_from_baro(obj.seepers_visited_idx) );
+                    %[resultIdx obj.sweepers_visited_idx baroStartIdx baroEndIdx obj.num_elements_baro]
+                    obj.result(resultIdx) = obj.sweepers.processNext( obj.height_from_baro(obj.sweepers_visited_idx) );
                 end
                 
                 score = obj.result(baroEndIdx - baroStartIdx + 1);
             else % if it is cache enabled
                 if numel( obj.sweepers{baroStartIdx} ) == 0  % if there's no sweeper at that index
-                    obj.sweepers{baroStartIdx} = DTWSweeper(); % TODO
+                    obj.sweepers{baroStartIdx} = DTWSweeper(obj.height_from_seg, obj.cost_function, obj.pruning_function, 0, obj.gps_only_transition_allowed);
                     obj.sweepers_visited_idx{baroStartIdx} = baroStartIdx - 1;
                     obj.result{baroStartIdx} = zeros(obj.num_elements_seg + obj.ONE_DIM_ARRAY_REALLOCATE_GROWTH_SIZE, 1);
                 end
-                while obj.seepers_visited_idx{baroEndIdx} < baroEndIdx
-                    obj.sweepers_visited_idx{baroEndIdx} = obj.seepers_visited_idx{baroEndIdx} + 1;
+                while obj.sweepers_visited_idx{baroEndIdx} < baroEndIdx
+                    obj.sweepers_visited_idx{baroEndIdx} = obj.sweepers_visited_idx{baroEndIdx} + 1;
                     resultIdx = obj.sweepers_visited_idx{baroEndIdx} - baroStartIdx + 1;
                     if numel(obj.result{baroEndIdx}) < resultIdx  % if the result array short on space, allocate more
                         obj.result{baroEndIdx}( resultIdx + obj.ONE_DIM_ARRAY_REALLOCATE_GROWTH_SIZE ) = 0;
                     end
                     obj.result{baroEndIdx}(resultIdx) = obj.sweepers{baroEndIdx}.processNext( ...
-                        obj.height_from_baro( obj.seepers_visited_idx{baroEndIdx} ) );
+                        obj.height_from_baro( obj.sweepers_visited_idx{baroEndIdx} ) );
                 end
                 
                 score = obj.result{baroEndIdx}(baroEndIdx - baroStartIdx + 1);
             end
+            
+            obj.last_query_start_idx = baroStartIdx;
         end
         
         % BACK-TRACKING
         function path = backTracking(obj, baroStartIdx, baroEndIdx)
-            tmpSweeper = DTWSweeper(); % TODO, remember to put it as cacheable
+            tmpSweeper = DTWSweeper(obj.height_from_seg, obj.cost_function, obj.pruning_function, 1, obj.gps_only_transition_allowed);
             for i = baroStartIdx:baroEndIdx
                 tmpSweeper(obj.height_from_baro(i));
             end
             path = tmpSweeper.backTracking();
+        end
+        
+        % ASSISTANCE FUNCTION
+        function len = getNumElementOfSeg(obj)
+            len = numel(obj.height_from_seg);
         end
     end
     

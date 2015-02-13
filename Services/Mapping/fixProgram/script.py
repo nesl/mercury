@@ -20,7 +20,7 @@ if len(osmName.split('.')) == 1:
     osmNameWoExt = osmName
 else:
     osmNameWoExt = osmName[:-(1+len(osmName.split('.')[-1]))]
-outRootDir = '../../../Data/trajectorySetsFix/'
+outRootDir = '../../../Data/trajectorySets/'
 outFile = outRootDir + osmNameWoExt + '.tfix'
 
 

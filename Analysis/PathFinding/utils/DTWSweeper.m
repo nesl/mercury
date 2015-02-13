@@ -16,6 +16,12 @@ classdef DTWSweeper < handle
     % By default, DTWSweeper doesn't allow gps-only transition when
     % computing DTW. Though not recommended, DTWSweeper provides an option
     % to add this transition back.
+    %
+    % NOTE: if you choose the default behavior, that is disabling the
+    % gps-only transition, then you need to make sure the maximum traveling
+    % distance of one barometer unit is shorter than one segment unit. As
+    % our current segment pre-processing setting, one segment unit is
+    % roughly equal to 9-11 meters.
     
     
     % About the transition:  (follows the matlab array directions)
@@ -83,8 +89,12 @@ classdef DTWSweeper < handle
         % PROCESSING
         % process one value at a time
         function lastScoreInColumn = processNext(obj, nextHeightBaro)
-            % if is already pruned, then sorry just return
+            % if is already pruned, then sorry it just returns
             if obj.already_pruned
+                %disp 'pruned by already_pruned\n'
+                %obj.baro_element_cnt
+                %obj.dp
+                lastScoreInColumn = inf;
                 return;
             end
             
@@ -94,9 +104,9 @@ classdef DTWSweeper < handle
             if obj.is_cacheable == 0
                 bIdx = 1;
             else
-                bIdx = obj.baro_element_cnt + 1;
+                bIdx = obj.baro_element_cnt;
             end
-            obj.dp(1, bIdx) = inf;
+            obj.dp(1, bIdx+1) = inf;
             
             % fast pruning, don't step on unnecessary cells
             if obj.gps_only_transition_allowed == 1
@@ -104,26 +114,36 @@ classdef DTWSweeper < handle
             else
                 lastSegIdx = min(obj.num_elements_seg, obj.baro_element_cnt);
             end
-                
+            
+            %lastSegIdx
+            
             for sIdx = 1:lastSegIdx
                 candidates = [ obj.dp(sIdx+1, bIdx) obj.dp(sIdx, bIdx) inf ];
                 if obj.gps_only_transition_allowed == 1
                     candidates(3) = obj.dp(sIdx, bIdx+1);
                 end
-                [obj.dp(sIdx, bIdx), obj.from(sIdx, bIdx)] = min(candidates);
-                obj.dp(sIdx, bIdx) = obj.dp(sIdx, bIdx) + obj.cost_function( obj.height_from_seg(sIdx) - nextHeightBaro);
+                %candidates
+                [obj.dp(sIdx+1, bIdx+1), obj.from(sIdx+1, bIdx+1)] = min(candidates);
+                obj.dp(sIdx+1, bIdx+1) = obj.dp(sIdx+1, bIdx+1) + obj.cost_function( obj.height_from_seg(sIdx) - nextHeightBaro);
             end
             lastScoreInColumn = obj.dp(end, end);
             
+            %obj.dp
+            
             % pruning checking
-            if min(obj.dp(:,bIdx)) > obj.pruning_function(obj.baro_element_cnt)
+            if min(obj.dp(:,bIdx+1)) > obj.pruning_function(obj.baro_element_cnt)
+                %obj.baro_element_cnt
+                %obj.dp
                 obj.already_pruned = 1;
                 lastScoreInColumn = inf;
             end
             
+            %obj.baro_element_cnt
+            %obj.dp
+            
             % housekeeping for non-cacheable mode
             if obj.is_cacheable == 0
-                obj.dp(:,1) = obj(:,2);
+                obj.dp(:,1) = obj.dp(:,2);
             end
         end
         

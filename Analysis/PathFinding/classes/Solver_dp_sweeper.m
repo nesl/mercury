@@ -1,4 +1,8 @@
-classdef Solver_dp3 < handle
+classdef Solver_dp_sweeper < handle
+    % WARNING: This code is obselete and put it for the reference. Unless
+    %          we decide to switch back and try to solve the bottleneck,
+    %          any further algorithm shouldn't based on this file.
+    %
     % SOLVER does the following thing:
     %   1. Based on DTW information, it performs search/DP algorithm to find
     %      the most likely n paths
@@ -55,7 +59,7 @@ classdef Solver_dp3 < handle
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_dp3(map_data, sensor_data)  % expected MapDataNoDTW and SensorData. they are passed by reference
+        function obj = Solver_dp_sweeper(map_data, sensor_data)  % expected MapDataNoDTW and SensorData. they are passed by reference
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
         end

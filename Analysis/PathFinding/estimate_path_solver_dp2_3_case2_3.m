@@ -32,12 +32,11 @@ if caseNo == 2
     sensor_data.setPressureScalar(-7.97);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
     sensor_data.setWindowSize(0.5);   % correct:0.5
-
+    map_data = MapData(mapfile, 1);   %correct:1
+        
     if solverVersion == 2
-        map_data = MapData(mapfile, 1);   %correct:1
         solver = Solver_dp2(map_data, sensor_data);
     elseif solverVersion == 3
-        map_data = MapDataNoDTW(mapfile, 2);   %correct:1
         solver = Solver_dp3(map_data, sensor_data);
     else
         error('Concentrate. There''s no this kind of solver...');
@@ -57,13 +56,12 @@ elseif caseNo == 3
     sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
-    
+    map_data = MapData(mapfile, 2);  % finer case: 1
+        
     if solverVersion == 2
-        map_data = MapData(mapfile, 2);  % finer case: 1
         solver = Solver_dp2(map_data, sensor_data);
         solver.setHardDTWScoreThreshold(2500);  % finer case: to smaller?
     elseif solverVersion == 3
-        map_data = MapDataNoDTW(mapfile, 2);  % finer case: 1
         solver = Solver_dp3(map_data, sensor_data);
     else
         error('Let me say that again. Specify the correct solver, okay?');
@@ -72,8 +70,6 @@ else
     error('Kidding me? You didn''t choose a correct test case!');
 end
 
-solver.forceInsertOraclePath();  
-return;
 
 %% test solver
 tic

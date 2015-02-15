@@ -1,4 +1,7 @@
 classdef SensorData < handle
+    % WARNING: there's MESSAGE for PAUL, search PAUL to see the code
+    % modification
+    
     % SensorData Summary of this class goes here
     %   Read the sensor data
     
@@ -82,8 +85,13 @@ classdef SensorData < handle
             obj.raw_gps = gps;
             obj.raw_gpsele = gpsele;
             
+            % MESSAGE TO PAUL from Bo-Jhang:
+            % I just comment out the following line as raw_baro should be
+            % raw data and shouldn't be down sampled. Try to create another
+            % variable to store down sampled version?
+            
             % downsample barometer
-            obj.raw_baro = obj.raw_baro(1:obj.DOWNSAMPLE:end, :);
+            %obj.raw_baro = obj.raw_baro(1:obj.DOWNSAMPLE:end, :);
             
             % get sampling rates
             obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
@@ -198,7 +206,7 @@ classdef SensorData < handle
             end
             timestampAfterWindow = ( elevRaw(1,1) + ((1:numWindow) - 1) * obj.TRIM_SEC )';
             elev = [  timestampAfterWindow  elevSum ./ elevCnt];
-            indxs = setdiff( 1:numWindow, find(isnan(elev(:,2))) );  % there might be windows which has no data points, remove them
+            indxs = setdiff( 1:numWindow, find(isnan(elev(:,2))) );  % there might be windows without any data points inside, remove these windows
             elev = elev(indxs,:);  
         end
         
@@ -249,6 +257,8 @@ classdef SensorData < handle
         
         function data = getTurns(obj)
             % find valid indices for this segment
+            % TODO: seems the time stamps are wrong... double check and
+            % consider the appraoch in getGps()
             data =  obj.est_turns(obj.est_turns(:,1) >= obj.segment_start & ...
                           obj.est_turns(:,1) <= obj.segment_stop, :);
             data(:,1) = data(:,1) - obj.segment_start;

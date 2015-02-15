@@ -1,3 +1,8 @@
+%% NOTE of NOTE:
+% This code has been replaced by estimate_path_solver_dp2to3_case1to3.m .
+% The reason that I don't delete this file is there are some debug
+% information inside for case 1.
+
 %% NOTE:
 % This will eventually be converted into a function, but for debugging
 % I'll keep it as a script for now. Inputs will be map file, sensor file,

@@ -1,3 +1,10 @@
+% NOTE: This code has been obseleted as we've moved to deal with the real
+%       case. This code generates the elevation of the path specified by
+%       node ID in OSM. It is very helpful as the foundation of the
+%       algorithm is based on this case generator.
+%
+% NOTE: The original working direction is under <mercury>/Analysis/PathFinding/
+
 dir = '../../Data/eleSegments/ucla_west/';
 
 nodeSets = {};

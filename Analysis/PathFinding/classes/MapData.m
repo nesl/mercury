@@ -15,8 +15,9 @@ classdef MapData < handle
         node_latlng;
         segment_elevations;
         segment_latlngs;
+        segment_num_elements;
         segment_allPairDTW;
-        segment_length;
+        segment_length;  % don't be confused. this is physical length as the unit is meter.
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
         
@@ -73,6 +74,7 @@ classdef MapData < handle
             obj.segment_elevations = cell(obj.num_nodes);
             obj.segment_latlngs = cell(obj.num_nodes);
             obj.segment_length = cell(obj.num_nodes);
+            obj.segment_num_elements = zeros(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
             obj.node_elevation = zeros(obj.num_nodes, 2);
             obj.node_latlng = zeros(obj.num_nodes, 2);
@@ -91,6 +93,9 @@ classdef MapData < handle
                 obj.segment_latlngs{na_idx, nb_idx} = raw(rawIdx, 2:3);
                 % calculate the geo length in meter
                 obj.segment_length{na_idx, nb_idx} = obj.private_getSegmentLength(na_idx, nb_idx);
+                % store number of elements of each segment
+                obj.segment_num_elements(na_idx, nb_idx) = numel(rawIdx);
+                obj.segment_num_elements(nb_idx, na_idx) = numel(rawIdx);
                 % add to neighbor lists
                 obj.node_neighbors{na_idx} = [obj.node_neighbors{na_idx} nb_idx];
                 obj.node_neighbors{nb_idx} = [obj.node_neighbors{nb_idx} na_idx];
@@ -127,10 +132,10 @@ classdef MapData < handle
         end
         
         
-        % get --+-- NodeIdx ---+--+-- (Filtered) Elev ----+-- ()
-        %       +-- NodeIdxs --+  +------------- LatLng --+
-        %       +-- Seg -------+  +------------- Length --+
-        %       +-- path ------+
+        % get --+-- NodeIdx ---+--+-- (Filtered) Elev --------+-- ()
+        %       +-- NodeIdxs --+  +------------- LatLng ------+
+        %       +-- Seg -------+  +------------- Length ------+
+        %       +-- path ------+  +------------- NumElement --+
      
         % get node indexes of OSM nodes
         function nlist = getNodeIdxs(obj, osm_nodes)
@@ -206,7 +211,7 @@ classdef MapData < handle
             end
         end
         
-        % get length of one segment
+        % get length (geo distance) of one segment
         function meter = getSegLength(obj, seg)
             na_idx = seg(1);
             nb_idx = seg(2);
@@ -218,6 +223,13 @@ classdef MapData < handle
             else
                 error('specified segment does not exist (getSegLength)');
             end
+        end
+        
+        % get number of elements in this segment
+        function numElement = getSegNumElement(obj, seg)
+            na_idx = seg(1);
+            nb_idx = seg(2);
+            numElement = obj.segment_num_elements(na_idx, nb_idx);
         end
         
         % get elevation over the path specified the node idxs in a list

@@ -37,10 +37,13 @@ classdef SensorData < handle
         SR_mag;
         SR_gps;
         
-        % additional data
+        % processed data from GPS as ground truth
         gps_speed;
         gps_angles;
+        
+        % estimated turns and related information from motion sensor
         est_turns;
+        est_turn_events;  % MESSGAE TO PAUL from Bo-Jhang: I add this variable
         
         % signal segmentation
         segment_start;  % as the absolute time
@@ -126,12 +129,19 @@ classdef SensorData < handle
             obj.motion_offset = (baro(end,1) - gps(end,1)) + obj.gps_offset;   % motion->abs = motion->gps + gps->abs_time
             obj.relative_offset = (baro(1,1) - obj.motion_offset) - 0;  % abs->relative = t_abs - t_relative
             
+            % MESSAGE TO PAUL from Bo-Jhang:
+            % consider obj.est_turns as the raw turns (without down
+            % sampling) and store the down-sampled version as a separate
+            % variable.
+            
             % estimate turns
             turns_full = estimateTurns(acc, gyro);
             
             % downsample estimated turns
             obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
+            % MESSGAE TO PAUL from Bo-Jhang: I add the following lines
+            obj.est_turn_events = estimateTurnsDiscrete(acc, gyro);
         end
                 
         % SIGNAL SEGMENTATION
@@ -257,14 +267,30 @@ classdef SensorData < handle
         end
         
         function data = getTurns(obj)
-            % find valid indices for this segment
-            % TODO: seems the time stamps are wrong... double check and
-            % consider the appraoch in getGps()
-            data =  obj.est_turns(obj.est_turns(:,1) >= obj.segment_start & ...
-                          obj.est_turns(:,1) <= obj.segment_stop, :);
-            data(:,1) = data(:,1) - obj.segment_start;
+            % MESSAGE TO PAUL from Bo-Jhang: I consider previous implementation as a bug as you access the incorrect indices
+            % MESSAGE TO PAUL from Bo-Jhang: suggest change function name as getEstimatedTurns()
+            % find valid indices for this segment. the timestamps of raw
+            % est_turns are motion-sensor time as it is derived from motion
+            % sensors.
+            motion_start_time = obj.segment_start - (-obj.motion_offset);
+            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            data = obj.est_turns( obj.est_turns(:,1) >= motion_start_time & ...
+                          obj.est_turns(:,1) <= motion_stop_time, :);
+            data(:,1) = data(:,1) - motion_start_time;
         end
 
+        % MESSGAE TO PAUL from Bo-Jhang: I add this function
+        function turnEvents = getTurnEvents(obj)
+            % find valid indices for this segment. the timestamps of raw
+            % est_turns are motion-sensor time as it is derived from motion
+            % sensors.
+            motion_start_time = obj.segment_start - (-obj.motion_offset);
+            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            turnEvents = obj.est_turn_events( obj.est_turn_events(:,1) >= motion_start_time & ...
+                          obj.est_turn_events(:,1) <= motion_stop_time, :);
+            turnEvents(:,1) = turnEvents(:,1) - motion_start_time;
+        end
+        
         function data = getGps(obj)
             % 7 columns: time, lat, lng, elev, error, speed, source
             % find valid indices for this segment

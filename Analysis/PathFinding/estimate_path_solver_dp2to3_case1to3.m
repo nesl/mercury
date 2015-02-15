@@ -13,9 +13,12 @@ add_paths;
 solverVersion = 3;  % 2 or 3
 caseNo = 1; % 1 or 2 or 3
 
+% some explanation on the map of ucla_small:
+%    top_left corner: (34.080821, -118.470371)
+%    bottom_right corner: (34.052816, -118.435204)
+%    area: 3117m (horizontal) x 3242m (vertical) = 10.1 km^2 = 3.95 mile^2
 
 %% Inputs:
-
 if caseNo == 1
     % around weyburn
     %    distance: 0.62 mile (1 km)

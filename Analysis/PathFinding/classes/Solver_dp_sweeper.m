@@ -3,7 +3,9 @@ classdef Solver_dp_sweeper < handle
     %          we decide to switch back and try to solve the bottleneck,
     %          any further algorithm shouldn't based on this file.
     %
-    % SOLVER does the following thing:
+    % History: This class is derived from Solver_dp2.m
+    % 
+    % This class does the following thing:
     %   1. Based on DTW information, it performs search/DP algorithm to find
     %      the most likely n paths
     %   2. It allows to solve arbitrary path / oracle path and put into the

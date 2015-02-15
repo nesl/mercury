@@ -1,4 +1,4 @@
-function [turn_angles] = estimateTurns(accRaw, gyroRaw)
+function [turn_angles] = estimateTurnsDiscrete(accRaw, gyroRaw)  % TODO: check the correctness of this file
 % [turn_angles] = estimateTurns(accRaw, gyroRaw)
 
 %% Get Sampling Rates

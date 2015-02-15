@@ -63,6 +63,22 @@ function [scoreSeg, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev
 %  blocked.
 %
 
+% CONSIDER: more pruning
+%   There's still a possibility to prune in the dynamic programming part.
+%   So far we only disallow the gps-only transition, which is upper bound
+%   pruning (in terms of index), but it is also possible to have lower
+%   bound pruning.
+%
+%   DP:  0 X X X X X      X = impossible
+%        X . . . H H      . = reasonable values
+%        X X . . H @      H = the cost is too high and pruned by pruning function
+%        X X X . . .      @ = cell of interest. it's gaurantee it must be pruned.
+%        X X X X . .
+%        X X X X X .
+%        X X X X X X
+%
+%  So the starting index of segment (sIdx) will monotonicly increase.
+
 % reshape the input and make the parameters:
 %    - hele as a column (y-axis) vector
 %    - hbaro as a row (x-axis) vector

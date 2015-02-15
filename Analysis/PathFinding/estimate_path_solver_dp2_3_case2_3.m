@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 2;  % 2 or 3
+solverVersion = 3;  % 2 or 3
 caseNo = 2; % 2 or 3
 
 
@@ -28,8 +28,10 @@ if caseNo == 2
     % Create SensorData object
     sensor_data = SensorData(sensorfile);
     % test-specific settings
-    sensor_data.setSeaPressure(1019.5);
-    sensor_data.setPressureScalar(-7.97);
+    %sensor_data.setSeaPressure(1019.5);
+    %sensor_data.setPressureScalar(-7.97);
+    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
@@ -72,15 +74,17 @@ end
 
 
 %% test solver
-tic
 
 solver.setOutputFilePath(outputWebFile);
+
+tic
 solver.solve();
+toc
+
 solver.getRawPath(1)
 solver.plotPathComparison(1)
 solver.toWeb();
 
-toc
 
 if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     [ratioOfDTWQuery, ratioOfElements] = solver.dtw_helper.pruningRatio();
@@ -92,8 +96,12 @@ return;
 
 %% test and insert the oracle path based on the true gps
 tic
-solver.forceInsertOraclePath();  
+solver.forceInsertingOraclePath();
+solver.toWeb();
 toc
+
+%% see the dtw trend
+solver.plotPathDTWScore(1);
 
 %% test on coefficient of test case 3
 sensor_data = SensorData(sensorfile);

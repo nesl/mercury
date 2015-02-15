@@ -190,22 +190,25 @@ classdef Solver_dp3 < handle
             % didn't do that
         end
         
-        function forceInsertAPath(obj, path)  % an row vector of nodeIdxs
+        function forceInsertingAPath(obj, path)  % an row vector of nodeIdxs
             % this method force the agent to walk along the specified path.
             % if there already are some result in the res_traces, the new
             % path is gauranteed to be inserted into res_traces with
             % replacing one of them.
             
+            % we need to create a new dtw_helper, since we don't want to
+            % involve any pruning mechanism
+            dtwHelperForce = SubSegmentDTWHelper(obj.map_data, obj.elevFromBaro(:,2), obj.dtw_cost_function, @(x) (inf) );
+            
             numVisitedNodes = length(path);
             numElevBaro = size(obj.elevFromBaro, 1);
-            numMapNodes = obj.map_data.getNumNodes();
             dp = inf(numVisitedNodes, numElevBaro+1);  % dp(a, b) = score of [last node_idx in sub-path, last step]
             dp(1, 1) = 0;
             from = zeros(numVisitedNodes, numElevBaro+1);  % from(a, b) = last step @ previous node_idx
             for i = 1:(numVisitedNodes-1)
                 for j = 1:numElevBaro
                     for k = (j+1):(numElevBaro+1)
-                        t = obj.dtw_helper.query(path(i), path(i+1), j, k-1);
+                        t = dtwHelperForce.query(path(i), path(i+1), j, k-1);
                         if dp(i, j) + t < dp(i+1, k)
                             dp(i+1, k) = dp(i, j) + t;
                             from(i+1, k) = j;
@@ -238,7 +241,7 @@ classdef Solver_dp3 < handle
             end
         end
         
-        function forceInsertOraclePath(obj)
+        function forceInsertingOraclePath(obj)
             gpsData = obj.sensor_data.getGps();
             numRows = size(gpsData, 1);
             closestNodeIdxs = [];
@@ -263,7 +266,7 @@ classdef Solver_dp3 < handle
                 end
             end
             finalPath = obj.map_data.findApproximatePathOverMapByNodeIdxs(compactPath); 
-            obj.forceInsertAPath(finalPath);
+            obj.forceInsertingAPath(finalPath);
         end
         
         % RETRIEVE PATHS
@@ -284,7 +287,7 @@ classdef Solver_dp3 < handle
                 a = rawPath(i  , 1);
                 b = rawPath(i+1, 1) - 1;
                 elevBaroSeg = obj.elevFromBaro(a:b, 2);
-                [~, dtwIdxBaro2Map, ~] = dtw_basic( elevMapSeg, elevBaroSeg, obj.dtw_cost_function, obj.dtw_pruning_function );
+                [~, dtwIdxBaro2Map, ~] = dtw_basic( elevMapSeg, elevBaroSeg, obj.dtw_cost_function, @(x) (inf) );
                 latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
             end
 
@@ -296,11 +299,11 @@ classdef Solver_dp3 < handle
         end
         
         % [ row vector ] = getSquareErrors(obj)  // get up to <max_result> results
-        % [single value] = getSquareErrors(obj, traceIdx)
+        % [ row vector ] = getSquareErrors(obj, traceIdxs)
         function squareErrors = getSquareErrors(obj, varargin) 
             indxs = 1:min(obj.max_results, numel(obj.res_traces));
             if numel(varargin) >= 1
-                indxs = varargin{1}:varargin{1};
+                indxs = varargin{1};
             end
             squareErrors = [];
             for i = indxs
@@ -378,32 +381,23 @@ classdef Solver_dp3 < handle
         end
         
         % given a trace id, show the dtw score over time
-        function plotPathDTWScore(obj, traceIdx)  % UNTESTED
+        function plotPathDTWScore(obj, traceIdx)
             clf
             
             ax1 = subplot(2, 1, 1);
             hold on
-            legendTexts = {};
-            gps2ele = obj.sensor_data.getGps2Ele();
-            if size(gps2ele, 1) == 0
-                %text(0, 0, 'Sorry, but gps2ele file has not been generated');
-                xlabel('Sorry, but gps2ele file has not been generated');
-            else
-                plot( 1:length(gps2ele(:,1)), gps2ele(:,4), 'b-');
-                legendTexts = { legendTexts{:} 'from GPS traj' };
-            end
-            plot(1:length(obj.elevFromBaro(:,1)), obj.elevFromBaro(:,2), 'k-');
-            legendTexts = { legendTexts{:} 'from baro' };
-            legend(legendTexts);
-            
-            ax2 = subplot(2, 1, 2);
             tmpNodeIdxs = obj.getRawPath(traceIdx);
             tmpNodeIdxs = tmpNodeIdxs(:,2);
-            elevFromPath = obj.map_data.getPathElev(tmpNodeIdxs);
-            [~, ~, scoreSeries] = dtw_basic(elevFromPath, obj.elevFromBaro, obj.dtw_cost_function, obj.dtw_pruning_function);
-            plot(1:length(scoreSeries), scoreSeries);
+            elevFromEstPath = obj.map_data.getPathElev(tmpNodeIdxs);
+            plot(1:length(elevFromEstPath), elevFromEstPath, 'b-');
+            plot(1:length(obj.elevFromBaro(:,1)), obj.elevFromBaro(:,2), 'r-');
+            legend('from esti traj', 'from baro');
             
-            linkaxes([ax1,ax2],'x')
+            ax2 = subplot(2, 1, 2);
+            [~, ~, scoreSeries] = dtw_basic(elevFromEstPath, obj.elevFromBaro(:,2), obj.dtw_cost_function, @(x) (inf));
+            plot(1:length(scoreSeries), scoreSeries, 'k-');
+            
+            linkaxes([ax1,ax2], 'x')
         end
         
         % TO WEB

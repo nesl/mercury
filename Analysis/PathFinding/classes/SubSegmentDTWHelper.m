@@ -9,36 +9,44 @@ classdef SubSegmentDTWHelper < handle
         % input
         elev_from_baro;
         map_data;
+        dtw_cost_function;
+        dtw_pruning_function;
         
         % cache result
+        segment_visited;  % for performance purpose
         segment_allSubSegmentDTW;
     end
     
     methods
         % CONSTRUCTOR
-        function obj = SubSegmentDTWHelper(mapData, elevFromBaro)
+        function obj = SubSegmentDTWHelper(mapData, elevFromBaro, costFunction, pruningFunction)
             obj.map_data = mapData;
             obj.elev_from_baro = elevFromBaro;
+            obj.dtw_cost_function = costFunction;
+            obj.dtw_pruning_function = pruningFunction;
             numNodes = mapData.getNumNodes();
+            obj.segment_visited = zeros(numNodes);
             obj.segment_allSubSegmentDTW = cell(numNodes);
         end
         
         
         function score = query(obj, nodeAIdx, nodeBIdx, baroStartIdx, baroEndIdx)
-            if numel( obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx} ) == 0   % haven't created a matrix there
+            if obj.segment_visited(nodeAIdx, nodeBIdx) == 0   % haven't created a matrix there
                 obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx} = nan( numel(obj.elev_from_baro) );
-            end
-            if isnan( obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx}(baroStartIdx, end) )
-                [ obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx}(baroStartIdx, baroStartIdx:end), ~, ~] ...
-                    = dtw_basic( obj.map_data.getSegElev([nodeAIdx nodeBIdx]), obj.elev_from_baro(baroStartIdx:end) );
+                obj.segment_visited(nodeAIdx, nodeBIdx) = 1;
             end
             score = obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx}(baroStartIdx, baroEndIdx);
+            if isnan(score)
+                [ obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx}(baroStartIdx, baroStartIdx:end), ~, ~] ...
+                    = dtw_basic( obj.map_data.getSegElev([nodeAIdx nodeBIdx]), obj.elev_from_baro(baroStartIdx:end), obj.dtw_cost_function, obj.dtw_pruning_function );
+                score = obj.segment_allSubSegmentDTW{nodeAIdx, nodeBIdx}(baroStartIdx, baroEndIdx);
+            end
         end
         
         % statistics of DTW data storage ratio.
         %    - ratioOfDTWQuery = DTW requests / expected DTW query
         %    - ratioOfElements = valid results / all the subsegments of all segments
-        function [ratioOfDTWQuery, ratioOfElements] = pruningRate(obj)
+        function [ratioOfDTWQuery, ratioOfElements] = pruningRatio(obj)
             numDTWRequest = 0;
             expectedDTWRequest = 0;
             validElements = 0;

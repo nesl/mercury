@@ -1,4 +1,4 @@
-function [score, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev_from_baro)
+function [scoreSeg, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev_from_baro, cost_function, pruning_function)
 % [p,q] = dp(M) 
 %    Use dynamic programming to find a min-cost path through matrix M.
 %    Return state sequence in p,q
@@ -8,11 +8,25 @@ function [score, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev_fr
 % released under GPL - see file COPYRIGHT
 
 % How to use this:
-%   TODO well, there are two ways to use this function but I'm too lazy to
-%   explain it... Tell me if you want to know what's it's doing and I'll
-%   update this part.........
-%   okay I think i'm a little bit not responsible... in short one function
-%   two purposes......
+%   This function support one of the following queries:
+%   1. you want to get the DTW of segment series compared to all the possible
+%      starting sub segments of baro series (i.e., a row vector which is
+%      the score of DTW(seg, baro(1:1)), DTW(seg, baro(1:2), ...). The
+%      result is stored in scoreSeg.
+%   2. you want to map the baro series to the corresponding segment series,
+%      the result is stored in mappedIdx
+%   3. you are curious about the changes of dtw score alone the searching
+%      path (in the dynamic programming table). The result is stored in
+%      scoreAloneTheWay
+%   These three questions are independent, yet the computations are hugely
+%   overlapped. The function retures all the three answers at once, but
+%   it's up to the result consumer to use the result they're looking for.
+%
+% Minor issues:
+%   Apparently if we're only curious about scoreSeg, we don't need the
+%   back-tracking stage and can stop the function earlier. However, since
+%   the back-tracking part is O(n) compared to dp stage is O(n^2), thus I
+%   consider the overhead is small.
 
 % Parameters:
 %   The input hele is the elevation series of a certain trajectory.
@@ -58,10 +72,7 @@ elev_from_baro = elev_from_baro(:)';
 numElementSeg = numel(elev_from_seg);
 numElementBaro = numel(elev_from_baro);
 
-costMatrix = (repmat(elev_from_seg, 1, numElementBaro) - repmat(elev_from_baro, numElementSeg, 1)) .^ 2;   % square
-%costMatrix = ( abs(repmat(hele, 1, c) - repmat(hbaro, r, 1)) ) .^ 3 + 0.2;   % cube
-%costMatrix = exp( abs(repmat(hele, 1, c) - repmat(hbaro, r, 1)) );  % exponential
-%costMatrix
+costMatrix = cost_function(repmat(elev_from_seg, 1, numElementBaro) - repmat(elev_from_baro, numElementSeg, 1));
 
 dp = inf(numElementSeg+1, numElementBaro+1);
 from = zeros(numElementSeg+1, numElementBaro+1);
@@ -78,16 +89,15 @@ for bIdx = 1:numElementBaro
     
     % pruning part. remember we consider anything related to bIdx, so
     % should be a column area.
-    %if min( dp(2:end, bIdx) ) > 27 + 10*bIdx   % this is the pruning formula
-    if min( dp(2:end, bIdx+1) ) > inf
-        score = dp(end, 2:end);
+    if min( dp(2:end, bIdx+1) ) > pruning_function(bIdx)
+        scoreSeg = dp(end, 2:end);
         mappedIdx = [];
         scoreAloneTheWay = [];
         return;
     end
 end
 
-score = dp(end, 2:end);
+scoreSeg = dp(end, 2:end);
 
 % well, if the end corner is inf, there's no possible way to to
 % back-tracking

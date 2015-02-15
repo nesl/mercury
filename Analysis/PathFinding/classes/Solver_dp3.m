@@ -32,6 +32,9 @@ classdef Solver_dp3 < handle
         % elevations from barometer
         elevFromBaro;
         
+        % dtw cost functions
+        dtw_cost_function = @(x) (x .^ 2);
+        
         % output result
         res_traces;  % which is always sorted
                      % a trace includes .rawPath (step; node_idx columns)
@@ -44,8 +47,13 @@ classdef Solver_dp3 < handle
         
         % pruning constants
         INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
-        %HARD_DTW_SCORE_THRESHOLD = 1000;
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
+        
+        % pruning functions
+        dtw_pruning_function = @(x) (27 + 10 * x);  % during accessing x-th barometer element in the dtw,
+                                                    % what is the cutting threshold for corresponding column
+        global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
+                                                       % what is the cutting threshold for corresponding column
         
         % parameters for finding the oracle path
         NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
@@ -77,7 +85,7 @@ classdef Solver_dp3 < handle
         function solve(obj)
             % all pair DTW
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
-            obj.dtw_helper = SubSegmentDTWHelper(obj.map_data, obj.elevFromBaro(:,2));
+            obj.dtw_helper = SubSegmentDTWHelper(obj.map_data, obj.elevFromBaro(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
             %obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
             %fprintf('finish calculating all pairs of dtw\n');
 
@@ -104,8 +112,7 @@ classdef Solver_dp3 < handle
                 % the traveling time, or more precisely, consumption of barometer data, is (bIdxEnd - bIdxStart + 1)
                 
                 for bIdxStart = 1:numElevBaro  % starting barometer index
-                    %earlyDPPruningScore = 200 + 8 * bIdxStart;
-                    earlyDPPruningScore = 2500;
+                    earlyDPPruningScore = obj.global_pruning_function(bIdxStart);
                     for nIdxStart = 1:numMapNodes  % starting node index
                         if dp(nIdxStart, bIdxStart) < earlyDPPruningScore    % global pruning. 
                             for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
@@ -189,8 +196,6 @@ classdef Solver_dp3 < handle
             % path is gauranteed to be inserted into res_traces with
             % replacing one of them.
             
-            path
-           
             numVisitedNodes = length(path);
             numElevBaro = size(obj.elevFromBaro, 1);
             numMapNodes = obj.map_data.getNumNodes();
@@ -198,7 +203,6 @@ classdef Solver_dp3 < handle
             dp(1, 1) = 0;
             from = zeros(numVisitedNodes, numElevBaro+1);  % from(a, b) = last step @ previous node_idx
             for i = 1:(numVisitedNodes-1)
-                obj.map_data.getSegNumElement( [path(i), path(i+1)] )
                 for j = 1:numElevBaro
                     for k = (j+1):(numElevBaro+1)
                         t = obj.dtw_helper.query(path(i), path(i+1), j, k-1);
@@ -211,9 +215,6 @@ classdef Solver_dp3 < handle
                 fprintf('pass %d-th of specified node\n', i);
             end
             
-            dp
-            from 
-            
             clear tmp_trace
             tmp_trace.dtwScore = dp(end, end);
             cElevStep = numElevBaro+1;  % current elevation step
@@ -221,7 +222,7 @@ classdef Solver_dp3 < handle
             for i = (numVisitedNodes-1):-1:1
                 cElevStep = from(i+1, cElevStep);
                 tmp_trace.rawPath = [ [cElevStep path(i)] ; tmp_trace.rawPath ];
-                [cElevStep i]
+                %[cElevStep i]
             end
             if numel(obj.res_traces) >= obj.max_results
                 obj.res_traces = obj.res_traces(1:(obj.max_results-1));
@@ -283,7 +284,7 @@ classdef Solver_dp3 < handle
                 a = rawPath(i  , 1);
                 b = rawPath(i+1, 1) - 1;
                 elevBaroSeg = obj.elevFromBaro(a:b, 2);
-                [~, dtwIdxBaro2Map, ~] = dtw_basic( elevMapSeg, elevBaroSeg );
+                [~, dtwIdxBaro2Map, ~] = dtw_basic( elevMapSeg, elevBaroSeg, obj.dtw_cost_function, obj.dtw_pruning_function );
                 latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
             end
 
@@ -399,7 +400,7 @@ classdef Solver_dp3 < handle
             tmpNodeIdxs = obj.getRawPath(traceIdx);
             tmpNodeIdxs = tmpNodeIdxs(:,2);
             elevFromPath = obj.map_data.getPathElev(tmpNodeIdxs);
-            [~, ~, scoreSeries] = dtw_basic(elevFromPath, obj.elevFromBaro);
+            [~, ~, scoreSeries] = dtw_basic(elevFromPath, obj.elevFromBaro, obj.dtw_cost_function, obj.dtw_pruning_function);
             plot(1:length(scoreSeries), scoreSeries);
             
             linkaxes([ax1,ax2],'x')

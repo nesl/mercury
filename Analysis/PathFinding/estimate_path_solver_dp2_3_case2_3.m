@@ -10,8 +10,8 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 3;  % 2 or 3
-caseNo = 3; % 2 or 3
+solverVersion = 2;  % 2 or 3
+caseNo = 2; % 2 or 3
 
 
 %% Inputs:
@@ -79,7 +79,14 @@ solver.solve();
 solver.getRawPath(1)
 solver.plotPathComparison(1)
 solver.toWeb();
+
 toc
+
+if solverVersion == 3  % CONSIDER: this violates the data encapsulation
+    [ratioOfDTWQuery, ratioOfElements] = solver.dtw_helper.pruningRatio();
+    fprintf('Pruning ratio in terms of DTW request: %f\n', ratioOfDTWQuery);
+    fprintf('Pruning ratio in terms of result of sub-segments: %f\n', ratioOfElements);
+end
 
 return;
 

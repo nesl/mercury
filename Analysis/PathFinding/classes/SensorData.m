@@ -128,6 +128,7 @@ classdef SensorData < handle
             
             % estimate turns
             turns_full = estimateTurns(acc, gyro);
+            
             % downsample estimated turns
             obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
@@ -265,8 +266,8 @@ classdef SensorData < handle
         end
 
         function data = getGps(obj)
+            % 7 columns: time, lat, lng, elev, error, speed, source
             % find valid indices for this segment
-            % time, lat, lng, speed, error, source (maybe...)
             gps_start_time = obj.segment_start - (-obj.gps_offset);
             gps_stop_time  = obj.segment_stop  - (-obj.gps_offset);
             data = obj.raw_gps( obj.raw_gps(:,1) >= gps_start_time & ...

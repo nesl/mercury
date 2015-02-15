@@ -11,13 +11,35 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 or 3
-caseNo = 2; % 2 or 3
+caseNo = 1; % 1 or 2 or 3
 
 
 %% Inputs:
 
-
-if caseNo == 2
+if caseNo == 1
+    % around weyburn
+    %    distance: 0.62 mile (1 km)
+    %        time: 900 sec
+    %   avg speed: 2.48mph / 4 km/h / 1.1 meter/sec
+    mapfile =    '../../Data/EleSegmentSets/ucla_small/';
+    sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
+    outputWebFile = ['../../Data/resultSets/case1_dp' num2str(solverVersion) '_ucla_small_weyburn_results.rset'];
+    % Create SensorData object
+    sensor_data = SensorData(sensorfile);
+    % test-specific settings
+    sensor_data.setSeaPressure(1020);
+    sensor_data.setPressureScalar(-8.15);
+    sensor_data.setAbsoluteSegment(1418102835, 1418103643);
+    %sensor_data.setWindowSize(5);   % default window size is 5
+    map_data = MapData(mapfile, 1);   % correct:1
+    if solverVersion == 2
+        solver = Solver_dp2(map_data, sensor_data);
+    elseif solverVersion == 3
+        solver = Solver_dp3(map_data, sensor_data);
+    else
+        error('Concentrate. There''s no this kind of solver...');
+    end
+elseif caseNo == 2
     % sunset
     %    distance: 1.26 mile (2.02 km)
     %        time: 150 sec

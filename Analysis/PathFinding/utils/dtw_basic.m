@@ -37,11 +37,43 @@ function [scoreSeg, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev
 
 % About pruning:
 %   Assume we are processing ith element of barometer series. If we are on
-%   the right path, then the minimum value of this column should be bound
-%   below pruningFunction(i) (not a real function but a formula). Once it 
-%   exceeds the pruning threshold, we don't process any more. The rest of the
-%   elements in score will be inf, and mappedIdx will simply be an empty
-%   array.
+%   the right path, then the minimum value of i-th column should be bound
+%   by pruning_function(i). Thus, once it violate this condition, we
+%   shouldn't continue performing DTW as it should be pruned out.
+%
+%   This is conceptually right but we're gonna use another pruning
+%   strategy. Instead, we can prune directly during we calculate the
+%   dynamic programming table. Consider the following observation:
+%
+%   dp:  0 X X X X X      X = impossible
+%        X . . . H *      . = reasonable values
+%        X X . . H @      H = the cost is too high and pruned by pruning function
+%        X X X . . .      @ = cell of interest. it's gaurantee it must be pruned.
+%        X X X X . .      * = don't care. it must be high in this example.
+%        X X X X X .
+%        X X X X X X
+%
+%   We found for each column (which has the same barometer index (bIdx)),
+%   there's an upper bound and lower bound search index w.r.t segment index
+%   (sIdx). The upper bound is naturely bounded by the fact of disallowing
+%   the gps-only transition. The lower bound is derived by the following
+%   sense. Please see the 4th column (the column with 2 Hs). After stepping
+%   all the cells in this column we found the first two elements are higher
+%   than the pruning threshold (denoted as H). Then we can argue that the
+%   first two cells in dp table of the next column (5th column) shouldn't 
+%   be visited because they should be pruned as the values are at least as
+%   high as their left neighbors. Thus the lower bound is monotonic
+%   increasing. Once the lower bound and upper bound is closed, then we
+%   don't need to perform DTW anymore.
+%
+%   Finally, the second strategy implicitly includes the first one.
+%
+%
+% What happened after being pruned:
+%   Once every cells in one column are totally pruned, the rest of the
+%   elements in scoreSeg will be marked as inf, mappedIdx and 
+%   scoreAloneTheWay will simply be an empty array.
+
 
 % About the transition:  (follows the matlab array directions)
 %
@@ -63,21 +95,7 @@ function [scoreSeg, mappedIdx, scoreAloneTheWay] = dtw_basic(elev_from_seg, elev
 %  blocked.
 %
 
-% CONSIDER: more pruning
-%   There's still a possibility to prune in the dynamic programming part.
-%   So far we only disallow the gps-only transition, which is upper bound
-%   pruning (in terms of index), but it is also possible to have lower
-%   bound pruning.
-%
-%   DP:  0 X X X X X      X = impossible
-%        X . . . H H      . = reasonable values
-%        X X . . H @      H = the cost is too high and pruned by pruning function
-%        X X X . . .      @ = cell of interest. it's gaurantee it must be pruned.
-%        X X X X . .
-%        X X X X X .
-%        X X X X X X
-%
-%  So the starting index of segment (sIdx) will monotonicly increase.
+
 
 % reshape the input and make the parameters:
 %    - hele as a column (y-axis) vector
@@ -88,24 +106,35 @@ elev_from_baro = elev_from_baro(:)';
 numElementSeg = numel(elev_from_seg);
 numElementBaro = numel(elev_from_baro);
 
+% the cost_function() is being called only once to get the best performance.
 costMatrix = cost_function(repmat(elev_from_seg, 1, numElementBaro) - repmat(elev_from_baro, numElementSeg, 1));
 
 dp = inf(numElementSeg+1, numElementBaro+1);
 from = zeros(numElementSeg+1, numElementBaro+1);
 dp(1,1) = 0;
 
+segIdxStart = 1;
+
 % for the pruning purpose we travel the barometer series (2nd dimension) as
 % the outter loop and segment series (1st dimension) as the inner loop.
 for bIdx = 1:numElementBaro
-    for sIdx = 1:numElementSeg;
+    segIdxEnd = min(bIdx, numElementSeg);
+    for sIdx = segIdxStart:segIdxEnd;
         %dp(j+1,k+1) = D(j+1,k+1) + min([D(j, k), D(j+1, k)]);
         [dp(sIdx+1, bIdx+1), from(sIdx+1, bIdx+1)] = min([ dp(sIdx+1, bIdx) dp(sIdx, bIdx) ]);
         dp(sIdx+1, bIdx+1) = dp(sIdx+1, bIdx+1) + costMatrix(sIdx, bIdx);
     end
     
-    % pruning part. remember we consider anything related to bIdx, so
-    % should be a column area.
-    if min( dp(2:end, bIdx+1) ) > pruning_function(bIdx)
+    % discuss: this should be considered the optimal way to implement
+    % pruning as the pruning checking is amortized by ( (number of elements
+    % of segments) + (number of elements in baro) ), corresponding the
+    % while condition as pruning sucessfully and pruning failed.
+    pruningScoreInThisRound = pruning_function(bIdx);
+    while segIdxStart <= segIdxEnd && dp(segIdxStart+1, bIdx+1) > pruningScoreInThisRound  % low index of segment exceeds the score and should be pruned
+        segIdxStart = segIdxStart + 1;
+    end
+    
+    if segIdxStart > segIdxEnd  % lower bound meets upper bound, which implies all the elements are totally pruned
         scoreSeg = dp(end, 2:end);
         mappedIdx = [];
         scoreAloneTheWay = [];

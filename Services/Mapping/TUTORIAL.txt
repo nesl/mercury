@@ -9,6 +9,16 @@ Software to open the map:
 
 
 [QGIS]
-QGIS itself can download part of the map by specifying the lat/long range. See http://learnosm.org/en/osm-data/osm-in-qgis/ for tutorial. The map downloading can be issued by clicked "Download data." The downloaded file should come with a file extension .osm extension, nevertheless the file itself is an xml. Briefly scanning it, the atom element seems to be node. The road/street is coded in way element, with a list of nd elements, the ref elements of which refer to the node elements by id. Probably it's the way to get the road path.
+QGIS itself can download part of the map by specifying the lat/long range. See
+http://learnosm.org/en/osm-data/osm-in-qgis/ for tutorial. The map downloading
+can be issued by clicking "Vector" -> "OpenStreetMap" -> "Download data."
+The downloaded file should come with a file extension .osm extension, but keep
+in mind the file itself is an xml. To check the correctness of the file,
+well I forgot the correct way to load the .osm, but simply dragging the file into
+QGIS window works.
+By briefly scanning it very quickly, the atom element seems to be node. The road/street is
+coded in way element, with a list of nd elements, the ref elements
+of which refer to the node elements by id. Currently we use this strategy to
+generate road network.
 
 

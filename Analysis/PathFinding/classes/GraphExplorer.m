@@ -64,6 +64,7 @@ classdef GraphExplorer < handle
                     N = obj.map.getNeighbors(node.node_idx);
                     % loop through all neighbors
                     nodeIsDeadend = true;
+                    
                     for i=1:length(N)
                         % if this is already a child of this "leaf" node,
                         % ignore it
@@ -87,12 +88,10 @@ classdef GraphExplorer < handle
                             obj.MIN_BRANCH_LOOP_LENGTH);
                         % if not, let's add it as a child
                         if ~visited
-                            %fprintf('exploring %d --> %d\n', node.node_idx, N(i));
 
                             % create a new child node
                             child_node = GraphNode(node, neighbor_idx);
                             node.addChild(child_node);
-                            node.children
                             % and calculate the cost of traveling to this
                             % new leaf node
                             new_path_cost = obj.calculatePathCost(child_node);
@@ -106,7 +105,7 @@ classdef GraphExplorer < handle
                     % children have been blacklisted and we can ignore this
                     % node in the future
                     if nodeIsDeadend
-                        node.setDeadend()
+                        node.setDeadend();
                     end
                 end
             end

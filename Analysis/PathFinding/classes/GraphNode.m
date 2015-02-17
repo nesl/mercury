@@ -13,7 +13,7 @@ classdef GraphNode < handle
         path_cost;
         % node children
         children = {};
-        map_idx2child = containers.Map('KeyType','int32','ValueType','int32');
+        map_idx2child;
         % blacklist of children that should not be visited again
         blacklist_nodes = [];
         % is this node a dead end? i.e. have all children been blacklisted?
@@ -31,6 +31,9 @@ classdef GraphNode < handle
             else
                 obj.path = nidx;
             end
+            
+            % initialize map
+            obj.map_idx2child = containers.Map('KeyType','int64','ValueType','int32');
         end
         
         % get the path

@@ -51,12 +51,14 @@ pause(0.1);
 for i=1:100
     fprintf('Iteration: %d\n', i);
     
-    % explore
-    %e_good.exploreNewNodes();
-    e_bad.exploreNewNodes();
     % prune
-    %e_good.autoPrunePaths();
-    e_bad.pruneUntilMaxPaths();
+    e_good.pruneUntilMaxPaths();
+    
+    % explore
+    e_good.exploreNewNodes();
+    e_bad.exploreNewNodes();
+
+    %e_bad.pruneUntilMaxPaths();
     
     hold off;
     for l=1:length(map_lines)
@@ -65,7 +67,7 @@ for i=1:100
         hold on;
     end
     
-    [paths,scores,latlngs,leaves] = e_bad.getAllPaths();
+    [paths,scores,latlngs,leaves] = e_good.getAllPaths();
     % plot paths
     for p=1:length(latlngs)
         path = latlngs{p};
@@ -88,10 +90,9 @@ for i=1:100
     
     %best cost score
     fprintf('good = %.2f, bad = %.2f\n', e_good.cost, e_bad.cost);
-    
-    
     pause();
     
+        
     clear plot
     hold off;
 end

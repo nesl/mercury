@@ -18,7 +18,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.50;
+        PRUNE_RATE = 0.70;
         
         % debugging options
         DBG = false;
@@ -67,10 +67,7 @@ classdef Solver_greedy < handle
                 end
             end
             
-            % --- search for realistic paths and prune ---
-            PRUNE_DELAY = 1;
-            time_till_prune = PRUNE_DELAY;
-            
+            % --- search for realistic paths and prune ---            
             for iter=1:100
                 fprintf('Iteration %d\n', iter);
                 
@@ -106,7 +103,7 @@ classdef Solver_greedy < handle
                 obj.graph_explorers(explorers_to_prune) = [];
                 
                 % --- finish if less than max outputs ---
-                if length(all_path_costs)*(100 - obj.PRUNE_RATE) < obj.max_results
+                if length(all_path_costs)*(1 - obj.PRUNE_RATE) < obj.max_results
                     fprintf(' SOLVER DONE!\n');
                     return;
                 end
@@ -127,13 +124,13 @@ classdef Solver_greedy < handle
                     
                     % plot everything
                     for e=1:length(obj.graph_explorers)
-                        [paths,scores] = obj.graph_explorers{e}.getAllPathLatLng();
-                        for p=1:length(paths);
-                            path = paths{p};
+                        [paths,scores,latlngs,leaves] = obj.graph_explorers{e}.getAllPaths();
+                        for p=1:length(latlngs);
+                            latlng = latlngs{p};
                             score = scores(p);
 
                             % long, lat
-                            plot(path(:,2), path(:,1), 'Color', obj.graph_explorers{e}.color, 'LineWidth',2);
+                            plot(latlng(:,2), latlng(:,1), 'Color', obj.graph_explorers{e}.color, 'LineWidth',2);
                             hold on;
                         end
                     end

@@ -18,7 +18,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.70;
+        PRUNE_RATE = 0.50;
         
         % debugging options
         DBG = false;
@@ -67,7 +67,9 @@ classdef Solver_greedy < handle
                 end
             end
             
-            % --- search for realistic paths and prune ---            
+            % --- search for realistic paths and prune ---
+            old_cost = 0;
+            
             for iter=1:100
                 fprintf('Iteration %d\n', iter);
                 
@@ -83,9 +85,19 @@ classdef Solver_greedy < handle
                
                 
                 % --- get threshold path cost ---
-                cost_thresh = prctile(all_path_costs, 100*(1 - obj.PRUNE_RATE));
+                %cost_thresh = prctile(all_path_costs, 100*(1 - obj.PRUNE_RATE));
+                sorted_costs = sort(all_path_costs);
+                prune_goal = round( length(sorted_costs)*(1-obj.PRUNE_RATE) );
+                prune_cost_idx = max(obj.max_results, prune_goal);
                 
-                                fprintf(' ------------ SUMMARY ----------- \n');
+                if prune_cost_idx > length(sorted_costs)
+                    % no need to prune!
+                    continue;
+                end
+                
+                cost_thresh = sorted_costs( prune_cost_idx );
+                
+                fprintf(' ------------ SUMMARY ----------- \n');
                 fprintf('    Explorers: %d \t Paths: %d, thresh:%.2f\n', length(obj.graph_explorers), length(all_path_costs), cost_thresh);
                 
                 % --- prune paths above the threshold ---
@@ -102,10 +114,15 @@ classdef Solver_greedy < handle
                 end
                 obj.graph_explorers(explorers_to_prune) = [];
                 
-                % --- finish if less than max outputs ---
-                if length(all_path_costs)*(1 - obj.PRUNE_RATE) < obj.max_results
-                    fprintf(' SOLVER DONE!\n');
-                    return;
+                % --- finish if overall cost has converged ---
+                if iter > 3
+                    delta = sorted_costs(1) - old_cost;
+                    if abs(delta) < 300;
+                        fprintf('SOLVER DONE!\n');
+                        return;
+                    end
+                    old_cost = sorted_costs(1);
+                    fprintf('    Solver Delta:%.2f\n', delta);
                 end
                     
                 
@@ -139,135 +156,29 @@ classdef Solver_greedy < handle
                 end
                 
                 % pause so we can see plot
-                pause(0.5);
-                
-                
-                
-                
+                pause(0.1);
+  
             end
-            
-            
-            
+      
         end
         
         % RETRIEVE PATHS
-        function rawPath = getRawPath(obj, traceIdx)
-            rawPath = obj.res_traces(traceIdx).rawPath;
-        end
-        
-        function dtwScore = getDTWScore(obj, traceIdx)
-            dtwScore = obj.res_traces(traceIdx).dtwScore;
-        end
-        
-        function latlngs = getLatLngPath(obj, traceIdx)
-            rawPath = obj.res_traces(traceIdx).rawPath;
-            latlngs = [];
-            for i = 1:length(rawPath)-1
-                elevMapSeg = obj.map_data.getSegElevation( rawPath(i:i+1, 2) );
-                latlngMapSeg = obj.map_data.getSegLatLng( rawPath(i:i+1, 2) );
-                a = rawPath(i  , 1);
-                b = rawPath(i+1, 1) - 1;
-                elevBaroSeg = obj.elevFromBaro(a:b, 2);
-                dtwIdxBaro2Map = dtw_find_path( elevMapSeg, elevBaroSeg );
-                latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
+        function [scores,paths] = getResults(obj)
+            % --- explore and get path costs ---
+            all_path_costs = [];
+            all_paths = {};
+            for e=1:length(obj.graph_explorers)
+                [paths,costs] = obj.graph_explorers{e}.getPaths();
+                all_path_costs = [all_path_costs; costs];
+                all_paths = [all_paths; paths];
             end
+            [sorted_costs, sorted_idxs] = sort(all_path_costs);
+
+            scores = sorted_costs(1:obj.max_results);
+            paths = all_paths(sorted_idxs);
             
-            %latlngs = [ latlngs; obj.map_data.nodeIdxToLatLng( rawPath(end, 2) ) ];
         end
         
-        function timeLatLngs = getTimeLatLngPath(obj, traceIdx)
-            timeLatLngs = [ obj.elevFromBaro(:,1)  obj.getLatLngPath(traceIdx) ];
-        end
-        
-        % [ row vector ] = getSquareErrors(obj)  // get up to <max_result> results
-        % [single value] = getSquareErrors(obj, traceIdx)
-        function squareErrors = getSquareErrors(obj, varargin)  % UNTESTED
-            indxs = 1:min(obj.max_results, numel(obj.res_traces));
-            if numel(varargin) >= 1
-                indxs = varargin{1}:varargin{1};
-            end
-            squareErrors = [];
-            for i = indxs
-                estimatedTimeLatLngs = obj.getTimeLatLngPath(i);
-                groundTruthTimeLatLngs = obj.sensor_data.getGps();
-                groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
-                squareErrors = [squareErrors; ...
-                    gpsSeriesCompare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
-            end
-        end
-        
-        % arguments should be passed as strings, including
-        % 'index', 'dtwScore' and 'squareError'
-        function res = resultSummarize(obj, varargin)
-            numRow = min(obj.max_results, numel(obj.res_traces));
-            res = zeros(numRow, 0);
-            for i = 1:numel(varargin)
-                if strcmp(varargin{i}, 'index') == 1
-                    'index'
-                    res = [res (1:numRow)'];
-                elseif strcmp(varargin{i}, 'dtwScore') == 1
-                    'dtwScore'
-                    tmp = zeros(numRow, 1);
-                    for j = 1:numRow
-                        tmp(j) = obj.res_traces(j).dtwScore;
-                    end
-                    res = [res roundn(tmp, -8)];
-                elseif strcmp(varargin{i}, 'squareError') == 1
-                    res = [ res roundn(obj.getSquareErrors(), -8) ];
-                else
-                    error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
-                end
-            end
-        end
-        
-        % VISUALIZATION
-        function plotPathComparison(obj, tracesIdxList)
-            gpsData = obj.sensor_data.getGps();  % 2:lat, 3:lon
-            clf
-            hold on
-            plot( gpsData(:,2), gpsData(:,3), 'k*' );
-            legendTexts = {'Ground'};
-            for i = tracesIdxList
-                estiLatLng = obj.getLatLngPath(i);
-                color = hsv2rgb([ rand() , 1, 0.7 ]);
-                plot( estiLatLng(:,1), estiLatLng(:,2), '-', 'Color', color );
-                legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
-            end
-            
-            rawPath = obj.getRawPath(tracesIdxList(1));
-            for i = 1:size(rawPath, 1)
-                latlng = obj.map_data.nodeIdxToLatLng(rawPath(i,2));
-                plot(latlng(1), latlng(2), 'ob');
-            end
-            legend(legendTexts);
-        end
-        
-        function plotElevationComparison(obj, tracesIdxList)
-            clf
-            hold on
-            legendTexts = {};
-            gps2ele = obj.sensor_data.getGps2Ele();
-            if size(gps2ele, 1) == 0
-                %text(0, 0, 'Sorry, but gps2ele file has not been generated');
-                xlabel('Sorry, but gps2ele file has not been generated');
-            else
-                plot( 1:length(gps2ele(:,1)), gps2ele(:,4), 'k-');
-                legendTexts = { legendTexts{:} 'from GPS traj' };
-            end
-            
-            plot(1:length(obj.elevFromBaro(:,1)), obj.elevFromBaro(:,2), 'b-');
-            legendTexts = { legendTexts{:} 'from baro' };
-            
-            for i = tracesIdxList
-                rawPath = obj.getRawPath(i);
-                tmpElev = obj.map_data.nodesToElev( rawPath(:,2) );
-                color = hsl2rgb([ rand() * 0.5 , 1, 0.7 ]);
-                plot(1:length(tmpElev), tmpElev, '-', 'Color', color);
-                legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
-            end
-            
-            legend(legendTexts);
-        end
     end
     
 end

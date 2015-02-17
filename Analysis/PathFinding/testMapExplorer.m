@@ -51,12 +51,12 @@ pause(0.1);
 for i=1:100
     fprintf('Iteration: %d\n', i);
     
-    % prune
-    e_good.pruneUntilMaxPaths();
     
     % explore
     e_good.exploreNewNodes();
-    e_bad.exploreNewNodes();
+    %e_bad.exploreNewNodes();
+    % prune
+    e_good.pruneUntilMaxPaths();
 
     %e_bad.pruneUntilMaxPaths();
     
@@ -90,24 +90,70 @@ for i=1:100
     
     %best cost score
     fprintf('good = %.2f, bad = %.2f\n', e_good.cost, e_bad.cost);
-    pause();
+    pause(0.1);
     
         
     clear plot
     hold off;
 end
 
-
+return;
     
 
 
+%%
+true = [
+    72
+    70
+    49
+    46
+    50
+    254
+    251
+    248
+    247
+    250];
+
+wrong = [
+    72
+    305
+    306
+    307
+    310
+    63
+    308
+    ];
+
+gt = sensor_data.getElevationTimeWindow();
+ele_true = map_data.getPathElev(true);
+ele_wrong = map_data.getPathElev(wrong);
+test = 124*ones(1,100);
+plot(ele_true);
+hold on;
+plot(ele_wrong,'r');
+plot(gt(:,2),'k');
+
+%% 
+grdy_true = [];
+grdy_wrong = [];
+
+for L=1:5:length(ele_true)
+    partial = ele_true(1:L);
+    cost = DTW_greedy(gt(:,2), partial);
+    grdy_true = [grdy_true; cost];
+end
 
 
+for L=1:5:length(ele_wrong)
+    partial = ele_wrong(1:L);
+    cost = DTW_greedy(gt(:,2), partial);
+    grdy_wrong = [grdy_wrong; cost];
+end
 
 
-
-
-
+plot(grdy_true);
+hold on;
+plot(grdy_wrong,'r');
 
 
 

@@ -18,7 +18,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 75;
+        PRUNE_RATE = 0.50;
         
         % debugging options
         DBG = false;
@@ -83,13 +83,13 @@ classdef Solver_greedy < handle
                     costs = obj.graph_explorers{e}.getPathCosts();
                     all_path_costs = [all_path_costs; costs];
                 end
-                
-                fprintf(' ------------ SUMMARY ----------- \n');
-                fprintf('    Explorers: %d \t Paths: %d\n', length(obj.graph_explorers), length(all_path_costs));
-
+               
                 
                 % --- get threshold path cost ---
-                cost_thresh = prctile(all_path_costs, 100 - obj.PRUNE_RATE);
+                cost_thresh = prctile(all_path_costs, 100*(1 - obj.PRUNE_RATE));
+                
+                                fprintf(' ------------ SUMMARY ----------- \n');
+                fprintf('    Explorers: %d \t Paths: %d, thresh:%.2f\n', length(obj.graph_explorers), length(all_path_costs), cost_thresh);
                 
                 % --- prune paths above the threshold ---
                 explorers_to_prune = [];
@@ -100,6 +100,7 @@ classdef Solver_greedy < handle
                         explorers_to_prune = [explorers_to_prune; e];
                     else
                         obj.graph_explorers{e}.prunePathsWorseThan(cost_thresh);
+                        obj.graph_explorers{e}.pruneUntilMaxPaths();
                     end
                 end
                 obj.graph_explorers(explorers_to_prune) = [];

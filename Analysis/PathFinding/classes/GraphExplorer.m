@@ -32,7 +32,7 @@ classdef GraphExplorer < handle
             obj.map = map;
             obj.sensor = sensor;
             if pruning < 0 || pruning >= 1
-                error('prune factor bust be >=0 and < 1');
+                error('prune factor must be >=0 and < 1');
             end
             obj.PRUNE_FACTOR_BRANCH = pruning;
             
@@ -65,6 +65,17 @@ classdef GraphExplorer < handle
                     % loop through all neighbors
                     nodeIsDeadend = true;
                     for i=1:length(N)
+                        % if this is already a child of this "leaf" node,
+                        % ignore it
+                        %fprintf('%d has children: \n', node.node_idx);
+                        %for q=1:length(node.children)
+                        %    fprintf('    > child: %d (%d)\n', node.children{q}.node_idx, node.hasChild(N(q)));
+                        %end
+
+                        if node.hasChild(N(i))
+                            continue;
+                        end
+                        
                         % if this is a blacklisted neigbor, ignore it
                         if node.isChildBlacklisted(N(i))
                             continue;
@@ -76,9 +87,12 @@ classdef GraphExplorer < handle
                             obj.MIN_BRANCH_LOOP_LENGTH);
                         % if not, let's add it as a child
                         if ~visited
+                            %fprintf('exploring %d --> %d\n', node.node_idx, N(i));
+
                             % create a new child node
                             child_node = GraphNode(node, neighbor_idx);
                             node.addChild(child_node);
+                            node.children
                             % and calculate the cost of traveling to this
                             % new leaf node
                             new_path_cost = obj.calculatePathCost(child_node);
@@ -96,15 +110,16 @@ classdef GraphExplorer < handle
                     end
                 end
             end
+            
         end
-                
+        
         % DETERMINE THE COST OF A GIVEN PATH
         function cost = calculatePathCost(obj, leaf_node)
             path_nodes = leaf_node.path;
             
             % get elevation
             mapElevations = obj.map.getPathElev(path_nodes);
-            estElevations = obj.sensor.getElevation();
+            estElevations = obj.sensor.getElevationTimeWindow();
             % ignore timestamps and add offset
             if obj.use_absolute_elevation
                 estElevations = estElevations(:,2);
@@ -114,15 +129,15 @@ classdef GraphExplorer < handle
             
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
-             
-%             close all;
-%             plot(estElevations,'k');
-%             hold on;
-%             plot(mapElevations,'r');
-%             title(['Node ID: ' num2str(obj.root.node_idx)]);
-%             fprintf('score = %.2f\n', cost_elev);
-%             pause();
-%             
+            
+            %             close all;
+            %             plot(estElevations,'k');
+            %             hold on;
+            %             plot(mapElevations,'r');
+            %             title(['Node ID: ' num2str(obj.root.node_idx)]);
+            %             fprintf('score = %.2f\n', cost_elev);
+            %             pause();
+            %
             
             % get turn cost
             % TODO: Currently I'm not going to add turns, so that I can see
@@ -163,7 +178,7 @@ classdef GraphExplorer < handle
                     
                 end
             end
-
+            
         end
         
         % if the solver object wants to prune everything worse than a
@@ -190,26 +205,26 @@ classdef GraphExplorer < handle
         
         % prune paths by looking at costs relative to this explorer,
         % keeping at most MAX_LEAVES.
-        function autoPrunePaths(obj)
-            % what are our candidate path costs right now?
-            path_costs = [];
-            path_idxs = [];
-            for n=1:length(obj.all_nodes)
-                if obj.all_nodes{n}.isLeaf()
-                    path_costs = [path_costs; obj.all_nodes{n}.path_cost];
-                    path_idxs = [path_idxs; n];
+        function pruneUntilMaxPaths(obj)
+            % if we don't have to prune any, skip this.
+            if obj.numLeaves() > obj.MAX_LEAVES
+                
+                % what are our candidate path costs right now?
+                path_costs = [];
+                path_idxs = [];
+                for n=1:length(obj.all_nodes)
+                    if obj.all_nodes{n}.isLeaf()
+                        path_costs = [path_costs; obj.all_nodes{n}.path_cost];
+                        path_idxs = [path_idxs; n];
+                    end
                 end
-            end
-            
-            % how many leaves can we keep? log2( # leaves ), no fewer than 4
-            sorted_costs = sort(path_costs);
-            
-            % what's our threshold for tossing out bad paths?
-            % throw away any path that exceeds (1-factor)*min_cost
-            obj.cost = sorted_costs(1);
-            
-            % do we have to prune? do we have more than we're keeping?
-            if length(path_costs) > obj.MAX_LEAVES
+                
+                % how many leaves can we keep? log2( # leaves ), no fewer than 4
+                sorted_costs = sort(path_costs);
+                
+                % what's our threshold for tossing out bad paths?
+                % throw away any path that exceeds (1-factor)*min_cost
+                obj.cost = sorted_costs(1);
                 
                 % array of leaves to be pruned
                 leaves_to_prune = [];
@@ -227,8 +242,8 @@ classdef GraphExplorer < handle
                 
                 % prune leaves
                 obj.pruneLeaves(leaves_to_prune);
-                
             end
+            
             
         end
         
@@ -236,30 +251,47 @@ classdef GraphExplorer < handle
         function pruneLeaves(obj, leaf_idxs)
             % prune leaf
             for i=1:length(leaf_idxs)
+                %fprintf('   pruning %d from %d\n', obj.all_nodes{leaf_idxs(i)}.node_idx, obj.all_nodes{leaf_idxs(i)}.parent.node_idx);
                 obj.all_nodes{ leaf_idxs(i) }.prune();
             end
             % remove leaf from object list
             obj.all_nodes(leaf_idxs) = [];
         end
         
+        % how many leaves are there?
+        function num = numLeaves(obj)
+           num = 0;
+           for n=1:length(obj.all_nodes)
+               if obj.all_nodes{n}.isLeaf()
+                   num = num + 1;
+               end
+           end
+        end
+        
         % PLOTTING
-        function [paths,scores] = getAllPathLatLng(obj)
-            paths = {};
+        function [paths,scores,latlngs,leaves] = getAllPaths(obj)
+            latlngs = {};
             scores = [];
+            leaves = [];
+            paths = {};
             % add paths to all leaves
             for n=1:length(obj.all_nodes)
                 if obj.all_nodes{n}.isLeaf()
+                    % keep track of leaves
+                    leaves = [leaves; obj.all_nodes{n}.node_idx];
                     % get path of indices
                     path_idxs = obj.all_nodes{n}.getPath();
+                    paths = [paths; {path_idxs}];
                     % convert indices to lat/lng
                     path_latlng = obj.map.getPathLatLng(path_idxs);
                     % append to array
-                    paths = [paths; path_latlng];
+                    latlngs = [latlngs; path_latlng];
                     scores = [scores; obj.all_nodes{n}.path_cost];
                 end
             end
         end
-
+        
+        
     end
     
 end

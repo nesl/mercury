@@ -52,42 +52,48 @@ for i=1:100
     fprintf('Iteration: %d\n', i);
     
     % explore
-    e_good.exploreNewNodes();
+    %e_good.exploreNewNodes();
     e_bad.exploreNewNodes();
     % prune
-    e_good.prunePaths();
-    e_bad.prunePaths();
+    %e_good.autoPrunePaths();
+    e_bad.pruneUntilMaxPaths();
     
-%     hold off;
-%     for l=1:length(map_lines)
-%         line = map_lines{l};
-%         plot(line(:,2), line(:,1), 'Color',[0.8 0.8 0.8]);
-%         hold on;
-%     end
-%     
-%     [paths,scores] = e_good.getAllPathLatLng();
-%     for p=1:length(paths)
-%         path = paths{p};
-%         score = scores(p);
-%         if score == min(scores)
-%             color = 'm';
-%             width = 2;
-%         else
-%             color = 'b';
-%             width = 1;
-%         end
-%         plot(path(:,2), path(:,1), color, 'LineWidth',width);
-%         text(path(end,2), path(end,1), num2str(score));
-%     end
+    hold off;
+    for l=1:length(map_lines)
+        line = map_lines{l};
+        plot(line(:,2), line(:,1), 'Color',[0.8 0.8 0.8]);
+        hold on;
+    end
     
-    % best cost score
-    %fprintf('good = %.2f, bad = %.2f\n', e_good.cost, e_bad.cost);
+    [paths,scores,latlngs,leaves] = e_bad.getAllPaths();
+    % plot paths
+    for p=1:length(latlngs)
+        path = latlngs{p};
+        score = scores(p);
+        if score == min(scores)
+            color = 'm';
+            width = 2;
+        else
+            color = 'b';
+            width = 1;
+        end
+        plot(path(:,2), path(:,1), color, 'LineWidth',width);
+        text(path(end,2), path(end,1), num2str(score));
+    end
+    % plot leaves
+    for l=1:length(leaves)
+        latlng = map_data.getNodeIdxLatLng(leaves(l));
+        plot(latlng(2), latlng(1), 'sr', 'MarkerFaceColor','g', 'LineWidth',2);
+    end
+    
+    %best cost score
+    fprintf('good = %.2f, bad = %.2f\n', e_good.cost, e_bad.cost);
     
     
     pause();
     
-    % clear plot
-    %hold off;
+    clear plot
+    hold off;
 end
 
 

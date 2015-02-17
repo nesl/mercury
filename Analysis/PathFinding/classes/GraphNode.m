@@ -40,7 +40,7 @@ classdef GraphNode < handle
         
         % is this a leaf?
         function l = isLeaf(obj)
-            l = isempty(obj.children);
+            l = isempty( find( ~cellfun(@isempty, obj.children) ) );
         end
         
         % is this a root
@@ -71,6 +71,11 @@ classdef GraphNode < handle
         % is this node blacklisted?
         function val = isChildBlacklisted(obj, child_idx)
             val = ~isempty( find(obj.blacklist_nodes == child_idx) );
+        end
+        
+        % is this node already a child of this?
+        function val = hasChild(obj, child_idx)
+            val = isKey(obj.map_idx2child, child_idx);
         end
         
         % set this node as a dead end (all children blacklisted)
@@ -105,25 +110,14 @@ classdef GraphNode < handle
         function  obj = addChild(obj, child_obj)
             child_idx = child_obj.node_idx;
             % add as a child if it's not one already
-            if ~isKey(obj.map_idx2child, child_idx)
+            if ~obj.hasChild(child_obj)
                 % new child
                 obj.children = [obj.children; {child_obj}];
                 obj.map_idx2child(child_idx) = length(obj.children);
             end
         end
         
-        % remove a child
-        function obj = removeChild(obj, child_obj)
-            child_idx = child_obj.node_idx;
-            if isKey(obj.map_idx2child, child_idx)
-                % remove from cell array of children
-                obj.children(obj.map_idx2child(child_idx)) = [];
-                % remove dictionary entry
-                remove(obj.map_idx2child, child_idx);
-            end
-        end
-        
-        
+
     end
     
 end

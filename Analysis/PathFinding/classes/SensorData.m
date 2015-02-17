@@ -140,6 +140,7 @@ classdef SensorData < handle
             % downsample estimated turns
             obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
+            % MESSGAE TO PAUL from Bo-Jhang: Suggest to change estimateTurnDiscrete() as estimateTurnEvents()
             % MESSGAE TO PAUL from Bo-Jhang: I add the following lines
             obj.est_turn_events = estimateTurnsDiscrete(acc, gyro);
         end

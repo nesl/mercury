@@ -11,12 +11,18 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 or 3
-caseNo = 1; % 1 or 2 or 3
+caseNo = 3; % 1 or 2 or 3
+
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
 %    bottom_right corner: (34.052816, -118.435204)
 %    area: 3117m (horizontal) x 3242m (vertical) = 10.1 km^2 = 3.95 mile^2
+
+% note:
+%     34.085134, -118.477606
+%     34.041619, -118.424563
+% d   TODO
 
 %% Inputs:
 if caseNo == 1
@@ -47,7 +53,7 @@ elseif caseNo == 2
     %    distance: 1.26 mile (2.02 km)
     %        time: 150 sec
     %   avg speed: 30mph / 48.5 km/h / 13.4 meter/sec
-    mapfile =    '../../Data/EleSegmentSets/ucla_small/';
+    mapfile =    '../../Data/EleSegmentSets/ucla_3x3/';
     sensorfile = '../../Data/rawData/baro_n503_20150111_091333.baro.csv';
     outputWebFile = ['../../Data/resultSets/case2_dp' num2str(solverVersion) '_ucla_small_sunset_results.rset'];
     % Create SensorData object

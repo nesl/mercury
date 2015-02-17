@@ -342,6 +342,34 @@ classdef MapData < handle
             end
         end
         
+        % ESTIMATE MAP TURNS
+        function turns = getTurnsFromNodes(obj, nidxList)
+            % get the lat/lng first
+            latlngs = obj.getPathLatLng(nidxList);
+            % now find absolute turns
+            angles = [];
+            for i=2:size(latlngs,1)
+                angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
+                angles = [angles; angle];
+            end
+            
+            % and then relative turns
+            dAngles = zeros(size(angles));
+            for i=2:length(angles)
+                dAngle = angles(i) - angles(i-1);
+                dAngles(i) = dAngle;
+            end
+            
+            % and finally window these turns
+            wlen = 5;
+            SCALE = 0.2;
+            turns = [];
+            for i=1:(length(dAngles)-wlen)
+                turns = [turns;
+                    SCALE*sum(dAngles(i:(i+wlen)))];
+            end
+        end
+        
         % QUERY BY GEO INFORMATION
         function meter = distanceToNodeIdx(obj, latlng, nodeIdx)
             meter = latlng2m(latlng, obj.getNodeIdxLatLng(nodeIdx));

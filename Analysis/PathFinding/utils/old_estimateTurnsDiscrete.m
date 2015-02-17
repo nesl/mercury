@@ -1,4 +1,4 @@
-function [turn_angles, turns] = estimateTurns(accRaw, gyroRaw)  % TODO: check the correctness of this file
+function [turn_angles] = estimateTurnsDiscrete(accRaw, gyroRaw)  % TODO: check the correctness of this file
 % [turn_angles] = estimateTurns(accRaw, gyroRaw)
 
 %% Get Sampling Rates
@@ -29,10 +29,10 @@ normalRotations = [gyroFilt(:,1) sum(gyroFilt(:,2:4).*grav_vec_resize(:,2:4), 2)
 
 %% Turn Detection
 % windowed, bounded integration
-TURN_THRESH = 35; % degrees
+TURN_THRESH = 10; % degrees
 turns = [normalRotations(:,1) zeros(size(normalRotations,1),1)];
-win_size = round( SR_acc*3 ); % 3 sec (integral window time)
-backoff = round( SR_gyro*5 ); % 5 sec (temporal backoff)
+win_size = 50*5; % 5 sec (integral window time)
+backoff = 50*4; % 4 sec (temporal backoff)
 turn_events = [];
 
 last_time = turns(1,1);
@@ -96,7 +96,7 @@ end
 
 % predict turn angles
 turn_angles = turn_events;
-turn_angles(:,2) = turn_angles(:,2)*0.8; % fudge factor to estimate angle
+turn_angles(:,2) = turn_angles(:,2)*1.3; % fudge factor to estimate angle
 
 % plot
 %{

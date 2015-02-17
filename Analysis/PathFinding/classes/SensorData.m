@@ -135,14 +135,14 @@ classdef SensorData < handle
             % variable.
             
             % estimate turns
-            turns_full = estimateTurns(acc, gyro);
+            [turn_events, turns_full] = estimateTurns(acc, gyro);
             
             % downsample estimated turns
             obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
             % MESSGAE TO PAUL from Bo-Jhang: Suggest to change estimateTurnDiscrete() as estimateTurnEvents()
             % MESSGAE TO PAUL from Bo-Jhang: I add the following lines
-            obj.est_turn_events = estimateTurnsDiscrete(acc, gyro);
+            obj.est_turn_events = turn_events;
         end
                 
         % SIGNAL SEGMENTATION

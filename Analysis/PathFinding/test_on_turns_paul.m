@@ -17,13 +17,52 @@ sensor_data.setPressureScalar(-8.2);
 sensor_data.setAbsoluteSegment(1421002543, 1421002988);
 sensor_data.setWindowSize(0.5);   % correct:0.5
 map_data = MapData(mapfile, 1);   %correct:1
+gps = sensor_data.getGps();
 
-%% Playground
-turns = sensor_data.getTurns();
+%% get turn estimates
+turnAnalog = sensor_data.getTurns();
 turnEvents = sensor_data.getTurnEvents();
 
+plot(turnAnalog(:,1), turnAnalog(:,2));
+hold on;
+plot(turnEvents(:,1), turnEvents(:,2),'rx');
+
+%% Get closest path from OSM map
+map_path = [
+       33
+       36
+      256
+      269
+      267
+      268
+      234
+      153
+       18
+       16
+       19
+      194
+       28
+       26
+       29
+       31
+      185
+        5
+      186
+      187
+      189
+      128
+      124
+      127
+      129
+   ];
+closest_gps = map_data.getPathLatLng(map_path);
+
+%% Get map turns
+map_turns = map_data.getTurnsFromNodes(map_path);
+
+
 %% See the turn events on the map
-gps = sensor_data.getGps();
+
 maxTime = max( max(gps(:,1)), max(turnEvents(:,1)) );
 minTime = min( min(gps(:,1)), min(turnEvents(:,1)) );
 dTime = maxTime - minTime;

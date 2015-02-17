@@ -44,7 +44,7 @@ match_costs = Costs(end,:);
 % length weights
 lengths = 1:size(Costs,2);
 MIN_PARTIAL = 10;
-length_weights = max( (lengths - MIN_PARTIAL), 0).^1.5;
+length_weights = max( (lengths - MIN_PARTIAL), 0).^2.0;
 
 % final greedy cost
 [greedy_cost,idx] = min( -length_weights./(match_costs+1) );

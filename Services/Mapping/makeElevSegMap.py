@@ -7,6 +7,12 @@
 # fine-grained elevation segments, so let's set resolution as >= 1e-4
 # (should be roughly 5m)
 
+# Issues: the position of this script cannot be changed. Since it uses Elevation
+#         library by appending the path, and ElevationService has it's own path
+#         to store data (elevation tiles), move this script into other folder,
+#         or even executing this script from different working directory will
+#         raise folder/file not found error.
+
 import os
 import sys
 sys.path.append('../Elevation')
@@ -27,10 +33,21 @@ def linearSpace(latLngA, latLngB):
 
 
 # historical options
-#tfixFilePath = '../../Data/trajectorySets/ucla_small.tfix'  # input part
-#outDir = '../../Data/EleSegmentSets/ucla_small/' # output folder
-tfixFilePath = '../../Data/trajectorySets/ucla_west.tfix'  
-outDir = '../../Data/EleSegmentSets/ucla_west/' 
+inputTfixName = 'ucla_3x3.tfix'  # sample: 'ucla_small.tfix'
+#inputTfixName = 'ucla_west'
+
+
+#if len(sys.argv) >= 2:
+#    inputTfixName = sys.argv[1]
+
+inRootDir = '../../Data/trajectorySets/'
+outRootDir = '../../Data/EleSegmentSets/'
+
+tfixFilePath = inRootDir + inputTfixName
+outDir = outRootDir + inputTfixName[:-5] + '/'
+
+cmd = 'mkdir -p ' + outDir
+os.system(cmd)
 
 f = open(tfixFilePath)   # input part
 lines = f.readlines()

@@ -118,6 +118,10 @@ classdef MapData < handle
             segs = obj.endNodePairs;
         end
         
+        function num = getNumSegments(obj)
+            num = size(obj.endNodePairs, 1);
+        end
+        
         function lines = getAllSegLatLng(obj)
             lines = {};
             segs = obj.getAllSegments();

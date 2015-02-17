@@ -402,30 +402,11 @@ classdef Solver_dp3 < handle
         
         % TO WEB
         function toWeb(obj)
-            if length(obj.outputFilePath) == 0
-                error('set output file path to the solver first (in toWeb())');
-            end
-            fid = fopen(obj.outputFilePath, 'w');
-            gpsData = obj.sensor_data.getGps();
-            for i = 1:size(gpsData, 1)
-                fprintf(fid, '%f,%f,', gpsData(i,2), gpsData(i,3) );
-            end
-            fprintf(fid, '-1\n');
-            
-            numRes = min(obj.max_results, numel(obj.res_traces));
-            fprintf(fid, '%d\n', numRes);
-            for i = 1:numRes
-                squareError = obj.getSquareErrors(i);
-                fprintf(fid, '%f,%f,', obj.res_traces(i).dtwScore, squareError);
-                rawPath = obj.getRawPath(i);
-                for j=1:size(rawPath, 1)
-                    latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
-                    fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
-                end
-                fprintf(fid,'-1\n');
-            end
-            fprintf(['File created. Please check file "' obj.outputFilePath '"\n']);
-            fclose(fid);
+            obj.private_toWeb(0);
+        end
+        
+        function toWebBeautiful(obj)
+            obj.private_toWeb(1);
         end
         
         
@@ -447,6 +428,47 @@ classdef Solver_dp3 < handle
             end
             lcs = dp(end, end);
             score = lcs * lcs / lenA / lenB;
+        end
+        
+        % help for generating results to the web
+        function private_toWeb(obj, flagBeautiful)
+            if isempty(obj.outputFilePath)
+                error('set output file path to the solver first (in toWeb())');
+            end
+            
+            fid = fopen([ obj.outputFilePath ], 'w');
+            gpsData = obj.sensor_data.getGps();
+            for i = 1:size(gpsData, 1)
+                fprintf(fid, '%f,%f,', gpsData(i,2), gpsData(i,3) );
+            end
+            fprintf(fid, '-1\n');
+            
+            numRes = min(obj.max_results, numel(obj.res_traces));
+            fprintf(fid, '%d\n', numRes);
+            for i = 1:numRes
+                squareError = obj.getSquareErrors(i);
+                fprintf(fid, '%f,%f,', obj.res_traces(i).dtwScore, squareError);
+                
+                if flagBeautiful == 0
+                    rawPath = obj.getRawPath(i);
+                    for j=1:size(rawPath, 1)
+                        latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
+                        fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
+                    end
+                    fprintf(fid,'-1\n');
+                elseif flagBeautiful == 1
+                    estiLatLng = obj.getPathLatLng(i);
+                    for j=1:size(estiLatLng, 1)
+                        fprintf(fid, '%f,%f,', estiLatLng(j,1), estiLatLng(j,2));
+                    end
+                else
+                    error('Unsupported mode of generating result (in private_toWeb())');
+                end
+                
+                fprintf(fid, '\n');
+            end
+            fprintf(['File created. Please check file "' obj.outputFilePath '"\n']);
+            fclose(fid);
         end
     end
     

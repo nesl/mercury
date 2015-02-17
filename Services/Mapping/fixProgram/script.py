@@ -14,7 +14,7 @@ import re
 osmName = 'ucla_3x3.osm'   # sample: 'ucla.osm'
 optionAllowLoop = False   # most of the cases are building bounding boxes
 
-inFile = '../osmFiles/' + osmName
+inFile = '../../../Data/osmFiles/' + osmName
 if len(osmName.split('.')) == 1:
     osmNameWoExt = osmName
 else:

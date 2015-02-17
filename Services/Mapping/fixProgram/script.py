@@ -11,7 +11,7 @@ import re
 
 # also, please scroll down the very bottom to see what's the next step
 
-osmName = 'ucla_3x3.osm'   # sample: 'ucla.osm'
+osmName = 'ucla_5x5.osm'   # sample: 'ucla.osm'
 optionAllowLoop = False   # most of the cases are building bounding boxes
 
 inFile = '../../../Data/osmFiles/' + osmName

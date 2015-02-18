@@ -36,7 +36,6 @@ costMatrix = (repmat(partial, 1, num_cols) - repmat(template', num_rows, 1)) .^ 
 % what is the entropy of this partial candidate? if we have a good match
 % with a higher entropy, that's more significant than a good match with a
 % low entropy.  
-ent = entropy(partial./max(partial));
 
 % costs to various template segments
 match_costs = Costs(end,:);
@@ -44,10 +43,10 @@ match_costs = Costs(end,:);
 % length weights
 lengths = 1:size(Costs,2);
 MIN_PARTIAL = 10;
-length_weights = max( (lengths - MIN_PARTIAL), 0).^2.5;
+length_weights = max( (lengths - MIN_PARTIAL), 0).^2.0;
 
 % final greedy cost
-[greedy_cost,idx] = min( -length_weights./(match_costs+1) );
+[greedy_cost,idx] = min( -1e-3*var(partial)*length_weights./(match_costs+1) );
 
 %fprintf(' %.2f * %d / %.5f = %.2f\n', ent, idx, match_costs(idx)+1, greedy_cost);
 

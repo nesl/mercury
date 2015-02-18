@@ -18,7 +18,7 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.50;
+        PRUNE_RATE = 0.750;
         
         % debugging options
         DBG = false;
@@ -68,7 +68,8 @@ classdef Solver_greedy < handle
             end
             
             % --- search for realistic paths and prune ---
-            old_cost = 0;
+            hist_len = 5;
+            cost_history = zeros(hist_len,1);
             
             for iter=1:100
                 fprintf('Iteration %d\n', iter);
@@ -115,16 +116,14 @@ classdef Solver_greedy < handle
                 obj.graph_explorers(explorers_to_prune) = [];
                 
                 % --- finish if overall cost has converged ---
-                if iter > 3
-                    delta = sorted_costs(1) - old_cost;
-                    if abs(delta) < 300;
-                        fprintf('SOLVER DONE!\n');
-                        return;
-                    end
-                    old_cost = sorted_costs(1);
-                    fprintf('    Solver Delta:%.2f\n', delta);
+                deltaPerc = min(1, abs((sorted_costs(1) - cost_history(1))/cost_history(1)) );
+                fprintf('    Solver Delta: %.3f\n', deltaPerc);
+                if deltaPerc < 0.01;
+                   fprintf('SOLVER DONE!\n');
+                   return;
                 end
-                    
+                % rotate window
+                cost_history = [cost_history(2:end); sorted_costs(1)];
                 
                 % PLOT DEBUGGING
                 if obj.DBG
@@ -174,7 +173,7 @@ classdef Solver_greedy < handle
             end
             [sorted_costs, sorted_idxs] = sort(all_path_costs);
 
-            scores = sorted_costs(1:obj.max_results);
+            scores = sorted_costs(1:end);
             paths = all_paths(sorted_idxs);
             
         end

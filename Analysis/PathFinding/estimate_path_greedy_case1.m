@@ -67,7 +67,17 @@ colors = {'m','r','b','g'};
 for i=3:-1:1
     path = paths{i};
     elev = map_data.getPathElev(path);
-    plot(elev, colors{i}, 'LineWidth',2);
+    fprintf(' Path [%d] has DTW score: %.2f\n', i, DTW_greedy(elev_true(:,2), elev) );
+    if solver.use_absolute_elevation
+        plot(elev, colors{i}, 'LineWidth',2);
+        xend = length(elev)
+        text( xend, elev(xend)+0.1, num2str(costs(i)) );
+    else
+        delta = elev(1) - elev_true(1,2);
+        plot(elev - delta, colors{i}, 'LineWidth',2);
+        xend = length(elev);
+        text( xend+2, elev(xend) - delta+0.1, num2str(costs(i)) );
+    end
     hold on;
 end
 plot(elev_true(:,2),'k--');

@@ -222,6 +222,29 @@ classdef GraphExplorer < handle
             % prune leaves
             obj.pruneLeaves(leaves_to_prune);
         end
+         
+%         % prune any paths that look too similar to a provided path
+%         function pruneSimilarPaths(obj, test_path, thresh)
+%             for n=1:length(obj.all_nodes)
+%                 if obj.all_nodes{n}.isLeaf()
+%                     % get similarity score
+%                     path = obj.all_nodes{n}.path;
+%                     similarity = getPathSimilarity(test_path, path);
+%                     
+%                     % prune if it's too similar
+%                     while similarity > thresh
+%                         % store the parent's path
+%                         path = obj.all_nodes{n}.parent.path;
+%                         % prune the child
+%                         obj.pruneLeaves(n);
+%                         % get new similarity
+%                         similarity = getPathSimilarity(test_path, 
+%                     end
+%                     
+%                     
+%                 end
+%             end
+%         end
         
         % prune paths by looking at costs relative to this explorer,
         % keeping at most MAX_LEAVES.
@@ -262,9 +285,7 @@ classdef GraphExplorer < handle
                 
                 % prune leaves
                 obj.pruneLeaves(leaves_to_prune);
-            end
-            
-            
+            end            
         end
         
         % prune a batch of leaves

@@ -40,15 +40,31 @@ costMatrix = (repmat(partial, 1, num_cols) - repmat(template', num_rows, 1)) .^ 
 % costs to various template segments
 match_costs = Costs(end,:);
 
+% get variance
+variance = var(partial);
+
 % length weights
 lengths = 1:size(Costs,2);
 MIN_PARTIAL = 10;
 length_weights = max( (lengths - MIN_PARTIAL), 0).^2.0;
 
-% final greedy cost
-[greedy_cost,idx] = min( -1e-3*var(partial)*length_weights./(match_costs+1) );
+% cost of going this speed
+SR = (1/1); % windowed baro / sec
+times = lengths/SR;
+latlng_dist = 10; % meters / latlng sample
+dist = length(partial)*latlng_dist;
+avg_speeds = dist./times;
+speed_costs = calculateSpeedCost(avg_speeds);
 
-%fprintf(' %.2f * %d / %.5f = %.2f\n', ent, idx, match_costs(idx)+1, greedy_cost);
+
+% final greedy cost
+[greedy_cost, idx] = min( -1e-1*sqrt(variance)*speed_costs.*length_weights./(match_costs+1) );
+
+%{
+fprintf(' 1e-1 * %.2f * %.2f * %d^2.0 ./ %.2f =   %.2f \n', var(partial), speed_costs(idx), lengths(idx), match_costs(idx)+1, greedy_cost);
+fprintf('      distance:  %.2f m, time: %.2f sec\n', dist, times(idx));
+fprintf('      avg_speed: %.2f m/s\n', avg_speeds(idx));
+%}
 
 end
 

@@ -7,12 +7,14 @@ classdef GraphExplorer < handle
         map;
         % sensor data object
         sensor;
+        % pre-fetch for speed:
+        sensor_elevation; 
         % branch pruning, 0-1
         PRUNE_FACTOR_BRANCH = 0;
         % branch loop reduction
         MIN_BRANCH_LOOP_LENGTH = 5;
         % minimum number of leaves to keep
-        MAX_LEAVES = 6;
+        MAX_LEAVES = 4;
         % score of best branch
         cost = inf;
         % root node
@@ -43,6 +45,9 @@ classdef GraphExplorer < handle
             % calculate the elevation offset required to make the map and
             % estimated elevations begin at the same height.
             obj.elevation_offset = obj.map.getNodeIdxElev(root_idx) - obj.sensor.getElevationStart();
+            
+            % pre-fetch sensor elevation for speed
+            obj.sensor_elevation = obj.sensor.getElevationTimeWindow();
             
             % random color for plotting :)
             obj.color = rand(1,3);
@@ -118,7 +123,7 @@ classdef GraphExplorer < handle
             
             % get elevation
             mapElevations = obj.map.getPathElev(path_nodes);
-            estElevations = obj.sensor.getElevationTimeWindow();
+            estElevations = obj.sensor_elevation;
             % ignore timestamps and add offset
             if obj.use_absolute_elevation
                 estElevations = estElevations(:,2);
@@ -180,6 +185,22 @@ classdef GraphExplorer < handle
             
         end
         
+        % get all paths
+        function [paths,costs] = getPaths(obj)
+            costs = [];
+            paths = {};
+            
+            for n=1:length(obj.all_nodes)
+                if obj.all_nodes{n}.isLeaf()
+                    
+                    costs = [costs; obj.all_nodes{n}.path_cost];
+                    paths = [paths; obj.all_nodes{n}.path];
+                    
+                end
+            end
+            
+        end
+        
         % if the solver object wants to prune everything worse than a
         % global threshold (not local as in auto), they'll use this
         % function.
@@ -206,7 +227,7 @@ classdef GraphExplorer < handle
         % keeping at most MAX_LEAVES.
         function pruneUntilMaxPaths(obj)
             % if we don't have to prune any, skip this.
-            if obj.numLeaves() > obj.MAX_LEAVES
+            while obj.numLeaves() > obj.MAX_LEAVES
                 
                 % what are our candidate path costs right now?
                 path_costs = [];

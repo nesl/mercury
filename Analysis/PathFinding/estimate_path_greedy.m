@@ -30,11 +30,32 @@ map_lines = map_data.getAllSegLatLng();
 %% Create Solver Object
 DEBUG = true;
 solver = Solver_greedy(map_data, sensor_data, DEBUG);
-solver.useAbsoluteElevation();
+%solver.useAbsoluteElevation();
 
 %% Solve !
 solver.solve();
     
+%% Plot best 3 results
+[costs,paths] = solver.getResults();
+
+% plot map
+for l=1:length(map_lines)
+    line = map_lines{l};
+    plot(line(:,2), line(:,1), 'Color',[0.8 0.8 0.8]);
+    hold on;
+end
+
+colors = {'r','m','b','g'};
+for i=1:3
+    path = paths{i};
+    latlng = map_data.getPathLatLng(path);
+    plot(latlng(:,2), latlng(:,1), colors{i}, 'LineWidth',2);
+end
+    
+    
+    
+hold off;
+
 
 
 

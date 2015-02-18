@@ -11,20 +11,23 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 or 3
-caseNo = 4; % 1 to 5
-mapSize = 4; % 2 to 4 (5 is coming soon)
+caseNo = 1; % 1 to 5
+mapSize = 2; % 2 to 4 (5 is coming soon)
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
 %    bottom_right corner: (34.052816, -118.435204)
 %    area: 3117m (horizontal) x 3242m (vertical) = 10.1 km^2 = 3.95 mile^2
 
-% note:
+% note for generate ucla_3x3, ucla_4x4 and ucla_5x5
 %     34.085134, -118.477606
 %     34.041619, -118.424563
 % d    -.043515     0.053043
 % x4  34.027114  -118.406882
 % x5  34.012609  -118.389201
+%
+% ucla_small: 361 nodes, 519 segments
+% ucla_4x4:  2080 nodes, 3255 segments
 
 %% Inputs:
 
@@ -138,7 +141,7 @@ if 0  % to check elevation matching
     sensor_data.plotElevation();
     pause
 end
-if 1  % to pause and see map information
+if 0  % to pause and see map information
     fprintf('%d nodes, %d segments\n', map_data.getNumNodes(), map_data.getNumSegments());
     pause
 end
@@ -153,11 +156,12 @@ tic
 solver.solve();
 toc
 
+fprintf('Generate results....');
 solver.getRawPath(1)
 solver.plotPathComparison(1)
 %solver.toWeb();
 solver.toWebBeautiful();
-
+fprintf('\n');
 
 if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     [ratioOfDTWQuery, ratioOfElements] = solver.dtw_helper.pruningRatio();
@@ -165,13 +169,14 @@ if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 end
 
-% quick result:
+% quick result of solver 3:
 %    case  map  rank  time
 %    3     3x3  2     37
 %    4     3x3  1     1318
 %    5     3x3  1     1300
 %    3     4x4  2     34
-%    4     4x4  (executing)
+%    4     4x4  2     1314
+%    5     4x4  1     1508
 return;
 
 %% test and insert the oracle path based on the true gps

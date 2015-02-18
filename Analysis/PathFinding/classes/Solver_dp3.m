@@ -298,20 +298,39 @@ classdef Solver_dp3 < handle
             timeLatLngs = [ obj.elevFromBaro(:,1)  obj.getPathLatLng(traceIdx) ];
         end
         
-        % [ row vector ] = getSquareErrors(obj)  // get up to <max_result> results
-        % [ row vector ] = getSquareErrors(obj, traceIdxs)
-        function squareErrors = getSquareErrors(obj, varargin) 
+        % see time_gps_series_compare.m for more information
+        % [ row vector ] = getPathSimilarityConsideringTime(obj)  // get up to <max_result> results
+        % [ row vector ] = getPathSimilarityConsideringTime(obj, traceIdxs)
+        function rmsInMeter = getPathSimilarityConsideringTime(obj, varargin) 
             indxs = 1:min(obj.max_results, numel(obj.res_traces));
             if numel(varargin) >= 1
                 indxs = varargin{1};
             end
-            squareErrors = [];
+            rmsInMeter = [];
             for i = indxs
                 estimatedTimeLatLngs = obj.getTimeLatLngPath(i);
                 groundTruthTimeLatLngs = obj.sensor_data.getGps();
                 groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
-                squareErrors = [squareErrors; ...
-                    gpsSeriesCompare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
+                rmsInMeter = [rmsInMeter; ...
+                    time_gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
+            end
+        end
+        
+        % see gps_series_compare.m for more information
+        % [ row vector ] = getPathShapeSimilarity(obj)  // get up to <max_result> results
+        % [ row vector ] = getPathShapeSimilarity(obj, traceIdxs)
+        function rmsInMeter = getPathShapeSimilarity(obj, varargin) 
+            indxs = 1:min(obj.max_results, numel(obj.res_traces));
+            if numel(varargin) >= 1
+                indxs = varargin{1};
+            end
+            rmsInMeter = [];
+            for i = indxs
+                estimatedTimeLatLngs = obj.getTimeLatLngPath(i);
+                groundTruthTimeLatLngs = obj.sensor_data.getGps();
+                groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
+                rmsInMeter = [rmsInMeter; ...
+                    gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
             end
         end
         
@@ -329,8 +348,10 @@ classdef Solver_dp3 < handle
                         tmp(j) = obj.res_traces(j).dtwScore;
                     end
                     res = [res roundn(tmp, -8)];
-                elseif strcmp(varargin{i}, 'squareError') == 1
-                    res = [ res roundn(obj.getSquareErrors(), -8) ];
+                elseif strcmp(varargin{i}, 'path') == 1
+                    res = [ res roundn(obj.getPathSimilarityConsideringTime(), -8) ];
+                elseif strcmp(varargin{i}, 'pathShape') == 1
+                    res = [ res roundn(obj.getPathShapeSimilarity(), -8) ];
                 else
                     error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
                 end
@@ -446,20 +467,21 @@ classdef Solver_dp3 < handle
             numRes = min(obj.max_results, numel(obj.res_traces));
             fprintf(fid, '%d\n', numRes);
             for i = 1:numRes
-                squareError = obj.getSquareErrors(i);
-                fprintf(fid, '%f,%f,', obj.res_traces(i).dtwScore, squareError);
+                rmsErrorPath = obj.getPathSimilarityConsideringTime(i);
+                rmsErrorPathShape = obj.getPathShapeSimilarity(i);
+                fprintf(fid, '%f,%f,%f', obj.res_traces(i).dtwScore, rmsErrorPath, rmsErrorPathShape);
                 
                 if flagBeautiful == 0
                     rawPath = obj.getRawPath(i);
                     for j=1:size(rawPath, 1)
                         latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
-                        fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
+                        fprintf(fid, ',%f,%f', latlngs(1), latlngs(2));
                     end
                     fprintf(fid,'-1\n');
                 elseif flagBeautiful == 1
                     estiLatLng = obj.getPathLatLng(i);
                     for j=1:size(estiLatLng, 1)
-                        fprintf(fid, '%f,%f,', estiLatLng(j,1), estiLatLng(j,2));
+                        fprintf(fid, ',%f,%f', estiLatLng(j,1), estiLatLng(j,2));
                     end
                 else
                     error('Unsupported mode of generating result (in private_toWeb())');

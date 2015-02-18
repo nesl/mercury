@@ -279,11 +279,13 @@ wss.on("connection", function (ws) {
 							tokens = lines[i+2].split(",");
 							tmpPath = {};
 							tmpPath.dtwScore = parseFloat(tokens[0]);
-							tmpPath.squareError = parseFloat(tokens[1]);
+							tmpPath.pathScore = parseFloat(tokens[1]);
+							tmpPath.pathShapeScore = parseFloat(tokens[2]);
 							tmpPath.path = [];
-							for (var j = 2; j+2 <= tokens.length; j+=2)
+							for (var j = 3; j+2 <= tokens.length; j+=2)
 								tmpPath.path.push( [ parseFloat(tokens[j]), parseFloat(tokens[j+1]) ] );
 							re.estiPaths.push(tmpPath);
+							console.log(tmpPath);
 						}
 						//console.log(re);
 						ws.send(JSON.stringify(re));

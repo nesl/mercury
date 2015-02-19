@@ -18,7 +18,8 @@ classdef Solver_greedy < handle
         graph_explorers = {};
         
         % pruning rules
-        PRUNE_RATE = 0.50;
+        %    0 --> 1
+        PRUNE_RATE = 0.750;
         
         % debugging options
         DBG = false;
@@ -68,7 +69,8 @@ classdef Solver_greedy < handle
             end
             
             % --- search for realistic paths and prune ---
-            old_cost = 0;
+            hist_len = 10;
+            cost_history = zeros(hist_len,1);
             
             for iter=1:100
                 fprintf('Iteration %d\n', iter);
@@ -90,41 +92,40 @@ classdef Solver_greedy < handle
                 prune_goal = round( length(sorted_costs)*(1-obj.PRUNE_RATE) );
                 prune_cost_idx = max(obj.max_results, prune_goal);
                 
-                if prune_cost_idx > length(sorted_costs)
-                    % no need to prune!
-                    continue;
-                end
-                
-                cost_thresh = sorted_costs( prune_cost_idx );
-                
+                                
                 fprintf(' ------------ SUMMARY ----------- \n');
-                fprintf('    Explorers: %d \t Paths: %d, thresh:%.2f\n', length(obj.graph_explorers), length(all_path_costs), cost_thresh);
+                fprintf('    Explorers: %d \t Paths: %d\n', length(obj.graph_explorers), length(all_path_costs));
                 
-                % --- prune paths above the threshold ---
-                explorers_to_prune = [];
-                for e=1:length(obj.graph_explorers)
-                    % if the best cost of this explorer doesn't meet the
-                    % threshold, prune the whole thing.
-                    if obj.graph_explorers{e}.getBestCost() > cost_thresh
-                        explorers_to_prune = [explorers_to_prune; e];
-                    else
-                        obj.graph_explorers{e}.prunePathsWorseThan(cost_thresh);
-                        obj.graph_explorers{e}.pruneUntilMaxPaths();
+                
+                if prune_cost_idx <= length(sorted_costs)
+                    % we need to prune!
+                    cost_thresh = sorted_costs( prune_cost_idx );
+                    
+                    % --- prune paths above the threshold ---
+                    explorers_to_prune = [];
+                    for e=1:length(obj.graph_explorers)
+                        % if the best cost of this explorer doesn't meet the
+                        % threshold, prune the whole thing.
+                        if obj.graph_explorers{e}.getBestCost() > cost_thresh
+                            explorers_to_prune = [explorers_to_prune; e];
+                        else
+                            obj.graph_explorers{e}.prunePathsWorseThan(cost_thresh);
+                            obj.graph_explorers{e}.pruneUntilMaxPaths();
+                        end
                     end
+                    obj.graph_explorers(explorers_to_prune) = [];
                 end
-                obj.graph_explorers(explorers_to_prune) = [];
+                
                 
                 % --- finish if overall cost has converged ---
-                if iter > 3
-                    delta = sorted_costs(1) - old_cost;
-                    if abs(delta) < 300;
-                        fprintf('SOLVER DONE!\n');
-                        return;
-                    end
-                    old_cost = sorted_costs(1);
-                    fprintf('    Solver Delta:%.2f\n', delta);
+                deltaPerc = min(1, abs((sorted_costs(1) - cost_history(1))/cost_history(1)) );
+                fprintf('    Solver Delta: %.3f\n', deltaPerc);
+                if deltaPerc < 0.01;
+                   fprintf('SOLVER DONE!\n');
+                   return;
                 end
-                    
+                % rotate window
+                cost_history = [cost_history(2:end); sorted_costs(1)];
                 
                 % PLOT DEBUGGING
                 if obj.DBG
@@ -174,8 +175,26 @@ classdef Solver_greedy < handle
             end
             [sorted_costs, sorted_idxs] = sort(all_path_costs);
 
-            scores = sorted_costs(1:obj.max_results);
+            scores = sorted_costs(1:end);
             paths = all_paths(sorted_idxs);
+            
+            % --- prune paths that are too similar to paths that are ---
+            %               performing better anyways
+            similarity_thresh = 0.80;
+            idxs_to_remove = [];
+            for startpath=1:(length(paths)-1)
+                for testpath = (startpath+1):length(paths)
+                    if getPathSimilarity( paths{startpath}, paths{testpath} ) > similarity_thresh
+                        fprintf('removing index: %d\n', testpath);
+                        % schedule this path for removal
+                        idxs_to_remove = [idxs_to_remove; testpath];
+                    end
+                end
+            end
+            % remove too similar paths
+            paths(idxs_to_remove) = [];
+            scores(idxs_to_remove) = [];
+            
             
         end
         

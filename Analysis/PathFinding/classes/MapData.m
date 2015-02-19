@@ -256,69 +256,77 @@ classdef MapData < handle
             dElevs = SCALE*diff(fElevs);
         end
         
-        % get angle sequence for a given node list / path
-        function angles = getPathAngles(obj, nidxList)
-            if isempty(nidxList)
-                error('node list is empty (getPathTurns)');
-            end
-            
-            % initialize empty deltaAngle vector
-            angles = [];
-            
-            % starting point
-            latlng_last = [];
-           
-            for i=1:( length(nidxList) - 1 )
-                % get segment nodes
-                nidx_a = nidxList(i);
-                nidx_b = nidxList(i+1);
-                % get lat/lng array
-                segLatLng = obj.getSegLatLng([nidx_a nidx_b]);
-                
-                for j=1:size(segLatLng,1)
-                    % lat = y, lng = x
-                    latlng = segLatLng(j,:);
-                   % check for starting point
-                   if i==1 && j==1
-                       latlng_last = latlng;
-                       continue;
-                   end
-                   
-                   % check for zero movement (latlng too close to latlng_last)
-                   if (latlng - latlng_last < 0.01e-5)
-                       latlng_last = latlng;
-                       continue;
-                   end
-                   
-                   disp_norm = (latlng - latlng_last)./norm( latlng - latlng_last );
-                   theta = atan2d(disp_norm(1), disp_norm(2));
-                   
-                   angles = [angles; theta];
-                   
-                   % recycle this lat/lng pair
-                   latlng_last = latlng;
-                end
-                
-            end
-            
-            % add one more to the angles list to make it the same size
-            angles = [angles; angles(end)];
-            
-            % smooth out angles
-            [b,a] = butter(1,0.5);
-            angles = filtfilt(b,a,angles);
-        end
+%         % get angle sequence for a given node list / path
+%         function angles = getPathAngles(obj, nidxList)
+%             if isempty(nidxList)
+%                 error('node list is empty (getPathTurns)');
+%             end
+%             
+%             % initialize empty deltaAngle vector
+%             angles = [];
+%             
+%             % starting point
+%             latlng_last = [];
+%            
+%             for i=1:( length(nidxList) - 1 )
+%                 % get segment nodes
+%                 nidx_a = nidxList(i);
+%                 nidx_b = nidxList(i+1);
+%                 % get lat/lng array
+%                 segLatLng = obj.getSegLatLng([nidx_a nidx_b]);
+%                 
+%                 for j=1:size(segLatLng,1)
+%                     % lat = y, lng = x
+%                     latlng = segLatLng(j,:);
+%                    % check for starting point
+%                    if i==1 && j==1
+%                        latlng_last = latlng;
+%                        continue;
+%                    end
+%                    
+%                    % check for zero movement (latlng too close to latlng_last)
+%                    if (latlng - latlng_last < 0.01e-5)
+%                        latlng_last = latlng;
+%                        continue;
+%                    end
+%                    
+%                    disp_norm = (latlng - latlng_last)./norm( latlng - latlng_last );
+%                    theta = atan2d(disp_norm(1), disp_norm(2));
+%                    
+%                    angles = [angles; theta];
+%                    
+%                    % recycle this lat/lng pair
+%                    latlng_last = latlng;
+%                 end
+%                 
+%             end
+%             
+%             % add one more to the angles list to make it the same size
+%             angles = [angles; angles(end)];
+%             
+%             % smooth out angles
+%             [b,a] = butter(1,0.5);
+%             angles = filtfilt(b,a,angles);
+%         end
         
-        % get turn sequence for a node list
+        % ESTIMATE MAP TURNS
         function turns = getPathTurns(obj, nidxList)
-            % get absolute path angles
-            angles = obj.getPathAngles(nidxList);
-            % smooth out these angles
+            % get the lat/lng first
+            latlngs = obj.getPathLatLng(nidxList);
+            % now find absolute turns
+            angles = [];
+            for i=2:size(latlngs,1)
+                angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
+                angles = [angles; angle];
+            end
             
-            turns = diff(angles);
+            % and then relative turns
+            dAngles = diff(angles);
             
+            % and finally discretize into turns above a certain level
+            thresh = 35; % deg
+            turns = dAngles( abs(dAngles) > thresh );
         end
-        
         
         % get all latitude and longitude for nodes in a list
         function latlngs = getPathLatLng(obj, nidxList)
@@ -339,33 +347,6 @@ classdef MapData < handle
             end
         end
         
-        % ESTIMATE MAP TURNS
-        function turns = getTurnsFromNodes(obj, nidxList)
-            % get the lat/lng first
-            latlngs = obj.getPathLatLng(nidxList);
-            % now find absolute turns
-            angles = [];
-            for i=2:size(latlngs,1)
-                angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
-                angles = [angles; angle];
-            end
-            
-            % and then relative turns
-            dAngles = zeros(size(angles));
-            for i=2:length(angles)
-                dAngle = angles(i) - angles(i-1);
-                dAngles(i) = dAngle;
-            end
-            
-            % and finally window these turns
-            wlen = 5;
-            SCALE = 0.2;
-            turns = [];
-            for i=1:(length(dAngles)-wlen)
-                turns = [turns;
-                    SCALE*sum(dAngles(i:(i+wlen)))];
-            end
-        end
         
         % QUERY BY GEO INFORMATION
         function meter = distanceToNodeIdx(obj, latlng, nodeIdx)

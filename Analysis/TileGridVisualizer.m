@@ -1,5 +1,5 @@
 %% Resolution Parameters (Corrected for first lat top-right/bottom-left).
-res = 4;
+res = 5;
 edgelength = [0 10 10 20 10] + 1;
 reallength = 10.^-[0 1 2 3 4];
 edgeres = edgelength(res);

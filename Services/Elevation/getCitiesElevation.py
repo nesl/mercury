@@ -8,7 +8,7 @@ def get_box(center_lat, center_lon):
 	dl = df/math.cos(math.radians(center_lat))
 	return [(center_lat + df, center_lon - dl), (center_lat - df, center_lon + dl)]
 
-major_cities = './storage/filter.csv'
+major_cities = './storage/losangeles.csv'
 
 e = TileRequester(4)
 

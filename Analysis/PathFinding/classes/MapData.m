@@ -76,7 +76,7 @@ classdef MapData < handle
             obj.segment_length = cell(obj.num_nodes);
             obj.segment_num_elements = zeros(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
-            obj.node_elevation = zeros(obj.num_nodes, 2);
+            obj.node_elevation = zeros(obj.num_nodes, 1);
             obj.node_latlng = zeros(obj.num_nodes, 2);
             
             % loop through all segments
@@ -141,13 +141,6 @@ classdef MapData < handle
         %       +-- Seg -------+  +------------- Length ------+
         %       +-- path ------+  +------------- NumElement --+
      
-        % get node indexes of OSM nodes
-        function nlist = getNodeIdxs(obj, osm_nodes)
-           nlist = zeros(length(osm_nodes), 1);
-           for i=1:length(osm_nodes)
-              nlist(i) = obj.nodeToIdx(osm_nodes(i)); 
-           end
-        end
         
         % get elevation for solely one node
         function elev = getNodeIdxElev(obj, idx)
@@ -431,10 +424,7 @@ classdef MapData < handle
                         chooseIdx = j;
                     end
                 end
-                %i
-                %trackList
                 trackList([i chooseIdx]) = trackList([chooseIdx i]);
-                %trackList
                 if trackList(i) == ne_idx  % reach goal
                     % back-tracking
                     nodeIdxs = trackList(i);
@@ -447,27 +437,17 @@ classdef MapData < handle
                 % if it doesn't return, means that we need to keep search
                 curIdx = trackList(i);
                 curDis = minDis;
-                %[curIdx curDis]
-                %obj.getNeighbors(curIdx)
-                %[-1 -1 obj.num_nodes size(obj.segment_length)]
                 for neighbor = obj.getNeighbors(curIdx)
                     nextDis = curDis + obj.getSegLength( [curIdx neighbor] );
-                    %keys(dis)
-                    %keys(from)
-                    %neighbor
+
                     if ~isKey(dis, neighbor)
                         dis(neighbor) = inf;
                         trackList = [trackList neighbor];
-                        %fprintf('add %d\n', neighbor);
                     end
                     if dis(neighbor) > nextDis
                         dis(neighbor) = nextDis;
                         from(neighbor) = curIdx;
                     end
-                    %keys(dis)
-                    %keys(from)
-                    %neighbor
-                    %[ 0 0 curIdx curDis neighbor dis(neighbor) from(neighbor)]
                 end
             end
             error('hmm... it seems you give me a big challenge... (findShortestPath())');
@@ -511,6 +491,15 @@ classdef MapData < handle
             idx = obj.map_node2idx(node);
         end
         
+        % get node indexes of OSM nodes  % TODO: duplicated function?
+        function nlist = getNodeIdxs(obj, osm_nodes)
+           nlist = zeros(length(osm_nodes), 1);
+           for i=1:length(osm_nodes)
+              nlist(i) = obj.nodeToIdx(osm_nodes(i)); 
+           end
+        end
+        
+        
         % METHODS REGARDING ALL PAIRS DTW
         function preProcessAllPairDTW(obj, elevFromBaro)
             obj.segment_allPairDTW = cell(obj.num_nodes);
@@ -524,6 +513,12 @@ classdef MapData < handle
             end
         end
         
+        % VISUALIZATION
+        function plotCDFofNodeElevs(obj)
+            clf
+            cdfplot(obj.node_elevation);
+        end
+         
         % [ square_matrix ] = queryAllPairDTW(obj, na_idx, nb_idx)
         % [   row_vector  ] = queryAllPairDTW(obj, na_idx, nb_idx, start_step)  // end_step=any
         % [  single_value ] = queryAllPairDTW(obj, na_idx, nb_idx, start_step, end_step)

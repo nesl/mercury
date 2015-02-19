@@ -199,9 +199,10 @@ function regenerateTracesPanel(rcvObj, filename) {
 		console.log(rcvObj.estiPaths[i].dtwScore, rcvObj.estiPaths[i].pathScore, rcvObj.estiPaths[i].pathShapeScore);
 		$('#' + idname).append('<div><input type="checkbox" id="c' + (i+1) + '" ' + checked + '/>Trace ' + (i+1) + '</div>');
 		$('#' + idname).append('<div style="width:100%; height:2px; background-color:' + hslToRgb(Number(i) / rcvObj.estiPaths.length, 0.8, 0.5) + '"></div>');
-		$('#' + idname).append('<div style="font-size:10px; text-align:right">DTW=' + rcvObj.estiPaths[i].dtwScore + '<br/>'
-				+ 'pathError=' + rcvObj.estiPaths[i].pathScore
-				+ ', shapeError=' + rcvObj.estiPaths[i].pathShapeScore + '</div>');
+		$('#' + idname).append('<div style="font-size:10px; text-align:right">'
+				+ 'pathError=' + rcvObj.estiPaths[i].pathScore.toFixed(2)
+				+ ', shapeError=' + rcvObj.estiPaths[i].pathShapeScore.toFixed(2) + '<br/>'
+				+ 'DTW=' + rcvObj.estiPaths[i].dtwScore.toFixed(2) + '</div>');
 
 	}
 

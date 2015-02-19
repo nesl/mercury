@@ -11,8 +11,8 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 or 3
-caseNo = 1; % 1 to 5
-mapSize = 2; % 2 to 4 (5 is coming soon)
+caseNo = 3; % 1 to 5
+mapSize = 3; % 2 to 4 (5 is coming soon)
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -31,14 +31,16 @@ mapSize = 2; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
 
-if mapSize == 2
+if mapSize == 1
+    mapfile = '../../Data/EleSegmentSets/ucla_west/';
+elseif mapSize == 2
     mapfile = '../../Data/EleSegmentSets/ucla_small/';
 elseif mapSize == 3
     mapfile = '../../Data/EleSegmentSets/ucla_3x3/';
 elseif mapSize == 4
     mapfile = '../../Data/EleSegmentSets/ucla_4x4/';
-%elseif mapSize == 5
-%    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
+elseif mapSize == 5
+    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
 else
     error('Be patient. The map will come out soon.');
 end
@@ -78,7 +80,7 @@ else
 end
 
 caseDesp = {'weyburn', 'sunset', 'sunset_hilgard', 'one_round_ucla', 'east_ucla_1'};
-mapDesp = {'', 'ucla_small', 'ucla_3x3', 'ucla_4x4', 'ucla_5x5'};
+mapDesp = {'ucla_west', 'ucla_small', 'ucla_3x3', 'ucla_4x4', 'ucla_5x5'};
 outputWebFile = ['../../Data/resultSets/(B)case' num2str(caseNo) ...
     '_dp' num2str(solverVersion) '_' mapDesp{mapSize} ...
     '_' caseDesp{caseNo} '_results.rset'];
@@ -97,14 +99,16 @@ elseif caseNo == 2
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
 elseif caseNo == 3
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
+    sensor_data.setSeaPressure(1019.0);  % coefficient hand-tuned
     sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
 elseif caseNo == 4
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
+    sensor_data.setSeaPressure(1018.7);  % correct coefficient hand-tuned
     sensor_data.setPressureScalar(-8.2);
+    %sensor_data.setSeaPressure(1019.3);  % test different coefs. scalar shouldn't matter that much
+    %sensor_data.setPressureScalar(-7.8);
     sensor_data.setAbsoluteSegment(1421002200, 1421003019);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
@@ -137,15 +141,29 @@ if solverVersion == 2
 end        
 
 %% to check the information very quickly
+pauseFlag = 0;
 if 0  % to check elevation matching
     sensor_data.plotElevation();
     pause
 end
-if 0  % to pause and see map information
-    fprintf('%d nodes, %d segments\n', map_data.getNumNodes(), map_data.getNumSegments());
+if 0  % characteristics of sensor data
+    tmpElev = sensor_data.getElevationTimeWindow();
+    fprintf('Barometer: max elev=%f, min elev=%f\n', max(tmpElev(:,2)), min(tmpElev(:,2)));
+    pauseFlag = 0;
+end
+if 0  % see cdf of elevation of map nodes
+    map_data.plotCDFofNodeElevs();
     pause
 end
+if 0  % to pause and see map information
+    fprintf('%d nodes, %d segments\n', map_data.getNumNodes(), map_data.getNumSegments());
+    pauseFlag = 0;
+end
 
+
+if pauseFlag == 1
+    pause
+end
 
 
 %% test solver

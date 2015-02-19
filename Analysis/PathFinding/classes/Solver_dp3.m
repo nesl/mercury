@@ -49,15 +49,18 @@ classdef Solver_dp3 < handle
         INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
         
-        % pruning functions
+        % pruning constants/functions
+        HARD_ELEVATION_THRESHOLD = 6; % meter, consider the nodes as check points and apply the threshold.
         dtw_pruning_function = @(x) (27 + 10 * x);  % during accessing x-th barometer element in the dtw,
                                                     % what is the cutting threshold for corresponding column
         global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
         
+                                                       
         % parameters for finding the oracle path
         NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
         DISTANCE_THRESHOLD_TO_BE_CONSIDERED_AS_VISITED = 20; % meter, this constraint is very important to avoid false path
+        
     end
     
     methods
@@ -114,7 +117,9 @@ classdef Solver_dp3 < handle
                 for bIdxStart = 1:numElevBaro  % starting barometer index
                     earlyDPPruningScore = obj.global_pruning_function(bIdxStart);
                     for nIdxStart = 1:numMapNodes  % starting node index
-                        if dp(nIdxStart, bIdxStart) < earlyDPPruningScore    % global pruning. 
+                        %[bIdxStart nIdxStart obj.elevFromBaro(bIdxStart) obj.map_data.getNodeIdxsElev(nIdxStart)]
+                        if dp(nIdxStart, bIdxStart) < earlyDPPruningScore ...     % global pruning. 
+                                && abs(obj.elevFromBaro(bIdxStart, 2) - obj.map_data.getNodeIdxsElev(nIdxStart)) < obj.HARD_ELEVATION_THRESHOLD
                             for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
                                 numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
                                 prevNodeIdx = from(nIdxStart, bIdxStart, 1);

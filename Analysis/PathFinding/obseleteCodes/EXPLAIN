@@ -1,4 +1,5 @@
-WARNING: the data folder in the codes might not be correct.
+WARNING: All the codes in this folder might not work by executing them directly.
+Please check the specified data folder in the code first.
 
 A historial folder stores the previous codes which tries to prove small concepts or
 parts of one certain algorithm work. 

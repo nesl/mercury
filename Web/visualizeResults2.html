@@ -36,6 +36,7 @@ function regulateSize() {
 
 // --- GOOGLE MAP SHOW/HIDE PATHS ---
 function mapUnmarshal(rcvObj) {
+	console.log(rcvObj);
 	latMin = 999.0;
 	latMax = -999.0;
 	lonMin = 999.0;
@@ -195,11 +196,12 @@ function regenerateTracesPanel(rcvObj, filename) {
 		checked = '';
 		if (i == 0)
 			checked = 'checked';
+		console.log(rcvObj.estiPaths[i].dtwScore, rcvObj.estiPaths[i].pathScore, rcvObj.estiPaths[i].pathShapeScore);
 		$('#' + idname).append('<div><input type="checkbox" id="c' + (i+1) + '" ' + checked + '/>Trace ' + (i+1) + '</div>');
 		$('#' + idname).append('<div style="width:100%; height:2px; background-color:' + hslToRgb(Number(i) / rcvObj.estiPaths.length, 0.8, 0.5) + '"></div>');
-		$('#' + idname).append('<div style="font-size:10px; text-align:right">DTW='
-				+ rcvObj.estiPaths[i].dtwScore + ', squreError='
-				+ rcvObj.estiPaths[i].squareError + '</div>');
+		$('#' + idname).append('<div style="font-size:10px; text-align:right">DTW=' + rcvObj.estiPaths[i].dtwScore + '<br/>'
+				+ 'pathError=' + rcvObj.estiPaths[i].pathScore
+				+ ', shapeError=' + rcvObj.estiPaths[i].pathShapeScore + '</div>');
 
 	}
 

@@ -1,9 +1,9 @@
 # imports
 import ElevationService
 
-filename = 'baro_n503_20150111_091333'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
+filename = 'baro_n503_20150110_161641'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
 
-rootDir = '../../Data/forMat/'
+rootDir = '../../Data/rawData/'
 
 src = rootDir + filename + '.gps.csv'
 dst = rootDir + filename + '.gpsele.csv'
@@ -16,7 +16,8 @@ f.close()
 
 lines = [ x for x in lines if x[-1] == '0' ]
 queryList = [ ( float(x[1]), float(x[2]) ) for x in lines ]
-res = ElevationService.requestElevations(queryList)
+requester = ElevationService.ElevationRequester()
+res = requester.query(queryList)
 
 assert len(lines) == len(res)
 

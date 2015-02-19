@@ -1,0 +1,11 @@
+How the codes under this folder got obseleted:
+
+Original path of this folder: <mercury>/Services/Mapping/
+Obselete date: Feb 16 1pm
+
+The codes achieve the following things:
+  - Parse .osm files, extract the 'way' elements, and suit into proper format for
+    next step parsing
+  - There's no technical consumer of these codes, as they are replaced by the
+    codes under 'fixProgram'. There's a website to visualize the result, the website
+    got obseleted, too.

@@ -131,7 +131,7 @@ classdef MapData < handle
             end
         end
         
-        function N = getNeighbors(obj, nidx)
+        function N = getNeighbors(obj, nidx)  % returns a row vector of neighbors
             N = obj.node_neighbors{nidx};
         end
         

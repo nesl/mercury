@@ -464,12 +464,28 @@ classdef MapData < handle
         % INDEX SYSTEM CONVERSION
         % convert local node index to OSM index
         function node = idxToNode(obj, nidx)
-            node = obj.map_idx2node(nidx);
+            node = obj.idxsToNodes(nidx);
         end
         
         % convert OSM index to local matlab index
         function idx = nodeToIdx(obj, node)
-            idx = obj.map_node2idx(node);
+            idx = obj.nodesToIdxs(node);
+        end
+        
+        % convert local node indexes to OSM indexes
+        function nodes = idxsToNodes(obj, nidxs)
+            nodes = nidxs;
+            for i = 1:numel(nidxs)
+                nodes(i) = obj.map_idx2node(nidxs(i));
+            end
+        end
+        
+        % convert OSM indexes to local matlab indexes
+        function idxs = nodesToIdxs(obj, nodes)
+            idxs = nodes;
+            for i = 1:numel(nodes)
+                idxs(i) = obj.map_node2idx(nodes(i));
+            end
         end
         
         % get node indexes of OSM nodes  % TODO: duplicated function?

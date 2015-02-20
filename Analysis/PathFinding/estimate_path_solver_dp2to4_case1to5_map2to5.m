@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 4;  % 2 to 4
-caseNo = 1; % 1 to 5
-mapSize = 1; % 2 to 5
+solverVersion = 3;  % 2 to 4
+caseNo = 2; % 1 to 5
+mapSize = 2; % 2 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)

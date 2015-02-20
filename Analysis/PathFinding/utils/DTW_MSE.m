@@ -1,4 +1,4 @@
-function [ s1trace, s2trace, mincost] = DTW_MSE( sig1, sig2 )
+function [mincost] = DTW_MSE( sig1, sig2 )
 % cost = DTW_MSE( sig1, sig2 )
 %
 % minimum squared error (MSE)-based dynamic time warping (DTW)

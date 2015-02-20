@@ -114,16 +114,21 @@ end
 
 
 %% Plot elevations
-figure();
-subplot(2,1,1);
+cfigure(30,30);
+subplot(3,1,1);
 plot(elev_est_rsz(:,1), elev_est_rsz(:,2));
 hold on;
 plot(elev_map(:,1), elev_map(:,4), 'b');
 
 %% Plot error
-subplot(2,1,2);
+subplot(3,1,2);
 estError = elev_est_rsz(:,2) - elev_map(:,4);
 plot(elev_est_rsz(:,1), estError,'r');
+
+%% Plot some simulated noise just for fun
+subplot(3,1,3);
+sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 300, 0.1);
+plot(elev_est_rsz(:,1), sim_noise, 'k');
 
 
 

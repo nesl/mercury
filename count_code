@@ -1,0 +1,16 @@
+echo "MATLAB:"
+echo `find . -name '*.m' | xargs wc -l | tail -n 1`
+echo ""
+echo "JAVASCRIPT:"
+echo `find . -name '*.js' -not -path './Web/server/node_modules/*' -not -path './Web/two.js' | xargs wc -l | tail -n 1`
+echo ""
+echo "PYTHON:"
+echo `find . -name '*.py' | xargs wc -l | tail -n 1`
+echo ""
+echo "HTML:"
+echo `find . -name '*.html' | xargs wc -l | tail -n 1`
+
+
+
+
+

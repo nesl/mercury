@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 3;  % 2 or 3
-caseNo = 3; % 1 to 5
-mapSize = 3; % 2 to 4 (5 is coming soon)
+solverVersion = 4;  % 2 to 4
+caseNo = 1; % 1 to 5
+mapSize = 1; % 2 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -88,8 +88,10 @@ outputWebFile = ['../../Data/resultSets/(B)case' num2str(caseNo) ...
 sensor_data = SensorData(sensorfile);
 
 if caseNo == 1
+    %sensor_data.setSeaPressure(1020);  % correct coefficient
+    %sensor_data.setPressureScalar(-8.15);
     sensor_data.setSeaPressure(1020);
-    sensor_data.setPressureScalar(-8.15);
+    sensor_data.setPressureScalar(-8.1);
     sensor_data.setAbsoluteSegment(1418102835, 1418103643);
     map_data = MapData(mapfile, 1);   % correct:1
 elseif caseNo == 2
@@ -124,6 +126,8 @@ if solverVersion == 2
     solver = Solver_dp2(map_data, sensor_data);
 elseif solverVersion == 3
     solver = Solver_dp3(map_data, sensor_data);
+elseif solverVersion == 4
+    solver = Solver_dp4(map_data, sensor_data, 0);
 else
     error('Concentrate. There''s no this kind of solver...');
 end
@@ -187,14 +191,15 @@ if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 end
 
-% quick result of solver 3:
-%    case  map  rank  time
-%    3     3x3  2     37
-%    4     3x3  1     1318
-%    5     3x3  1     1300
-%    3     4x4  2     34
-%    4     4x4  2     1314
-%    5     4x4  1     1508
+% quick result of solvers:
+%    solver case  map  rank  time
+%    3      3     3x3  2     37
+%    3      4     3x3  1     1318
+%    3      5     3x3  1     1300
+%    3      3     4x4  2     34
+%    3      4     4x4  2     1314
+%    3      5     4x4  1     1508
+%    4      3     4x4  3     1143
 return;
 
 %% test and insert the oracle path based on the true gps

@@ -216,7 +216,7 @@ classdef SensorData < handle
                     elevCnt(idx) = elevCnt(idx) + 1;
                 end
             end
-            timestampAfterWindow = ( elevRaw(1,1) + ((1:numWindow) - 1) * obj.TRIM_SEC )';
+            timestampAfterWindow = ( elevRaw(1,1) + ((1:numWindow) - 1) * obj.window_size )';
             elev = [  timestampAfterWindow  elevSum ./ elevCnt];
             indxs = setdiff( 1:numWindow, find(isnan(elev(:,2))) );  % there might be windows without any data points inside, remove these windows
             elev = elev(indxs,:);  

@@ -15,6 +15,8 @@ classdef GraphExplorer < handle
         MIN_BRANCH_LOOP_LENGTH = 5;
         % minimum number of leaves to keep
         MAX_LEAVES = 4;
+        % do we use turns for pruning?
+        use_turns = false;
         % score of best branch
         cost = inf;
         % root node
@@ -56,6 +58,11 @@ classdef GraphExplorer < handle
         % USE ABSOLUTE ELEVATION
         function useAbsoluteElevation(obj)
             obj.use_absolute_elevation = true;
+        end
+        
+        % PRUNE WITH TURNS
+        function useTurns(obj)
+            obj.use_turns = true;
         end
         
         % EXPLORING NEW NODES
@@ -134,27 +141,23 @@ classdef GraphExplorer < handle
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
             
-            %             close all;
-            %             plot(estElevations,'k');
-            %             hold on;
-            %             plot(mapElevations,'r');
-            %             title(['Node ID: ' num2str(obj.root.node_idx)]);
-            %             fprintf('score = %.2f\n', cost_elev);
-            %             pause();
-            %
-            
-            % get turn cost
-            % TODO: Currently I'm not going to add turns, so that I can see
-            % how well it does without them.  I'll add turns later, because
-            % they won't work w/ the walking in Case 1 anyways :)
-            
             % get turns
-            %mapTurns = obj.map.getPathTurns(path_nodes);
-            %estTurns = obj.sensor.get
+            if obj.use_turns
+                mapTurns = obj.map.getPathTurns(path_nodes);
+                estTurns = obj.sensor.getTurns();
+                cost_turns = DTW_greedy_turns(estTurns(:,2), mapTurns);
+            end
             
             % combine costs
-            cost = cost_elev;
+            if obj.use_turns
+                % -1 used because both are negative, don't want a large
+                % positive cost!
+                cost = cost_elev*-1*cost_turns;
+            else
+                cost = cost_elev;
+            end
         end
+                    
         
         % get explorer's best cost
         function cost = getBestCost(obj)

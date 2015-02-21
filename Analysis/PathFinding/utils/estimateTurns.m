@@ -35,6 +35,10 @@ win_size = round( SR_acc*3 ); % 3 sec (integral window time)
 backoff = round( SR_gyro*5 ); % 5 sec (temporal backoff)
 turn_events = [];
 
+% add a start turn event of angle 0
+% turn_events = [turn_events;
+%     normalRotations(1,1), 0];
+
 last_time = turns(1,1);
 
 % windowed integration (summation)

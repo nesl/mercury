@@ -95,70 +95,147 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
-gps = sensor_data.getGps();
+%% Choose paths to examine
+% correct path (true only under mapSize=2, case=2)
+path_true = [
+         1    33
+    21    36
+   118   256
+   146   269
+   149   267
+   208   268
+   215   234
+   230   153
+   300    18];
+path_true = path_true(:,2);
 
-%% get turn estimates
-turnAnalog = sensor_data.getTurns();
-turnEvents = sensor_data.getTurnEvents();
+% multiple bad paths
+tmp1 = [122773634
+122773638
+122643265
+122773641
+122752265
+122752261
+122752257
+122824159
+123161854
+];
+tmp1 = map_data.nodesToIdxs(tmp1);
 
-plot(turnAnalog(:,1), turnAnalog(:,2));
+tmp2 = [122584740
+122584748
+122584755
+122584764
+122584789
+496202094
+496202095
+122914625
+123526804
+122584823
+];
+tmp2 = map_data.nodesToIdxs(tmp2);
+
+tmp3 = [122978990
+123036806
+123148520
+123191897
+123191894
+122867535
+122867533
+122867531
+123138234
+122681075
+122914606
+];
+tmp3 = map_data.nodesToIdxs(tmp3);
+
+tmp4 = [122914625
+122914624
+122914622
+1717288137
+123370940
+592635874
+122978981
+123148498
+122681080
+122914608
+122762246
+122914606
+122867526
+];
+tmp4 = map_data.nodesToIdxs(tmp4);
+
+path_bad = {tmp1 tmp2 tmp3 tmp4};
+
+%% Get sensor turns
+turns_sensor = sensor_data.getTurnEvents();
+turns_sensor = turns_sensor(:,2);
+
+%% Get true map turns
+% true map turns
+close all;
+
+true_costs = [];
+for i=2:size(path_true,1)
+    partial = path_true(1:i);
+    map_turns = map_data.getPathTurns(partial);
+    cost = DTW_greedy_turns(turns_sensor, map_turns);
+    true_costs = [true_costs; cost];
+end
+
+fprintf('\n');
+
+%% Get bad map turns
+% bad map turns
+close all;
+
+bad_costs = [];
+bad = path_bad{1};
+for i=2:size(bad,1)
+    partial = bad(1:i);
+    map_turns = map_data.getPathTurns(partial);
+    cost = DTW_greedy_turns(turns_sensor, map_turns);
+    bad_costs = [bad_costs; cost];
+end
+
+
+%% Plot
+close all;
+plot(true_costs,'b');
 hold on;
-plot(turnEvents(:,1), turnEvents(:,2),'rx');
-
-%% Get closest path from OSM map
-map_path = [
-       33
-       36
-      256
-      269
-      267
-      268
-      234
-      153
-       18
-       16
-       19
-      194
-       28
-       26
-       29
-       31
-      185
-        5
-      186
-      187
-      189
-      128
-      124
-      127
-      129
-   ];
-closest_gps = map_data.getPathLatLng(map_path);
-
-%% Get map turns
-map_turns = map_data.getPathTurns(map_path);
+plot(bad_costs, 'r');
 
 
-%% See the turn events on the map
 
-maxTime = max( max(gps(:,1)), max(turnEvents(:,1)) );
-minTime = min( min(gps(:,1)), min(turnEvents(:,1)) );
-dTime = maxTime - minTime;
 
-clf
-hold on
-for i = 1:size(gps, 1)
-    plot(gps(i,3), gps(i,2), '*', 'Color', hsv2rgb( [ (gps(i,1) - minTime) / dTime, 1, 0.95 ] ) );
-end
-for i = 1:size(turnEvents, 1)
-    closestGpsIdx = find(turnEvents(i,1) < gps(:,1)); 
-    if numel(closestGpsIdx) == 0  % in case all the gps samples are earlier then the turn event
-        closestGpsIdx = size(gps, 1);
-    else
-        closestGpsIdx = closestGpsIdx(1); % choose the earliest gps sample which just after this turn event
-    end
-    plot(gps(closestGpsIdx,3), gps(closestGpsIdx,2), 'o', 'MarkerSize', 14, 'Color', hsv2rgb( [ (turnEvents(i,1) - minTime) / dTime, 0.7, 0.4 ] ) );
-    %[turnEvents(i,:) closestGpsIdx]
-    text(gps(closestGpsIdx,3) + 1e-4, gps(closestGpsIdx,2) + 1e-4, num2str(turnEvents(i,2)))
-end
-axis equal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

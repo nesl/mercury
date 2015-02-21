@@ -325,6 +325,7 @@ classdef MapData < handle
             
             % and finally discretize into turns above a certain level
             thresh = 35; % deg
+            % first add a dummy turn of 0 degrees so it's not empty
             turns = dAngles( abs(dAngles) > thresh );
         end
         

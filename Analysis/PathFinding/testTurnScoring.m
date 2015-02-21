@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% Load Map and Data
-caseNo = 2; % 1 to 5
+caseNo = 3; % 1 to 5
 mapSize = 2; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
@@ -188,13 +188,13 @@ stem(turns_map_true, 'r','LineWidth',3);
 
 for i=1:2
     subplot(4,1,2+i);
-    stem(turns_map_bad{i}, 'b','LineWidth',3);
+    stem(turns_map_bad{i+2}, 'b','LineWidth',3);
 end
 
 
 fprintf('Correct cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_true));
-fprintf('BAD1 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{1}));
-fprintf('BAD2 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{2}));
+fprintf('BAD1 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{3}));
+fprintf('BAD2 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{4}));
 
 
 

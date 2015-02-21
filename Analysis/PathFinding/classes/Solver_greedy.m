@@ -20,6 +20,7 @@ classdef Solver_greedy < handle
         % pruning rules
         %    0 --> 1
         PRUNE_RATE = 0.750;
+        use_turns = false;
         
         % debugging options
         DBG = false;
@@ -38,6 +39,11 @@ classdef Solver_greedy < handle
         % ABSOLUTE ELEVATION OR RELATIVE
         function useAbsoluteElevation(obj)
             obj.use_absolute_elevation = true;
+        end
+        
+        % USE TURNS OR NOT
+        function useTurns(obj)
+            obj.use_turns = true;
         end
         
         % OUTPUT SETTINGS
@@ -65,6 +71,11 @@ classdef Solver_greedy < handle
                 % absolute or relative elvations
                 if obj.use_absolute_elevation
                     obj.graph_explorers{n}.useAbsoluteElevation();
+                end
+                
+                % use turns or not
+                if obj.use_turns
+                    obj.graph_explorers{n}.useTurns();
                 end
             end
             

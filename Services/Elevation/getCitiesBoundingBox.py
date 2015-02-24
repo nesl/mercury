@@ -24,7 +24,7 @@ for city_data in city_list:
 	#f.write(('data_box = [%8.3lf %8.3lf %8.3lf %8.3lf]; % ' + city_data + '_' +  str(miles_across*2) + 'x' + str(miles_across*2) + '\n'));
 	print(box);
 	print('%.3lf %.3lf %%' % (2.7, box[0][0]), city_data)
-	print(('data_box = [%8.3lf %8.3lf %8.3lf %8.3lf ]; %% %.0lfx%.0lf_%s\n') % (box[0][0], box[0][1], box[1][0], box[1][1], miles_across*2, miles_across*2, city_data[0]))
-	f.write(('%%data_box = [%8.3lf %8.3lf %8.3lf %8.3lf ]; %% %.0lfx%.0lf_%s\n') % (box[0][0], box[0][1], box[1][0], box[1][1], miles_across*2, miles_across*2, city_data[0]))
+	#print(('data_box = [%8.3lf %8.3lf %8.3lf %8.3lf ]; %% %.0lfx%.0lf_%s\n') % (box[0][0], box[0][1], box[1][0], box[1][1], miles_across*2, miles_across*2, city_data[0]))
+	f.write(('%%elevMatrix = TileGridLoader([%8.3lf %8.3lf %8.3lf %8.3lf ]);  %% %.0lfx%.0lf_%s\n') % (box[0][0], box[0][1], box[1][0], box[1][1], miles_across*2, miles_across*2, city_data[0]))
 
 f.close()

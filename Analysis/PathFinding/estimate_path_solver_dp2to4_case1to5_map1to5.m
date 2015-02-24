@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 3;  % 2 to 4
-caseNo = 2; % 1 to 5
-mapSize = 2; % 2 to 5
+solverVersion = 4;  % 2 to 4
+caseNo = 5; % 1 to 5
+mapSize = 5; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -87,6 +87,7 @@ outputWebFile = ['../../Data/resultSets/(B)case' num2str(caseNo) ...
 
 sensor_data = SensorData(sensorfile);
 
+% Note: the setSeaPressure() and setPressureScalar() just has no effect to Solver_dp4.
 if caseNo == 1
     %sensor_data.setSeaPressure(1020);  % correct coefficient
     %sensor_data.setPressureScalar(-8.15);
@@ -191,16 +192,23 @@ if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 end
 
-% quick result of solvers:
-%    solver case  map  rank  time
-%    3      3     3x3  2     37
-%    3      4     3x3  1     1318
-%    3      5     3x3  1     1300
-%    3      3     4x4  2     34
-%    3      4     4x4  2     1314
-%    3      5     4x4  1     1508
-%    4      3     4x4  3     1143
 return;
+
+% quick result of solvers:
+%    solver case  map    rank  time
+%    3      3     3x3    2     37
+%    3      4     3x3    1     1318
+%    3      5     3x3    1     1300
+%    3      3     4x4    2     34
+%    3      4     4x4    2     1314
+%    3      5     4x4    1     1508
+%    4      1     small  1     120
+%    4      3     4x4    3     1143
+%    4      4     3x3    1     28806
+%    4      4     4x4    1*,4  30361
+%    4      5     4x4    4     16080
+%    4p     2     small  1     97
+
 
 %% test and insert the oracle path based on the true gps
 tic

@@ -8,7 +8,8 @@ classdef Solver_dp4 < handle
     %   3. It allows to solve arbitrary path / oracle path and put into the
     %      trajectory result list. Oracle path is a path extracted from gps
     %      data.
-    %   4. It provides the function to compare with the ground-truth path
+    %   4. It provides the function to compare with the ground-truth path.
+    %   5. Parallelly solves different case.
     %
     % This solver list all the possible start points and perform DP
     % algorithm. It focus on exploring early pruning strategies. It
@@ -24,6 +25,7 @@ classdef Solver_dp4 < handle
     % Difference with the previous version:
     %   - Everything is the same except try to loop over different pressure
     %     parameter settings
+    %   - Support parallel solving
     
     properties (SetAccess = public)
         % input uncertainty
@@ -42,7 +44,6 @@ classdef Solver_dp4 < handle
         % associated objects
         map_data;
         sensor_data;
-        dtw_helpers;  %% TODO: condition dependent
         
         % elevations from barometer
         elev_series_from_baro;  % TODO: integrate into the solver
@@ -108,12 +109,10 @@ classdef Solver_dp4 < handle
             
             % initialize all the possible pressure parameters
             obj.elev_series_from_baro = cell(obj.num_pressure_parameters, 1);
-            obj.dtw_helpers = cell(obj.num_pressure_parameters, 1);
             for i = 1:obj.num_pressure_parameters
                 obj.sensor_data.setPressureScalar( obj.pressure_parameters(i,1) );
                 obj.sensor_data.setSeaPressure( obj.pressure_parameters(i,2) );
                 obj.elev_series_from_baro{i} = obj.sensor_data.getElevationTimeWindow();
-                obj.dtw_helpers{i} = SubSegmentDTWHelper(obj.map_data, obj.elev_series_from_baro{i}(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
             end
             fprintf('pressure parameters scheduled and related stuff initialized\n');
             
@@ -121,7 +120,7 @@ classdef Solver_dp4 < handle
             for preIdx = 1:obj.num_pressure_parameters  % pressure index
                 numMapNodes = obj.map_data.getNumNodes();
                 numElevBaro = size(obj.elev_series_from_baro{preIdx}, 1);
-                curDtwHelper = obj.dtw_helpers{preIdx};
+                curDtwHelper = SubSegmentDTWHelper(obj.map_data, obj.elev_series_from_baro{preIdx}(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
                 
                 % find the possible starting points
                 beginElev = obj.elev_series_from_baro{preIdx}(1,2);
@@ -225,6 +224,9 @@ classdef Solver_dp4 < handle
                 end
                 if findSimilarPath == 0
                     keptTraces = [keptTraces obj.final_res_traces(i)];
+                end
+                if i >= 1000
+                    break;
                 end
             end
             obj.final_res_traces = keptTraces;

@@ -2,12 +2,16 @@ import os
 import sys
 import ElevationService as ES
 
-RESOLUTION = 8e-5
+RESOLUTION = 8e-4
 
-lat1 = 34.104632
-lat2 = 34.082597
-lng1 = -118.316801
-lng2 = -118.381681
+#lat1 = 34.104632
+#lat2 = 34.082597
+#lng1 = -118.316801
+#lng2 = -118.381681
+lat1 = 33.791
+lng1 = -84.439
+lat2 = 33.706
+lng2 = -84.337
 
 if lat1 > lat2:
 	lat2, lat1 = lat1, lat2

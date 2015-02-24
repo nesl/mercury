@@ -349,6 +349,65 @@ classdef MapData < handle
         end
         
         
+        % RANDOM WALK
+        
+        % This function returns a path of random walk. It starts from
+        % startNodeIdx. If startNodeIdx is set as a negative value, then
+        % the function will randomly pick a starting node. pathLength
+        % refers to how many elevation points do you want. If
+        % allowImmediateBack is set, then the path may contain the
+        % go-and-forth pattern such as <a>--<b>--<a>. We decide to make the
+        % function returns a path (i.e., a series of nodeIdx) since the
+        % consumer can easily extract the elevations by getPathElev(). Also
+        % the full elevation path can be slightly longer than the desired
+        % length. However, the consumer can easily truncate the redundant
+        % ones.
+        function path = getRandomWalk(obj, startNodeIdx, pathLength, allowImmediateBack)
+            if startNodeIdx >= 0
+                cur_node = startNodeIdx;
+            else
+                cur_node = round(1 + (obj.num_nodes - 1)*rand(1));
+            end
+            prev_node = -1;  % previous node doesn't exist
+            
+            curLength = 0;
+            path = cur_node;
+            while curLength < pathLength
+                next_nodes = obj.getNeighbors(cur_node);
+                rand_steps = randperm(numel(next_nodes));
+                if ~allowImmediateBack
+                    while numel(rand_steps) > 0 && next_nodes(rand_steps(1)) == prev_node  % exclude going back case
+                        rand_steps = rand_steps(2:end);
+                    end
+                end
+                if numel(rand_steps) == 0  % omg, cannot go any further. roll back
+                    stepsToGetBack = ceil(rand() * 6);
+                    stepsToGetBack = min(stepsToGetBack, numel(path) - 1);
+                    while stepsToGetBack > 0
+                        curLength = curLength - numel(obj.getSegElev([path(end) path(end-1)])) + 1;
+                        %path
+                        path = path(1:end-1);
+                        %path
+                        stepsToGetBack = stepsToGetBack - 1;
+                    end
+                    if numel(path) == 1
+                        prev_node = -1;
+                    else
+                        prev_node = path(end-1);
+                    end
+                    cur_node = path(end);
+                else
+                    prev_node = cur_node;
+                    cur_node = next_nodes(rand_steps(1));
+                    curLength = curLength + numel(obj.getSegElev([prev_node cur_node])) - 1;
+                    path = [path; cur_node];
+                end
+                %path
+                %fprintf('%d\n', curLength);
+                %pause
+            end
+        end
+        
         % QUERY BY GEO INFORMATION
         function meter = distanceToNodeIdx(obj, latlng, nodeIdx)
             meter = latlng2m(latlng, obj.getNodeIdxLatLng(nodeIdx));

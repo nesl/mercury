@@ -2,6 +2,8 @@
 mapfile =    '../../Data/EleSegmentSets/ucla_3x3/';
 %sensorfile = '../../Data/rawData/baro_n501_20141208_211251.baro.csv';
 
+add_paths
+
 disp 'Getting map data. . .'
 %% Create MapData object
 map_data = MapData(mapfile);

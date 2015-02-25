@@ -127,7 +127,7 @@ plot(elev_est_rsz(:,1), estError,'r');
 
 %% Plot some simulated noise just for fun
 subplot(3,1,3);
-sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 300, 0.1);
+sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 300, 0.08);
 plot(elev_est_rsz(:,1), sim_noise, 'k');
 
 

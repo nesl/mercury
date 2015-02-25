@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 4;  % 2 to 4
-caseNo = 5; % 1 to 5
-mapSize = 5; % 1 to 5
+solverVersion = 3;  % 2 to 4
+caseNo = 3; % 1 to 5
+mapSize = 4; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -102,7 +102,7 @@ elseif caseNo == 2
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
 elseif caseNo == 3
-    sensor_data.setSeaPressure(1019.0);  % coefficient hand-tuned
+    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
     sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
@@ -232,3 +232,33 @@ sensor_data.setAbsoluteSegment(1421002543, 1421002988);
 sensor_data.plotElevation();
 
 
+%% answers
+
+% case 3, under map 4x4
+pathAns = [
+    183
+     186
+    1299
+    1376
+    1374
+    1375
+    1250
+     747
+      88
+      86
+      89
+     901
+     153
+     151
+     154
+     156
+     893
+      30
+     894
+     895
+     897
+     632
+     628
+     631
+     633
+];

@@ -6,7 +6,7 @@ class TileRequester:
 	
 	def __init__(self, resolution=4):
 		self.elev_service = ElevationRequester(resolution)
-		self.tileResolution = self.elev_service.tileResolution * 0.4;
+		self.tileResolution = self.elev_service.tileResolution * 0.99999987;
 	
 	def _getBoundedBox(self, center_lat, center_lon, miles):
 		df = miles/69.0

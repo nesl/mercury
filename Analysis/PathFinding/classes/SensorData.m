@@ -22,6 +22,7 @@ classdef SensorData < handle
     %          offsetAC = offsetAB + offsetBC = time_in_A - time_in_C
     
     properties (SetAccess = public, GetAccess = public)
+        
         % raw data
         raw_baro;
         raw_acc;
@@ -66,6 +67,9 @@ classdef SensorData < handle
         % downsampling
         DOWNSAMPLE = 100;
         
+        % offset file name
+        offset_file_name;
+        
     end
     
     methods
@@ -73,7 +77,7 @@ classdef SensorData < handle
         function obj = SensorData(filepath)
 
             % parse raw data
-            [baro, acc, gyro, mag, gps, gpsele] = parseRawData(filepath);
+            [baro, acc, gyro, mag, gps, gpsele, obj.offset_file_name] = parseRawData(filepath);
             
             % ensure at least baro and gps are not empty
             if isempty(baro) || isempty(gps)
@@ -103,10 +107,6 @@ classdef SensorData < handle
             obj.SR_mag =  mean(1./diff(obj.raw_gps(:,1)));
             obj.SR_gps =  mean(1./diff(obj.raw_gps(:,1)));
             
-            % by default, the segment is slightly trimmed
-            obj.segment_start = baro(1,1) + obj.TRIM_SEC;
-            obj.segment_stop = baro(end,1) - obj.TRIM_SEC;
-            
             % Calculate gpsSpeed
             obj.gps_speed = zeros(size(obj.raw_gps,1), 2);
             obj.gps_speed(:,1) = obj.raw_gps(:,1);
@@ -126,8 +126,16 @@ classdef SensorData < handle
             % the END are roughly matched up in time
             obj.gps_offset = 0;   % gps->abs_time
                                   % from the observation the gps time seems to be correct so far
-            obj.motion_offset = (baro(end,1) - gps(end,1)) + obj.gps_offset;   % motion->abs = motion->gps + gps->abs_time
+            obj.motion_offset = (baro(end,1) - gps(end,1)) + obj.gps_offset - obj.getOffset();   % motion->abs = (motion->gps + manualOffset) + gps->abs_time
+                                                                                                 % In the end of the day we still need to have a manual offset
             obj.relative_offset = (baro(1,1) - obj.motion_offset) - 0;  % abs->relative = t_abs - t_relative
+            
+            % by default, the segment is slightly trimmed
+            % let's just use gps as the default time interval of interest.
+            % Otherwise most likely there's no gps data in the beginning
+            obj.segment_start = gps(1,1) + obj.TRIM_SEC;
+            obj.segment_stop = gps(end,1) - obj.TRIM_SEC;
+            
             
             % MESSAGE TO PAUL from Bo-Jhang:
             % consider obj.est_turns as the raw turns (without down
@@ -292,6 +300,18 @@ classdef SensorData < handle
             turnEvents(:,1) = turnEvents(:,1) - motion_start_time;
         end
         
+        function turnVector = spanTurnEventsToVector(obj)
+            turnVector = obj.getElevationTimeWindow();  % we only curious about time
+            turnVector(:,2) = 0;  % by default, the turn is 0
+            turnEvents = obj.getTurnEvents();
+            for i = 1:size(turnEvents, 1)
+                candidates = find(turnVector(:,1) > turnEvents(i, 1));
+                if numel(candidates) > 0
+                    turnVector(candidates(1), 2) = turnEvents(i, 2);
+                end
+            end
+        end
+        
         function data = getGps(obj)
             % 7 columns: time, lat, lng, elev, error, speed, source
             % find valid indices for this segment
@@ -318,6 +338,27 @@ classdef SensorData < handle
             gps2ele = obj.raw_gpsele( obj.raw_gpsele(:,1) >= gps_start_time & ...
                 obj.raw_gpsele(:,1) <= gps_stop_time, : );
             gps2ele(:,1) = gps2ele(:,1) - gps_start_time;
+        end
+        
+        % OFFSET
+        % Though we've done so much effort on timestamp alignment, yet
+        % there are still some situation we need to align manually. These
+        % two functions allow you to specify/load the "manual" offset, but
+        % for the precise definition of this value, please refer to the
+        % constructor.
+        function offset = getOffset(obj)
+            offset = 0;
+            if exist(obj.offset_file_name, 'file')
+                fid = fopen(obj.offset_file_name, 'r');
+                offset = fscanf(fid, '%d');
+                fclose(fid);
+            end
+        end
+        
+        function setOffset(obj, offset)
+            fid = fopen(obj.offset_file_name, 'w');
+            fprintf(fid, '%d', offset);
+            fclose(fid);
         end
         
         % VISUALIZATION

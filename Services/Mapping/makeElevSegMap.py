@@ -33,7 +33,10 @@ def linearSpace(latLngA, latLngB):
 
 
 # historical options
-inputTfixName = 'ucla_3x3.tfix'  # sample: 'ucla_small.tfix'
+inputTfixName = 'ucla_5x5.tfix'
+#inputTfixName = 'ucla_4x4.tfix'
+#inputTfixName = 'ucla_3x3.tfix'
+#inputTfixName = 'ucla_sample.tfix'  # sample: 'ucla_small.tfix'
 #inputTfixName = 'ucla_west'
 
 

@@ -1,4 +1,4 @@
-function [baroData, accData, gyroData, magData, gpsData, gps2eleData] = parseRawData(filepath, varargin)
+function [baroData, accData, gyroData, magData, gpsData, gps2eleData, offsetFileName] = parseRawData(filepath, varargin)
 
 
 % user only needs to specify one file of an entire data set, we'll find the
@@ -46,3 +46,4 @@ gyroData    = dataSets{3};
 magData     = dataSets{4};
 gpsData     = dataSets{5};
 gps2eleData = dataSets{6};
+offsetFileName = [ rootDir basename '.offset.txt' ];

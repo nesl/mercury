@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 4;  % 2 to 4
-caseNo = 5; % 1 to 5
-mapSize = 5; % 1 to 5
+solverVersion = 3;  % 2 to 4
+caseNo = 4; % 1 to 5
+mapSize = 4; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -102,7 +102,7 @@ elseif caseNo == 2
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
 elseif caseNo == 3
-    sensor_data.setSeaPressure(1019.0);  % coefficient hand-tuned
+    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
     sensor_data.setPressureScalar(-8.2);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
@@ -232,3 +232,98 @@ sensor_data.setAbsoluteSegment(1421002543, 1421002988);
 sensor_data.plotElevation();
 
 
+%% answers
+
+% case 3, under map 4x4
+pathAns = [
+    183
+     186
+    1299
+    1376
+    1374
+    1375
+    1250
+     747
+      88
+      86
+      89
+     901
+     153
+     151
+     154
+     156
+     893
+      30
+     894
+     895
+     897
+     632
+     628
+     631
+     633
+];
+
+
+
+%% case 3 dp 3 map 3x3
+rank2 = [
+     1   114
+    11   117
+    60   697
+    75   733
+    77   731
+   104   732
+   108   668
+   116   404
+   149    55
+   154    53
+   157    56
+   167   477
+   187    84
+   217    82
+   227    85
+   230    87
+   235   469
+   243    30
+   256   470
+   263   471
+   327   473
+   345   355
+   355   351
+   395   354
+   425   356
+   432   360
+   443   363
+];
+
+nodes = rank2(:,2);
+nodes = nodes(1:end-2);  % even more correct
+numNodes = numel(nodes);
+clf
+hold on
+mapAngle = []
+for i = 1:(numNodes-2)
+    latlng = map_data.getNodeIdxLatLng(nodes(i+1));
+    ang = map_data.getAdjacentSegmentsAngle(nodes(i:(i+2)))
+    mapAngle = [mapAngle; ang];
+    markerSize = max(ceil( (abs(ang) - 20) / 5 ), 3);
+    if ang > 0
+        plot(latlng(2), latlng(1), 'bo', 'MarkerSize', markerSize);
+    else
+        plot(latlng(2), latlng(1), 'bx', 'MarkerSize', markerSize);
+    end
+end
+
+gpsLatLng = sensor_data.getGps();
+turns = sensor_data.spanTurnEventsToVector();
+for i = 1:(length(gpsLatLng)-10)
+    if turns(i, 2) ~= 0
+        markerSize = max(ceil( (abs( turns(i,2) ) - 20) / 5 ), 3);
+        if turns(i, 2) > 0
+            plot(gpsLatLng(i,3), gpsLatLng(i,2), 'ro', 'MarkerSize', markerSize);
+        else
+            plot(gpsLatLng(i,3), gpsLatLng(i,2), 'rx', 'MarkerSize', markerSize);
+        end
+    end
+    
+end

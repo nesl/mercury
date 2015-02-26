@@ -18,6 +18,8 @@ classdef MapData < handle
         segment_num_elements;
         segment_allPairDTW;
         segment_length;  % don't be confused. this is physical length as the unit is meter.
+        segment_start_orientation;   % a==----->b,  orientation of == part 
+        segment_end_orientation;     % a-----==>b
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
         
@@ -75,6 +77,8 @@ classdef MapData < handle
             obj.segment_latlngs = cell(obj.num_nodes);
             obj.segment_length = cell(obj.num_nodes);
             obj.segment_num_elements = zeros(obj.num_nodes);
+            obj.segment_start_orientation = nan(obj.num_nodes);
+            obj.segment_end_orientation = nan(obj.num_nodes);
             obj.node_neighbors = cell(obj.num_nodes, 1);
             obj.node_elevation = zeros(obj.num_nodes, 1);
             obj.node_latlng = zeros(obj.num_nodes, 2);
@@ -91,6 +95,39 @@ classdef MapData < handle
                 obj.segment_elevations{na_idx, nb_idx} = raw(rawIdx, 1);
                 % store lat/lng from a-->b only
                 obj.segment_latlngs{na_idx, nb_idx} = raw(rawIdx, 2:3);
+                % store the orientation from any pair a-->b
+                tmpLatLng = obj.segment_latlngs{na_idx, nb_idx}(1:2, :);
+                obj.segment_start_orientation(na_idx, nb_idx) = ...
+                    atan2d(tmpLatLng(2, 1) - tmpLatLng(1, 1), tmpLatLng(2, 2) - tmpLatLng(1, 2));
+                tmpLatLng = obj.segment_latlngs{na_idx, nb_idx}(end-1:end, :);
+                obj.segment_end_orientation(na_idx, nb_idx) = ...
+                    atan2d(tmpLatLng(2, 1) - tmpLatLng(1, 1), tmpLatLng(2, 2) - tmpLatLng(1, 2));
+                obj.segment_start_orientation(nb_idx, na_idx) = obj.segment_end_orientation(na_idx, nb_idx) - 180;
+                if obj.segment_start_orientation(nb_idx, na_idx) < -180
+                    obj.segment_start_orientation(nb_idx, na_idx) = obj.segment_start_orientation(nb_idx, na_idx) + 360;
+                end
+                obj.segment_end_orientation(nb_idx, na_idx) = obj.segment_start_orientation(na_idx, nb_idx) - 180;
+                if obj.segment_end_orientation(nb_idx, na_idx) < -180
+                    obj.segment_end_orientation(nb_idx, na_idx) = obj.segment_end_orientation(nb_idx, na_idx) + 360;
+                end
+                
+                %{
+                if (na_idx == 53 && nb_idx == 51) || (na_idx == 51 && nb_idx == 53)
+                    fprintf('%d->%d  %f %f %f %f\n', na_idx, nb_idx, ...
+                        obj.segment_start_orientation(na_idx, nb_idx), ...
+                        obj.segment_end_orientation(na_idx, nb_idx), ...
+                        obj.segment_start_orientation(nb_idx, na_idx), ...
+                        obj.segment_end_orientation(nb_idx, na_idx));
+
+                    clf
+                    hold on
+                    plot(obj.segment_latlngs{na_idx, nb_idx}(:,2), obj.segment_latlngs{na_idx, nb_idx}(:,1), 'r-');
+                    plot(obj.segment_latlngs{na_idx, nb_idx}(1,2), obj.segment_latlngs{na_idx, nb_idx}(1,1), 'k^');
+                    axis equal
+                    pause
+                end
+                %}
+    
                 % calculate the geo length in meter
                 obj.segment_length{na_idx, nb_idx} = obj.private_getSegmentLength(na_idx, nb_idx);
                 % store number of elements of each segment
@@ -310,6 +347,19 @@ classdef MapData < handle
 %         end
         
         % ESTIMATE MAP TURNS
+        function angle = getAdjacentSegmentsAngle(obj, path)
+            % the path should have exactly 3 elements, which composes
+            % exactly 2 segments.
+            angle = obj.segment_start_orientation( path(2), path(3) ) ...
+                - obj.segment_end_orientation( path(1), path(2) );
+            if angle >= 180
+                angle = angle - 360;
+            end
+            if angle <= -180
+                angle = angle + 360;
+            end
+        end
+        
         function turns = getPathTurns(obj, nidxList)
             % get the lat/lng first
             latlngs = obj.getPathLatLng(nidxList);

@@ -45,3 +45,25 @@ for i = 1:size(turnEvents, 1)
     text(gps(closestGpsIdx,3) + 1e-4, gps(closestGpsIdx,2) + 1e-4, num2str(turnEvents(i,2)))
 end
 axis equal
+
+return;
+
+%% see the turn events from the sensor and also from the path
+
+
+path = map_data.getRandomWalk(-1, 1000, 0);
+for i = 1:10
+    i
+    path(i:(i+2))
+    segLatLngA = map_data.getSegLatLng([path(i  ) path(i+1)]);
+    segLatLngB = map_data.getSegLatLng([path(i+1) path(i+2)]);
+    map_data.segment_end_orientation(path(i), path(i+1))
+    map_data.segment_start_orientation(path(i+1), path(i+2))
+    map_data.getAdjacentSegmentsAngle(path(i:(i+2)))
+    clf
+    hold on
+    plot(segLatLngA(:,2), segLatLngA(:,1), 'r-o');
+    plot(segLatLngB(:,2), segLatLngB(:,1), 'g-o');
+    axis equal
+    pause
+end

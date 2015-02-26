@@ -1,7 +1,7 @@
 clc; clf; clear all;
 
-%sensorfile = '../../Data/rawData/baro_n501_20150108_221546.gps.csv';
-sensorfile = '../../Data/rawData/baro_n503_20150110_143636.gps.csv';
+sensorfile = '../../Data/rawData/baro_n501_20150108_221546.gps.csv';
+%sensorfile = '../../Data/rawData/baro_n503_20150110_143636.gps.csv';
 sensor_data = SensorData(sensorfile);
 sensor_data.setSeaPressure(1020);
 sensor_data.setPressureScalar(-8.1);
@@ -35,3 +35,7 @@ plot(startTime, startTime, 'o');
 plot(stopTime, stopTime, 's');
 %}
 sensor_data.plotElevation()
+
+% set offset:
+%sensor_data.setOffset(62)
+% and then remember to create a new SensorData instance

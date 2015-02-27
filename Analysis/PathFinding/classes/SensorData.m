@@ -336,7 +336,7 @@ classdef SensorData < handle
 %             end
 %             % convert mag reading to compass heading
 %             
-%         end
+         end
         
         function data = getGps(obj)
             % 7 columns: time, lat, lng, elev, error, speed, source

@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 3;  % 2 to 4
-caseNo = 3; % 1 to 5
-mapSize = 3; % 1 to 5
+solverVersion = 4;  % 2 to 4
+caseNo = 2; % 1 to 5
+mapSize = 2; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -170,7 +170,6 @@ if pauseFlag == 1
     pause
 end
 
-return;
 
 %% test solver
 
@@ -178,7 +177,8 @@ solver.setOutputFilePath(outputWebFile);
 
 tic
 solver.solve();
-toc
+totalTime = toc;
+fprintf('Elapsed time is %lf seconds.\n', totalTime);
 
 fprintf('Generate results....');
 solver.getRawPath(1)

@@ -5,11 +5,12 @@ classdef Solver_dp4 < handle
     %      But we still need to give it a range of possible parameters.
     %   2. Based on DTW information, it performs search/DP algorithm to find
     %      the most likely n paths
-    %   3. It allows to solve arbitrary path / oracle path and put into the
+    %   3. This solver also prune the search space based on turns
+    %   4. It allows to solve arbitrary path / oracle path and put into the
     %      trajectory result list. Oracle path is a path extracted from gps
     %      data.
-    %   4. It provides the function to compare with the ground-truth path.
-    %   5. Parallelly solves different case (if map is small or ram is big)
+    %   5. It provides the function to compare with the ground-truth path.
+    %   6. Parallelly solves different case (if map is small or ram is big)
     %
     % This solver list all the possible start points and perform DP
     % algorithm. It focus on exploring early pruning strategies. It
@@ -45,26 +46,34 @@ classdef Solver_dp4 < handle
         map_data;
         sensor_data;
         
-        % elevations from barometer
-        elev_series_from_baro;  % TODO: integrate into the solver
+        % elevations from barometer; continuous turn
+        elev_series_from_baro; % a cell of arrays since it's pressure parameter dependent
+        driving_angle_max;  % an array
+        driving_angle_min;  % an array
         
         % dtw cost functions
         dtw_cost_function = @(x) (x .^ 2);
         
         % output result
         final_res_traces;  % which is always sorted
-                           % a trace includes .rawPath (step; node_idx columns)
-                           %                  .dtwScore (sorted by this)
+                           % a trace includes .rawPath ([step node_idx] columns)
                            %                  .pressureParamIdx
+                           %                  .dtwScore
+                           %                  .numMistakeTurns
+                           %                  .finalScore (the traces are sorted based on this score, see the def. in the code)
                      
-        
+                     
         % output settings
         max_results = 30;
         outputFilePath;
         
+        % parameter for turn detections
+        TURN_EVENT_DELAY = 5;  % barometer index, +/- slots
+        
         % pruning constants
         INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
+        ACCEPTED_TURN_ANGLE_DIFFERENCE = 90;  % degree
         
         % pruning constants/functions
         HARD_ELEVATION_THRESHOLD = 6; % meter, consider the nodes as check points and apply the threshold.
@@ -72,7 +81,7 @@ classdef Solver_dp4 < handle
                                                     % what is the cutting threshold for corresponding column
         global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
-        
+        allowed_num_turn_mistakes = @(x) (2 + 0.34 * x)  % x is number of segments which have been visited.
                                                        
         % parameters for finding the oracle path
         NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
@@ -86,11 +95,6 @@ classdef Solver_dp4 < handle
             obj.map_data = mapData;
             obj.sensor_data = sensorData;
             obj.scheduler_random_start = scheduleRandomStart;
-        end
-        
-        % EARLY PRUNING SETTINGS
-        function obj = setHardDTWScoreThreshold(obj, score)
-            obj.HARD_DTW_SCORE_THRESHOLD = score;
         end
         
         % OUTPUT SETTINGS
@@ -116,10 +120,25 @@ classdef Solver_dp4 < handle
             end
             fprintf('pressure parameters scheduled and related stuff initialized\n');
             
+            numMapNodes = obj.map_data.getNumNodes();
+            numElevBaro = size(obj.elev_series_from_baro{1}, 1);  % every series has the same length
+            
+            % take turns
+            turnVector = obj.sensor_data.spanTurnEventsToVector();
+            obj.driving_angle_max = zeros(numElevBaro, 1);
+            obj.driving_angle_min = zeros(numElevBaro, 1);
+            
+            % then, we want to specify the possible max and min angles at
+            % each time points. We use sliding window approach
+            for i = 1:numElevBaro
+                sidx = max(i - obj.TURN_EVENT_DELAY, 1);
+                eidx = min(i + obj.TURN_EVENT_DELAY, numElevBaro);
+                obj.driving_angle_max(i) = max( turnVector(sidx:eidx, 2) ) + obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+                obj.driving_angle_min(i) = min( turnVector(sidx:eidx, 2) ) - obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+            end
+            
             tmpResTracesForAllPressureParameters = cell(obj.num_pressure_parameters, 1);
             for preIdx = 1:obj.num_pressure_parameters  % pressure index
-                numMapNodes = obj.map_data.getNumNodes();
-                numElevBaro = size(obj.elev_series_from_baro{preIdx}, 1);
                 curDtwHelper = SubSegmentDTWHelper(obj.map_data, obj.elev_series_from_baro{preIdx}(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
                 
                 % find the possible starting points
@@ -133,8 +152,8 @@ classdef Solver_dp4 < handle
                     % dynamic programming
                     dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, baro elev step)
                     dp(initStartNodeIdx,1) = 0;
-                    from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node idx, last baro elev step]
-
+                    from = zeros(numMapNodes, numElevBaro+1, 4);  % from(a, b) = [last node idx, last baro elev step, # segs visited, # of turn mistakes]
+                
                     % GUIDELINE: think about we start from
                     %     dp(nIdxStart, bIdxStart) -------- consume baro data (bIdxStart:(bIdxEnd-1)) --------> dp(nIdxEnd, bIdxEnd)
                     %
@@ -149,9 +168,29 @@ classdef Solver_dp4 < handle
                             if dp(nIdxStart, bIdxStart) < earlyDPPruningScore ...     % global pruning. 
                                     && abs(obj.elev_series_from_baro{preIdx}(bIdxStart, 2) - obj.map_data.getNodeIdxsElev(nIdxStart)) < obj.HARD_ELEVATION_THRESHOLD
                                 for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
-                                    numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
                                     prevNodeIdx = from(nIdxStart, bIdxStart, 1);
-                                    if prevNodeIdx ~= nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                    if prevNodeIdx == nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                        continue;
+                                    end
+
+                                    numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
+                                    pastNumSegments = from(nIdxStart, bIdxStart, 3);
+                                    pastNumTurnMistakes = from(nIdxStart, bIdxStart, 4);
+                                    curNumTurnMistakes = pastNumTurnMistakes;
+                                
+                                    % impose the turn mistake penalty
+                                    if prevNodeIdx ~= 0 % means we can find out the previous node
+                                        % then we try to exam the turn from sensor is valid, i.e., meet the
+                                        % accpeted angles reported from the map. since we need to consider
+                                        % the angle space is continuous, i.e., -180 = 180 degrees,
+                                        % we calculate 3 equivalent angles (i.e, -360, +0, +360)
+                                        jointAngleFromMapSet = obj.map_data.getAdjacentSegmentsAngle([prevNodeIdx nIdxStart nIdxEnd]) + 360 * (-1:1);
+                                        if sum(obj.driving_angle_min(bIdxStart) <= jointAngleFromMapSet & jointAngleFromMapSet <= obj.driving_angle_max(bIdxStart)) == 0 % means that all the angles are mismatched
+                                            curNumTurnMistakes = curNumTurnMistakes + 1;
+                                        end
+                                    end
+                                    
+                                    if curNumTurnMistakes <= obj.allowed_num_turn_mistakes(pastNumSegments)
                                         earliestPossibleBaroIdxEnd = bIdxStart + numElementOfSeg;
                                         for bIdxEnd = earliestPossibleBaroIdxEnd:(numElevBaro+1)
                                             tmpScore = dp(nIdxStart, bIdxStart) + curDtwHelper.query(nIdxStart, nIdxEnd, bIdxStart, bIdxEnd-1);
@@ -164,7 +203,7 @@ classdef Solver_dp4 < handle
 
                                             if tmpScore < dp(nIdxEnd, bIdxEnd)
                                                 dp(nIdxEnd, bIdxEnd) = tmpScore;
-                                                from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart];
+                                                from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart, pastNumSegments+1, curNumTurnMistakes];
                                             end
                                         end
                                     end
@@ -181,6 +220,8 @@ classdef Solver_dp4 < handle
                             tmpTrace = [];
                             tmpTrace.pressureParamIdx = preIdx;
                             tmpTrace.dtwScore = dp(i, numElevBaro+1);
+                            tmpTrace.numMistakeTurns = from(i, numElevBaro+1, 4);
+                            tmpTrace.finalScore = tmpTrace.dtwScore * tmpTrace.numMistakeTurns;
                             cNodeIdx = i;  % current node index
                             cElevStep = numElevBaro+1;  % current elevation step
                             tmpTrace.rawPath = [numElevBaro+1 i];
@@ -197,6 +238,7 @@ classdef Solver_dp4 < handle
                 end
                 tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces;
             end
+            fprintf('Finish searching. Summarize the result....\n');
             
             % join the answers
             obj.final_res_traces = [];

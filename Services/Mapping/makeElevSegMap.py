@@ -40,8 +40,8 @@ inputTfixName = 'ucla_5x5.tfix'
 #inputTfixName = 'ucla_west'
 
 
-#if len(sys.argv) >= 2:
-#    inputTfixName = sys.argv[1]
+if len(sys.argv) >= 2:
+    inputTfixName = sys.argv[1]
 
 inRootDir = '../../Data/trajectorySets/'
 outRootDir = '../../Data/EleSegmentSets/'

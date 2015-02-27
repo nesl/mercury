@@ -53,7 +53,12 @@ filenames = [
 'Washington_6x6.osm'
 ]
 
+idx = 0
+
 for x in filenames:
-    cmd = 'python3 script.py ' + x
-    print(cmd)
-    os.system(cmd)
+    if idx in [5, 8, 11, 14, 15]:
+        print('idx=' + str(idx))
+        cmd = 'python3 script.py ' + x
+        print(cmd)
+        os.system(cmd)
+    idx += 1

@@ -20,7 +20,7 @@
 %elevMatrix = TileGridLoader([  29.997  -90.124   29.912  -90.026 ]);  % 6x6_New Orleans
 %elevMatrix = TileGridLoader([  39.333  -76.668   39.248  -76.557 ]);  % 6x6_Baltimore
 %elevMatrix = TileGridLoader([  42.374  -83.104   42.289  -82.988 ]);  % 6x6_Detroit
-%elevMatrix = TileGridLoader([  39.142  -94.633   39.057  -94.523 ]);  % 6x6_Kansas City
+%elevMatrix = TileGridLoader([  39.142  -94.633   39.057  -94.523 ]);  % 6x6_Kansas City 2
 %elevMatrix = TileGridLoader([  41.301  -95.994   41.216  -95.881 ]);  % 6x6_Omaha
 %elevMatrix = TileGridLoader([  36.217 -115.189   36.133 -115.084 ]);  % 6x6_Las Vegas
 %elevMatrix = TileGridLoader([  35.127 -106.703   35.042 -106.598 ]);  % 6x6_Albuquerque

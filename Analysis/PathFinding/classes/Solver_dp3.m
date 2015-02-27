@@ -29,9 +29,8 @@ classdef Solver_dp3 < handle
         sensor_data;
         dtw_helper;
         
-        % elevations from barometer; continuous turn
+        % elevations from barometer
         elevFromBaro;
-        drivingAngle;
         
         % dtw cost functions
         dtw_cost_function = @(x) (x .^ 2);
@@ -87,12 +86,8 @@ classdef Solver_dp3 < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
+            % all pair DTW
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
-            obj.drivingAngle = obj.sensor_data.spanTurnEventsToVector() / 2;
-            
-            obj.drivingAngle(obj.drivingAngle >  120) =  120;
-            obj.drivingAngle(obj.drivingAngle < -120) = -120;  % too big? too small? shrink to a reasonable angle
-            
             obj.dtw_helper = SubSegmentDTWHelper(obj.map_data, obj.elevFromBaro(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
             %obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
             %fprintf('finish calculating all pairs of dtw\n');
@@ -129,24 +124,17 @@ classdef Solver_dp3 < handle
                             for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
                                 numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
                                 prevNodeIdx = from(nIdxStart, bIdxStart, 1);
-                                if prevNodeIdx == 0  % if 0, means there's no previous node
-                                    turnDifference = 0;
-                                else
-                                    turnDifference = obj.map_data.getAdjacentSegmentsAngle([prevNodeIdx nIdxStart nIdxEnd]) - obj.drivingAngle(bIdxStart);
-                                end
-                                
-                                %if prevNodeIdx ~= nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
-                                if abs(turnDifference) < 150
+                                if prevNodeIdx ~= nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
                                     earliestPossibleBaroIdxEnd = bIdxStart + numElementOfSeg;
                                     for bIdxEnd = earliestPossibleBaroIdxEnd:(numElevBaro+1)
                                         tmpScore = dp(nIdxStart, bIdxStart) + obj.dtw_helper.query(nIdxStart, nIdxEnd, bIdxStart, bIdxEnd-1);
-
+                                        
                                         % purning: if tmpScore is inf, meaning that it is pruned by the
                                         % pruning score when performing DTW. no need to continue anymore
                                         if tmpScore == inf
                                             break
                                         end
-
+                                        
                                         if tmpScore < dp(nIdxEnd, bIdxEnd)
                                             dp(nIdxEnd, bIdxEnd) = tmpScore;
                                             from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart];

@@ -312,6 +312,32 @@ classdef SensorData < handle
             end
         end
         
+        function heading = getGpsHeading(obj)
+%             gps = obj.getGps();
+%             % extract instantaneous compass heading
+%             headings = [];
+%             for i=2:size(gps,1)
+%                 angle = atan2d( gps(i,2) - gps(i-1,2), gps(i,3) - gps(i-1,3) );
+%                 headings = [headings; angle];
+%             end
+        end
+        
+        function heading = getMagHeading(obj)
+%             mag = obj.getMag();
+%             acc = obj.getAcc();
+%             heading = [];
+%             % mag is smaller than acc
+%             mag2acc_idx = size(acc,1)/size(mag,1);
+%             for i=1:size(mag,1)
+%                 acc_idx = min(size(acc,1), round(i*mag2acc_idx));
+%                 r = vrrotvec(mag(i,2:end), acc(acc_idx,2:end));
+%                 R = vrrotvec2mat(r);
+%                 angle = 
+%             end
+%             % convert mag reading to compass heading
+%             
+%         end
+        
         function data = getGps(obj)
             % 7 columns: time, lat, lng, elev, error, speed, source
             % find valid indices for this segment

@@ -54,7 +54,9 @@ times = lengths/SR;
 latlng_dist = 10; % meters / latlng sample
 dist = length(partial)*latlng_dist;
 avg_speeds = dist./times;
-speed_costs = calculateSpeedCost(avg_speeds);
+%% TEMPORARILY REMOVE SPEED COSTS TO DEBUG
+%speed_costs = calculateSpeedCost(avg_speeds);
+speed_costs = 1;
 
 
 % final greedy cost

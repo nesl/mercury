@@ -46,24 +46,49 @@ for i = 1:size(turnEvents, 1)
 end
 axis equal
 
-return;
 
 %% see the turn events from the sensor and also from the path
 
+% 
+% path = map_data.getRandomWalk(-1, 1000, 0);
+% for i = 1:10
+%     i
+%     path(i:(i+2))
+%     segLatLngA = map_data.getSegLatLng([path(i  ) path(i+1)]);
+%     segLatLngB = map_data.getSegLatLng([path(i+1) path(i+2)]);
+%     map_data.segment_end_orientation(path(i), path(i+1))
+%     map_data.segment_start_orientation(path(i+1), path(i+2))
+%     map_data.getAdjacentSegmentsAngle(path(i:(i+2)))
+%     clf
+%     hold on
+%     plot(segLatLngA(:,2), segLatLngA(:,1), 'r-o');
+%     plot(segLatLngB(:,2), segLatLngB(:,1), 'g-o');
+%     axis equal
+%     pause
+% end
+% 
 
-path = map_data.getRandomWalk(-1, 1000, 0);
-for i = 1:10
-    i
-    path(i:(i+2))
-    segLatLngA = map_data.getSegLatLng([path(i  ) path(i+1)]);
-    segLatLngB = map_data.getSegLatLng([path(i+1) path(i+2)]);
-    map_data.segment_end_orientation(path(i), path(i+1))
-    map_data.segment_start_orientation(path(i+1), path(i+2))
-    map_data.getAdjacentSegmentsAngle(path(i:(i+2)))
-    clf
-    hold on
-    plot(segLatLngA(:,2), segLatLngA(:,1), 'r-o');
-    plot(segLatLngB(:,2), segLatLngB(:,1), 'g-o');
-    axis equal
-    pause
+%% Plot mag
+figure();
+mag = sensor_data.getMag();
+acc = sensor_data.getAcc();
+[b,a] = butter(2,0.01);
+grav = [acc(:,1) filtfilt(b,a,acc(:,2)) filtfilt(b,a,acc(:,3)) filtfilt(b,a,acc(:,4))];
+
+heading = [];
+% mag is smaller than acc
+mag2grav_idx = size(grav,1)/size(mag,1);
+alpha = 0.5;
+grav_old = [];
+for i=1:size(mag,1)
+    grav_idx = min(size(grav,1), round(i*mag2grav_idx));
+    g = grav(grav_idx,2:end);
+    
+    r = vrrotvec(grav(grav_idx,2:end), mag(i,2:end));
+    R = vrrotvec2mat(r);
+    mag_compensated = R\mag(i,2:end)'
+    angle = mag_compensated(3);
+    heading = [heading; angle];
 end
+% convert mag reading to compass heading
+plot(heading);

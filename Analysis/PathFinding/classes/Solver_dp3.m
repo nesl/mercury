@@ -94,7 +94,7 @@ classdef Solver_dp3 < handle
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
             numElevBaro = size(obj.elevFromBaro, 1);
             
-            turnVector = obj.sensor_data.spanTurnEventsToVector() / 2;  % magic number, since the turn events from the sensor data is typically larger than actual turns
+            turnVector = obj.sensor_data.spanTurnEventsToVector();
             %turnVector(turnVector >  120) =  120;
             %turnVector(turnVector < -120) = -120;  % too big? too small? shrink to a reasonable angle
             % ^ since divide by magic number, the above two lines have no effect.

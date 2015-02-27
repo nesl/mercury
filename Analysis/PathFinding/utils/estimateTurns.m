@@ -100,7 +100,7 @@ end
 
 % predict turn angles
 turn_angles = turn_events;
-turn_angles(:,2) = turn_angles(:,2)*0.8; % fudge factor to estimate angle
+turn_angles(:,2) = sign(turn_angles(:,2)) .* ((abs(turn_angles(:,2)*0.8)) .^ 0.95); % fudge factor to estimate angle
 
 % plot
 %{

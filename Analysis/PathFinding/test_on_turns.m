@@ -9,15 +9,27 @@ add_paths;
 
 %% load data
 % borrow from case 3
+
 mapfile =    '../../Data/EleSegmentSets/ucla_small/';
 sensorfile = '../../Data/rawData/baro_n503_20150111_091333.baro.csv';
 sensor_data = SensorData(sensorfile);
+%{
 sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
 sensor_data.setPressureScalar(-8.2);
 sensor_data.setAbsoluteSegment(1421002543, 1421002988);
 sensor_data.setWindowSize(0.5);   % correct:0.5
 map_data = MapData(mapfile, 1);   %correct:1
+%}
 
+sensor_data.setSeaPressure(1018.7);  % correct coefficient hand-tuned
+sensor_data.setPressureScalar(-8.2);
+%sensor_data.setSeaPressure(1019.3);  % test different coefs. scalar shouldn't matter that much
+%sensor_data.setPressureScalar(-7.8);
+sensor_data.setAbsoluteSegment(1421002200, 1421003019);
+sensor_data.setWindowSize(1);  % finer case: 0.5
+map_data = MapData(mapfile, 2);  % finer case: 1
+
+    
 %% Playground
 turns = sensor_data.getTurns();
 turnEvents = sensor_data.getTurnEvents();

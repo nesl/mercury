@@ -14,6 +14,14 @@ import re
 osmName = 'ucla_5x5.osm'   # sample: 'ucla.osm'
 optionAllowLoop = False   # most of the cases are building bounding boxes
 
+
+
+# support system parameters
+if len(sys.argv) >= 2:
+	osmName = sys.argv[1]
+if len(sys.argv) >= 3:
+	optionAllowLoop = (sys.argv[2] == '1')
+
 inFile = '../../../Data/osmFiles/' + osmName
 if len(osmName.split('.')) == 1:
     osmNameWoExt = osmName

@@ -199,7 +199,7 @@ classdef Solver_dp3 < handle
                 % back tracking
                 for i = 1:numMapNodes
                     if dp(i, numElevBaro+1) < inf
-                        clear tmp_trace
+                        tmp_trace = [];
                         tmp_trace.dtwScore = dp(i, numElevBaro+1);
                         tmp_trace.numMistakeTurns = from(i, numElevBaro+1, 4);
                         tmp_trace.finalScore = tmp_trace.dtwScore * tmp_trace.numMistakeTurns;

@@ -533,7 +533,6 @@ classdef Solver_dp4 < handle
             obj.private_toWeb(1);
         end
         
-        
         % +-----------------+
         % | PRIVATE METHODS |
         % +-----------------+

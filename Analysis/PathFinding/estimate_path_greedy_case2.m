@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% Load Map and Data
-caseNo = 2; % 1 to 5
+caseNo = 3; % 1 to 5
 mapSize = 2; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
@@ -102,7 +102,7 @@ DEBUG = true;
 solver = Solver_greedy(map_data, sensor_data, DEBUG);
 solver.setNumPathsToKeep(40);
 solver.useAbsoluteElevation();
-solver.useTurns();
+%solver.useTurns();
 
 %% Solve !
 tic;

@@ -1,5 +1,7 @@
-% This code simply is a playground of turn detection. It gives me better
-% intuition how the turn detection works.
+%% NOTE:
+% This will eventually be converted into a function, but for debugging
+% I'll keep it as a script for now. Inputs will be map file, sensor file,
+% and sensor segmentation (start and duration).
 
 %% Housekeeping
 clear all; clc; close all;
@@ -19,8 +21,8 @@ elseif mapSize == 3
     mapfile = '../../Data/EleSegmentSets/ucla_3x3/';
 elseif mapSize == 4
     mapfile = '../../Data/EleSegmentSets/ucla_4x4/';
-%elseif mapSize == 5
-%    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
+    %elseif mapSize == 5
+    %    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
 else
     error('Be patient. The map will come out soon.');
 end
@@ -95,140 +97,28 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
-%% Choose paths to examine
-% correct path (true only under mapSize=2, case=2)
-path_true = [
-         1    33
-    21    36
-   118   256
-   146   269
-   149   267
-   208   268
-   215   234
-   230   153
-   300    18];
-path_true = path_true(:,2);
+%% Plot mag
+mag = sensor_data.getMag();
+acc = sensor_data.getAcc();
+[b,a] = butter(2,0.01);
+grav = [acc(:,1) filtfilt(b,a,acc(:,2)) filtfilt(b,a,acc(:,3)) filtfilt(b,a,acc(:,4))];
 
-% multiple bad paths
-tmp1 = [122773634
-122773638
-122643265
-122773641
-122752265
-122752261
-122752257
-122824159
-123161854
-];
-tmp1 = map_data.nodesToIdxs(tmp1);
-
-tmp2 = [122584740
-122584748
-122584755
-122584764
-122584789
-496202094
-496202095
-122914625
-123526804
-122584823
-];
-tmp2 = map_data.nodesToIdxs(tmp2);
-
-tmp3 = [122978990
-123036806
-123148520
-123191897
-123191894
-122867535
-122867533
-122867531
-123138234
-122681075
-122914606
-];
-tmp3 = map_data.nodesToIdxs(tmp3);
-
-tmp4 = [122914625
-122914624
-122914622
-1717288137
-123370940
-592635874
-122978981
-123148498
-122681080
-122914608
-122762246
-122914606
-122867526
-];
-tmp4 = map_data.nodesToIdxs(tmp4);
-
-path_bad = {tmp1 tmp2 tmp3 tmp4};
-
-%% Get sensor turns
-turns_sensor = sensor_data.getTurnEvents();
-turns_sensor = turns_sensor(:,2);
-
-%% Get true map turns
-% true map turns
-close all;
-
-true_costs = [];
-for i=2:size(path_true,1)
-    partial = path_true(1:i);
-    map_turns = map_data.getPathTurns(partial);
-    cost = DTW_greedy_turns(turns_sensor, map_turns);
-    true_costs = [true_costs; cost];
+heading = [];
+% mag is smaller than acc
+mag2grav_idx = size(grav,1)/size(mag,1);
+alpha = 0.5;
+grav_old = [];
+for i=1:size(mag,1)
+    grav_idx = min(size(grav,1), round(i*mag2grav_idx));
+    g = grav(acc_idx,2:end);
+    
+    r = vrrotvec(grav(grav_idx,2:end), mag(i,2:end));
+    R = vrrotvec2mat(r);
+    mag_compensated = R\mag(i,2:end)'
+    angle = mag_compensated(3);
+    heading = [heading; angle];
 end
-
-fprintf('\n');
-
-%% Get bad map turns
-% bad map turns
-close all;
-
-bad_costs = [];
-bad = path_bad{4};
-for i=2:size(bad,1)
-    partial = bad(1:i);
-    map_turns = map_data.getPathTurns(partial);
-    cost = DTW_greedy_turns(turns_sensor, map_turns);
-    bad_costs = [bad_costs; cost];
-end
-
-
-%% Plot
-close all;
-plot(true_costs,'b');
-hold on;
-plot(bad_costs, 'r');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+% convert mag reading to compass heading
 
 
 

@@ -19,7 +19,7 @@ classdef Solver_greedy < handle
         
         % pruning rules
         %    0 --> 1
-        PRUNE_RATE = 0.750;
+        PRUNE_RATE = 0.500;
         use_turns = false;
         
         % debugging options

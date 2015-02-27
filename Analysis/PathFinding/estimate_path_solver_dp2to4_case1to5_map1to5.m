@@ -11,8 +11,8 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 to 4
-caseNo = 4; % 1 to 5
-mapSize = 4; % 1 to 5
+caseNo = 5; % 1 to 5
+mapSize = 5; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -170,7 +170,6 @@ if pauseFlag == 1
     pause
 end
 
-
 %% test solver
 
 solver.setOutputFilePath(outputWebFile);
@@ -202,6 +201,8 @@ return;
 %    3      3     4x4    2     34
 %    3      4     4x4    2     1314
 %    3      5     4x4    1     1508
+%    3t     4     4x4    1     1434
+%    3t     5     5x5    1     1505
 %    4      1     small  1     120
 %    4      3     4x4    3     1143
 %    4      4     3x3    1     28806
@@ -315,7 +316,7 @@ for i = 1:(numNodes-2)
 end
 
 gpsLatLng = sensor_data.getGps();
-turns = sensor_data.spanTurnEventsToVector();
+turns = sensor_data.spanTurnEventsToVector() / 2;
 for i = 1:(length(gpsLatLng)-10)
     if turns(i, 2) ~= 0
         markerSize = max(ceil( (abs( turns(i,2) ) - 20) / 5 ), 3);

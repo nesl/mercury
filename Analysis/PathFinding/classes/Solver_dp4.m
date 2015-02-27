@@ -9,7 +9,7 @@ classdef Solver_dp4 < handle
     %      trajectory result list. Oracle path is a path extracted from gps
     %      data.
     %   4. It provides the function to compare with the ground-truth path.
-    %   5. Parallelly solves different case.
+    %   5. Parallelly solves different case (if map is small or ram is big)
     %
     % This solver list all the possible start points and perform DP
     % algorithm. It focus on exploring early pruning strategies. It

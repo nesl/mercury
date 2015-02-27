@@ -2,15 +2,12 @@ classdef Solver_dp3 < handle
     % SOLVER does the following thing:
     %   1. Based on DTW information, it performs search/DP algorithm to find
     %      the most likely n paths
-    %   2. It provides the function to compare with the ground-truth path
-    %
-    % This class does the following thing:
-    %   1. Based on DTW information, it performs search/DP algorithm to find
-    %      the most likely n paths
-    %   2. It allows to solve arbitrary path / oracle path and put into the
+    %   2. This solver also prune the search space based on turns
+    %   3. It allows to solve arbitrary path / oracle path and put into the
     %      trajectory result list. Oracle path is a path extracted from gps
     %      data.
-    %   3. It provides the function to compare with the ground-truth path
+    %   4. It provides the function to compare with the ground-truth path
+    %
     %
     % This solver list all the possible start points and perform DP
     % algorithm. It focus on exploring early pruning strategies. It
@@ -29,8 +26,10 @@ classdef Solver_dp3 < handle
         sensor_data;
         dtw_helper;
         
-        % elevations from barometer
+        % elevations from barometer; continuous turn
         elevFromBaro;
+        driving_angle_max;
+        driving_angle_min;
         
         % dtw cost functions
         dtw_cost_function = @(x) (x .^ 2);
@@ -38,16 +37,22 @@ classdef Solver_dp3 < handle
         % output result
         res_traces;  % which is always sorted
                      % a trace includes .rawPath (step; node_idx columns)
-                     %                  .dtwScore (sorted by this)
+                     %                  .dtwScore 
+                     %                  .numMistakeTurns
+                     %                  .finalScore (the traces are sorted based on this score, see the def. in the code)
                      
         
         % output settings
         max_results = 20;
         outputFilePath;
         
+        % parameter for turn detections
+        TURN_EVENT_DELAY = 5;  % barometer index, +/- slots
+        
         % pruning constants
         INITIAL_ELEVATION_DIFFERENCE_SCREEN = 2; % meter
         RAW_PATH_SIMILARITY_THRESHOLD = 0.6;
+        ACCEPTED_TURN_ANGLE_DIFFERENCE = 90;  % degree
         
         % pruning constants/functions
         HARD_ELEVATION_THRESHOLD = 6; % meter, consider the nodes as check points and apply the threshold.
@@ -55,7 +60,7 @@ classdef Solver_dp3 < handle
                                                     % what is the cutting threshold for corresponding column
         global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
-        
+        allowed_num_turn_mistakes = @(x) (2 + 0.34 * x)  % x is number of segments which have been visited.
                                                        
         % parameters for finding the oracle path
         NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
@@ -86,14 +91,37 @@ classdef Solver_dp3 < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
-            % all pair DTW
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
+            numElevBaro = size(obj.elevFromBaro, 1);
+            
+            turnVector = obj.sensor_data.spanTurnEventsToVector() / 2;  % magic number, since the turn events from the sensor data is typically larger than actual turns
+            %turnVector(turnVector >  120) =  120;
+            %turnVector(turnVector < -120) = -120;  % too big? too small? shrink to a reasonable angle
+            % ^ since divide by magic number, the above two lines have no effect.
+            
+            obj.driving_angle_max = zeros(numElevBaro, 1);
+            obj.driving_angle_min = zeros(numElevBaro, 1);
+            
+            % then, we want to specify the possible max and min angles at
+            % each time points. We use sliding window approach
+            for i = 1:numElevBaro
+                sidx = max(i - obj.TURN_EVENT_DELAY, 1);
+                eidx = min(i + obj.TURN_EVENT_DELAY, numElevBaro);
+                obj.driving_angle_max(i) = max( turnVector(sidx:eidx, 2) ) + obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+                obj.driving_angle_min(i) = min( turnVector(sidx:eidx, 2) ) - obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+            end
+            
+            %size(obj.elevFromBaro)
+            %size(turnVector)
+            %[turnVector(:,2) obj.driving_angle_max obj.driving_angle_min]
+            %pause
+            
             obj.dtw_helper = SubSegmentDTWHelper(obj.map_data, obj.elevFromBaro(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
             %obj.map_data.preProcessAllPairDTW(obj.elevFromBaro(:,2));
             %fprintf('finish calculating all pairs of dtw\n');
 
             numMapNodes = obj.map_data.getNumNodes();
-            numElevBaro = size(obj.elevFromBaro, 1);
+            
             obj.res_traces = [];
             
             % find the possible starting points
@@ -106,7 +134,7 @@ classdef Solver_dp3 < handle
                 % dynamic programming
                 dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, baro elev step)
                 dp(initStartNodeIdx,1) = 0;
-                from = zeros(numMapNodes, numElevBaro+1, 2);  % from(a, b) = [last node idx, last baro elev step]
+                from = zeros(numMapNodes, numElevBaro+1, 4);  % from(a, b) = [last node idx, last baro elev step, # segs visited, # of turn mistakes]
                 
                 % GUIDELINE: think about we start from
                 %     dp(nIdxStart, bIdxStart) -------- consume baro data (bIdxStart:(bIdxEnd-1)) --------> dp(nIdxEnd, bIdxEnd)
@@ -121,23 +149,44 @@ classdef Solver_dp3 < handle
                         %[bIdxStart nIdxStart obj.elevFromBaro(bIdxStart) obj.map_data.getNodeIdxsElev(nIdxStart)]
                         if dp(nIdxStart, bIdxStart) < earlyDPPruningScore ...     % global pruning. 
                                 && abs(obj.elevFromBaro(bIdxStart, 2) - obj.map_data.getNodeIdxsElev(nIdxStart)) < obj.HARD_ELEVATION_THRESHOLD
-                            for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
-                                numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
+                            for nIdxEnd = obj.map_data.getNeighbors(nIdxStart)
                                 prevNodeIdx = from(nIdxStart, bIdxStart, 1);
-                                if prevNodeIdx ~= nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                if prevNodeIdx == nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                    continue;
+                                end
+                                
+                                numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
+                                pastNumSegments = from(nIdxStart, bIdxStart, 3);
+                                pastNumTurnMistakes = from(nIdxStart, bIdxStart, 4);
+                                curNumTurnMistakes = pastNumTurnMistakes;
+                                
+                                % impose the turn mistake penalty
+                                if prevNodeIdx ~= 0 % means we can find out the previous node
+                                    % then we try to exam the turn from sensor is valid, i.e., meet the
+                                    % accpeted angles reported from the map. since we need to consider
+                                    % the angle space is continuous, i.e., -180 = 180 degrees,
+                                    % we calculate 3 equivalent angles (i.e, -360, +0, +360)
+                                    jointAngleFromMapSet = obj.map_data.getAdjacentSegmentsAngle([prevNodeIdx nIdxStart nIdxEnd]) + 360 * (-1:1);
+                                    if sum(obj.driving_angle_min(bIdxStart) <= jointAngleFromMapSet & jointAngleFromMapSet <= obj.driving_angle_max(bIdxStart)) == 0 % means that all the angles are mismatched
+                                        curNumTurnMistakes = curNumTurnMistakes + 1;
+                                    end
+                                end
+                                
+                                
+                                if curNumTurnMistakes <= obj.allowed_num_turn_mistakes(pastNumSegments)
                                     earliestPossibleBaroIdxEnd = bIdxStart + numElementOfSeg;
                                     for bIdxEnd = earliestPossibleBaroIdxEnd:(numElevBaro+1)
                                         tmpScore = dp(nIdxStart, bIdxStart) + obj.dtw_helper.query(nIdxStart, nIdxEnd, bIdxStart, bIdxEnd-1);
-                                        
+
                                         % purning: if tmpScore is inf, meaning that it is pruned by the
                                         % pruning score when performing DTW. no need to continue anymore
                                         if tmpScore == inf
                                             break
                                         end
-                                        
+
                                         if tmpScore < dp(nIdxEnd, bIdxEnd)
                                             dp(nIdxEnd, bIdxEnd) = tmpScore;
-                                            from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart];
+                                            from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart, pastNumSegments+1, curNumTurnMistakes];
                                         end
                                     end
                                 end
@@ -152,6 +201,8 @@ classdef Solver_dp3 < handle
                     if dp(i, numElevBaro+1) < inf
                         clear tmp_trace
                         tmp_trace.dtwScore = dp(i, numElevBaro+1);
+                        tmp_trace.numMistakeTurns = from(i, numElevBaro+1, 4);
+                        tmp_trace.finalScore = tmp_trace.dtwScore * tmp_trace.numMistakeTurns;
                         cNodeIdx = i;  % current node index
                         cElevStep = numElevBaro+1;  % current elevation step
                         tmp_trace.rawPath = [numElevBaro+1 i];
@@ -166,13 +217,14 @@ classdef Solver_dp3 < handle
                     end
                 end
             end
+            fprintf('Finish searching. Summarize the result....\n');
             
             if numel(obj.res_traces) == 0
                 warning('Solver didn''t find any possible path... try to relax the pruning condition');
                 return;
             end
             
-            obj.res_traces = nestedSortStruct(obj.res_traces, {'dtwScore'});
+            obj.res_traces = nestedSortStruct(obj.res_traces, {'finalScore'});
             
             % remove similar traces
             keptTraces = [];

@@ -13,7 +13,6 @@ filenames = [
 'Columbus_6x6.osm',
 'Dallas_6x6.osm',
 'Denver_6x6.osm',
-'detectDuplicate.py',
 'Detroit_6x6.osm',
 'El_Paso_6x6.osm',
 'Fort_Worth_6x6.osm',
@@ -56,7 +55,7 @@ filenames = [
 idx = 0
 
 for x in filenames:
-    if idx in [5, 8, 11, 14, 15]:
+    if idx in [35, 36, 37, 38, 39]:
         print('idx=' + str(idx))
         cmd = 'python3 script.py ' + x
         print(cmd)

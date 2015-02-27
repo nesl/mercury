@@ -13,7 +13,6 @@ filenames = [
 'Columbus_6x6.tfix',
 'Dallas_6x6.tfix',
 'Denver_6x6.tfix',
-'detectDuplicate.py',
 'Detroit_6x6.tfix',
 'El_Paso_6x6.tfix',
 'Fort_Worth_6x6.tfix',

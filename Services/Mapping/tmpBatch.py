@@ -52,17 +52,17 @@ filenames = [
 'Washington_6x6.tfix'
 ]
 
-dividor = 1
-remainder = 0
+startIdx = 0
+stopIdx = len(filenames)
 if len(sys.argv) >= 2:
-    dividor = int(sys.argv[1])
+    startIdx = int(sys.argv[1])
 
 if len(sys.argv) >= 3:
-    remainder = int(sys.argv[2])
+    stopIdx = int(sys.argv[2])
 
 idx = 0
 for x in filenames:
-    if idx % dividor == remainder:
+    if startIdx <= idx and idx < stopIdx:
         print('idx=' + str(idx))
         cmd = 'python3 makeElevSegMap.py ' + x
         print(cmd)

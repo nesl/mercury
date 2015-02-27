@@ -102,7 +102,7 @@ DEBUG = true;
 solver = Solver_greedy(map_data, sensor_data, DEBUG);
 solver.setNumPathsToKeep(40);
 solver.useAbsoluteElevation();
-solver.useTurns();
+%solver.useTurns();
 
 %% Solve !
 tic;

@@ -54,14 +54,16 @@ classdef Solver_dp4 < handle
         % dtw cost functions
         dtw_cost_function = @(x) (x .^ 2);
         
-        % output result
+        % output result / performance
         final_res_traces;  % which is always sorted
                            % a trace includes .rawPath ([step node_idx] columns)
                            %                  .pressureParamIdx
                            %                  .dtwScore
                            %                  .numMistakeTurns
                            %                  .finalScore (the traces are sorted based on this score, see the def. in the code)
-                     
+        processing_time;
+        overall_pruning_ratio_of_dtw_query;
+        overall_pruning_ratio_of_dtw_elements;
                      
         % output settings
         max_results = 30;
@@ -108,6 +110,8 @@ classdef Solver_dp4 < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
+            tic
+            
             % get possible pressure parameters
             obj.private_schedulePressureParameters();
             
@@ -138,6 +142,8 @@ classdef Solver_dp4 < handle
             end
             
             tmpResTracesForAllPressureParameters = cell(obj.num_pressure_parameters, 1);
+            tmpDTWPruningRatioQuery = zeros(obj.num_pressure_parameters, 1);
+            tmpDTWPruningRatioElement = zeros(obj.num_pressure_parameters, 1);
             for preIdx = 1:obj.num_pressure_parameters  % pressure index
                 curDtwHelper = SubSegmentDTWHelper(obj.map_data, obj.elev_series_from_baro{preIdx}(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
                 
@@ -237,6 +243,9 @@ classdef Solver_dp4 < handle
                     end
                 end
                 tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces;
+                [pruningQuery, pruningElement] = curDtwHelper.pruningRatio();
+                tmpDTWPruningRatioQuery(preIdx) = pruningQuery;
+                tmpDTWPruningRatioElement(preIdx) = pruningElement;
             end
             fprintf('Finish searching. Summarize the result....\n');
             
@@ -272,6 +281,11 @@ classdef Solver_dp4 < handle
                 end
             end
             obj.final_res_traces = keptTraces;
+            
+            % summarize performance
+            obj.processing_time = toc;
+            obj.overall_pruning_ratio_of_dtw_query = mean(tmpDTWPruningRatioQuery);
+            obj.overall_pruning_ratio_of_dtw_elements = mean(tmpDTWPruningRatioElement);
             
             % TODO: suppose to truncate the # of res_traces into
             % max_results, but for development and debugging purposes, we
@@ -453,6 +467,16 @@ classdef Solver_dp4 < handle
                     error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
                 end
             end
+        end
+        
+        % QUERY PERFORMANCE
+        function sec = getProcessingTime(obj)
+            sec = obj.processing_time;
+        end
+        
+        function [ratioDTWQuery, ratioDTWElement] = queryPruningRatio(obj)
+            ratioDTWQuery = obj.overall_pruning_ratio_of_dtw_query;
+            ratioDTWElement = obj.overall_pruning_ratio_of_dtw_elements;
         end
         
         % VISUALIZATION

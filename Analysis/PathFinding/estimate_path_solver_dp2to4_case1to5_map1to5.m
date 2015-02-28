@@ -10,9 +10,9 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 4;  % 2 to 4
-caseNo = 2; % 1 to 5
-mapSize = 2; % 1 to 5
+solverVersion = 3;  % 2 to 4
+caseNo = 5; % 1 to 5
+mapSize = 3; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -187,8 +187,13 @@ solver.plotPathComparison(1)
 solver.toWebBeautiful();
 fprintf('\n');
 
+% for solver statistics
 if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     [ratioOfDTWQuery, ratioOfElements] = solver.dtw_helper.pruningRatio();
+    fprintf('Pruning ratio in terms of DTW request: %.9f\n', ratioOfDTWQuery);
+    fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
+elseif solverVersion == 4
+    [ratioOfDTWQuery, ratioOfElements] = solver.pruningRatio();
     fprintf('Pruning ratio in terms of DTW request: %.9f\n', ratioOfDTWQuery);
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 end

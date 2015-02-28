@@ -40,11 +40,12 @@ f.write('<in>' + inFile + '</in>');
 f.close()
 
 # the following command can be slow. a 3x3 mile^2 area takes 53 seconds to generate the result.
-cmd = 'basex findWayTrajectory.xq > /tmp/wayDetail.xml'
+xmlWayDetail = outRootDir + 'originOfLife/' + osmNameWoExt + '.xml'
+cmd = 'basex findWayTrajectory.xq > ' + xmlWayDetail
 print('CMD: ' + cmd)
 os.system(cmd)
 
-cmd = 'python fix.py ' + ('-a' if optionAllowLoop else '') + ' < /tmp/wayDetail.xml > ' + outFile 
+cmd = 'python fix.py ' + ('-a' if optionAllowLoop else '') + ' < ' + xmlWayDetail + ' > ' + outFile 
 print('CMD: ' + cmd)
 os.system(cmd)
 

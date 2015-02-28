@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+from collections import deque
 
 flagAllowCycle = False
 for op in sys.argv:
@@ -37,7 +38,8 @@ for e in edges:
         nextNodes[nb] = []
     nextNodes[nb] += [na]
 
-
+print('Total # of nodes: ' + str(len(nodes)))
+print('Total # of edges: ' + str(len(edges)))
 #asking = ['122905200', '1903812544', '1903812541', '1903812539', '1903812527', '1903812524', '122905197']
 #for ask in asking:
 #    print ask, nextNodes[ask]
@@ -45,33 +47,34 @@ for e in edges:
 
 trajCnt = 0
 
-tracedNodes = []
-tracedEdges = []
+tracedNodes = set()
+tracedEdges = set()
 for n in nextNodes:
     if n not in tracedNodes:
-        connectedNodes = []
-        queue = [n]
+        connectedNodes = set()
+        queue = deque([n])
         while len(queue) > 0:
-            nn = queue[0]
-            connectedNodes += [nn]
-            queue = queue[1:]
+            nn = queue.popleft()
+            connectedNodes.add(nn)
             for nnn in nextNodes[nn]:
                 if nnn not in connectedNodes and nnn not in queue:
                     queue += [nnn]
-        tracedNodes += connectedNodes
+        tracedNodes |= connectedNodes
 
         criticalNodes = [ x for x in connectedNodes if len(nextNodes[x]) != 2 ]
         if len(criticalNodes) == 0 and flagAllowCycle:
-            criticalNodes = connectedNodes[0:1]
+            criticalNodes = connectedNodes[0]
 
         if len(criticalNodes) < 100:
             continue
+        print('find component with size ' + str(len(criticalNodes)))
 
         for nn in criticalNodes:
             for tn in nextNodes[nn]:
                 if (nn, tn) not in tracedEdges:
                     seg = [nn, tn]
-                    tracedEdges += [ (nn, tn), (tn, nn) ]
+                    tracedEdges.add( (nn, tn) )
+                    tracedEdges.add( (tn, nn) )
                     while seg[-1] not in criticalNodes:
                         nnn = seg[-1]
                         for tnn in nextNodes[nnn]:

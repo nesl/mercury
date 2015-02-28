@@ -55,7 +55,7 @@ filenames = [
 idx = 0
 
 for x in filenames:
-    if idx in [35, 36, 37, 38, 39]:
+    if idx in [4]:
         print('idx=' + str(idx))
         cmd = 'python3 script.py ' + x
         print(cmd)

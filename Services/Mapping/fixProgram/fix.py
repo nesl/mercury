@@ -79,7 +79,8 @@ for n in nextNodes:
                         nnn = seg[-1]
                         for tnn in nextNodes[nnn]:
                             if (nnn, tnn) not in tracedEdges:
-                                tracedEdges += [ (nnn, tnn), (tnn, nnn) ]
+                                tracedEdges.add( (nnn, tnn) )
+				tracedEdges.add( (tnn, nnn) )
                                 seg += [tnn]
                     segCoor = [ x + ',' + nodes[x][0] + ',' + nodes[x][1] for x in seg ]
                     print ",".join( tuple(segCoor) )

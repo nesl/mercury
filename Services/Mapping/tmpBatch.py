@@ -62,7 +62,7 @@ if len(sys.argv) >= 3:
 
 idx = 0
 for x in filenames:
-    if startIdx <= idx and idx < stopIdx:
+    if startIdx <= idx and idx <= stopIdx:
         print('idx=' + str(idx))
         cmd = 'python3 makeElevSegMap.py ' + x
         print(cmd)

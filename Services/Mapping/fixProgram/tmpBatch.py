@@ -44,18 +44,21 @@ filenames = [
 'San_Juan_6x6.osm',
 'Seattle_6x6.osm',
 'Tucson_6x6.osm',
-#'ucla_3x3.osm',
+'Virginia_Beach_6x6.osm',
+'Washington_6x6.osm',
+'ucla_3x3.osm',
 #'ucla_4x4.osm',
 #'ucla_5x5.osm',
 #'ucla_small.osm',
-'Virginia_Beach_6x6.osm',
-'Washington_6x6.osm'
 ]
 
 idx = 0
+acceptedIdx = range(len(filenames))
+if len(sys.argv) > 1:
+	acceptedIdx = [ int(x) for x in sys.argv[1:] ]
 
 for x in filenames:
-    if idx in [4]:
+    if idx in acceptedIdx:
         print('idx=' + str(idx))
         cmd = 'python3 script.py ' + x
         print(cmd)

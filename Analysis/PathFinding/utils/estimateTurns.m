@@ -5,6 +5,17 @@ function [turn_angles, turns] = estimateTurns(accRaw, gyroRaw)  % TODO: check th
 SR_acc = mean(1./diff(accRaw(:,1)));
 SR_gyro = mean(1./diff(gyroRaw(:,1)));
 
+% if the above formula fails due to identical timestamp, use traditional way
+if isnan(SR_acc) || isinf(SR_acc)
+    SR_acc = (accRaw(end,1) - accRaw(1,1)) / size(accRaw, 1);
+end
+if isnan(SR_gyro) || isinf(SR_gyro)
+    SR_gyro = (gyroRaw(end,1) - gyroRaw(1,1)) / size(gyroRaw, 1);
+end
+
+% ^ even doing like this, the butter function "butter(2, acc_fc/(SR_acc/2));" 
+%   still fails. TODO
+
 %% Detect the gravity vector using accelerometer
 % first filter accel a lot
 acc_fc = (1/5); % Hz

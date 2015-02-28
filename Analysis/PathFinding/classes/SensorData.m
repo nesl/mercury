@@ -1,25 +1,6 @@
 classdef SensorData < handle
-    % WARNING: there's MESSAGE for PAUL, search PAUL to see the code
-    % modification
-    
-    % SensorData Summary of this class goes here
-    %   Read the sensor data
-    
-    % For time alignment:
-    %
-    % Motion sensor ->     +-------+
-    %           GPS ->         +-------+
-    %     True time ->          +-------+
-    %                      |....|  => motion_offset
-    %                          ||  => gps_offset
-    %                  0........|  => relative time offset, based on barometer
-    %
-    % general: time_in_system_from - offset = time_in_system_to
-    %          offset = time_in_system_from - time_in_system_to
-    %          
-    %          offsetAB = time_in_A - time_in_B
-    %          offsetBC = time_in_B - time_in_C
-    %          offsetAC = offsetAB + offsetBC = time_in_A - time_in_C
+    % Revision on Feb. 27: all the timestamps in raw sensor data are
+    % aligned with absolute timestamps, unit in second
     
     properties (SetAccess = public, GetAccess = public)
         
@@ -30,6 +11,7 @@ classdef SensorData < handle
         raw_mag;
         raw_gps;
         raw_gpsele;
+        raw_human_event;
         
         % sampling rates
         SR_baro;
@@ -52,11 +34,6 @@ classdef SensorData < handle
         window_size = 5;  % seconds
         TRIM_SEC = 5; % seconds
         
-        % time alignment
-        motion_offset;   % 
-        gps_offset;      % key: sensor_time - offset = abs_time     
-        relative_offset; %      abs_time - relative_offset = relative_time
-        
         % filtering
         BARO_FNORM = 1e-5;
         
@@ -77,7 +54,7 @@ classdef SensorData < handle
         function obj = SensorData(filepath)
 
             % parse raw data
-            [baro, acc, gyro, mag, gps, gpsele, obj.offset_file_name] = parseRawData(filepath);
+            [baro, acc, gyro, mag, gps, gpsele, humanEvent] = parseRawData(filepath);
             
             % ensure at least baro and gps are not empty
             if isempty(baro) || isempty(gps)
@@ -91,14 +68,7 @@ classdef SensorData < handle
             obj.raw_mag = mag;
             obj.raw_gps = gps;
             obj.raw_gpsele = gpsele;
-            
-            % MESSAGE TO PAUL from Bo-Jhang:
-            % I just comment out the following line as raw_baro should be
-            % raw data and shouldn't be down sampled. Try to create another
-            % variable to store down sampled version?
-            
-            % downsample barometer
-            %obj.raw_baro = obj.raw_baro(1:obj.DOWNSAMPLE:end, :);
+            obj.raw_human_event = humanEvent;
             
             % get sampling rates
             obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
@@ -122,13 +92,6 @@ classdef SensorData < handle
             obj.gps_angles = 0;
             % TODO: !!!
             
-            % GPS time alignment - assume that the baro and gps samples at
-            % the END are roughly matched up in time
-            obj.gps_offset = 0;   % gps->abs_time
-                                  % from the observation the gps time seems to be correct so far
-            obj.motion_offset = (baro(end,1) - gps(end,1)) + obj.gps_offset - obj.getOffset();   % motion->abs = (motion->gps + manualOffset) + gps->abs_time
-                                                                                                 % In the end of the day we still need to have a manual offset
-            obj.relative_offset = (baro(1,1) - obj.motion_offset) - 0;  % abs->relative = t_abs - t_relative
             
             % by default, the segment is slightly trimmed
             % let's just use gps as the default time interval of interest.
@@ -137,34 +100,25 @@ classdef SensorData < handle
             obj.segment_stop = gps(end,1) - obj.TRIM_SEC;
             
             
-            % MESSAGE TO PAUL from Bo-Jhang:
-            % consider obj.est_turns as the raw turns (without down
-            % sampling) and store the down-sampled version as a separate
-            % variable.
-            
             % estimate turns
             [turn_events, turns_full] = estimateTurns(acc, gyro);
             
             % downsample estimated turns
             obj.est_turns = turns_full(1:obj.DOWNSAMPLE:end, :);
 
-            % MESSGAE TO PAUL from Bo-Jhang: Suggest to change estimateTurnDiscrete() as estimateTurnEvents()
-            % MESSGAE TO PAUL from Bo-Jhang: I add the following lines
             obj.est_turn_events = turn_events;
         end
                 
         % SIGNAL SEGMENTATION
         function obj = setAbsoluteSegment(obj, start_sec, stop_sec)
             % ensure we don't exceed the trim boundaries
-            obj.segment_start = max( start_sec, (obj.raw_baro(1,1) - obj.motion_offset) + obj.TRIM_SEC );
-            obj.segment_stop  = min( stop_sec,  (obj.raw_baro(end,1) - obj.motion_offset) - obj.TRIM_SEC );
+            obj.segment_start = max( start_sec, obj.raw_baro(1,1) + obj.TRIM_SEC );
+            obj.segment_stop  = min( stop_sec,  obj.raw_baro(end,1) - obj.TRIM_SEC );
         end
         
         function obj = setRelativeSegment(obj, start_sec, stop_sec)
-            % convert into absolute segmentation
-            obj.setAbsoluteSegment(start_sec - (-obj.relative_offset), stop_sec - (-obj.relative_offset));
-            % remember that def. of relative_offset is abs->relative, but
-            % now we want to do relative->abs
+            % convert into absolute segmentation, use first barometer sample as global starting time
+            obj.setAbsoluteSegment(start_sec + obj.raw_baro(1,1), stop_sec + obj.raw_baro(1,1));
         end
         
         % ACCESS TURNS
@@ -241,8 +195,8 @@ classdef SensorData < handle
         
         function data = getBaro(obj)
             % find valid indices for this segment
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             data = obj.raw_baro( obj.raw_baro(:,1) >= motion_start_time & ...
                                  obj.raw_baro(:,1) <= motion_stop_time, : );
             data(:,1) = data(:,1) - motion_start_time;
@@ -250,8 +204,8 @@ classdef SensorData < handle
         
         function data = getAcc(obj)
             % find valid indices for this segment
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             data = obj.raw_acc( obj.raw_acc(:,1) >= motion_start_time & ...
                 obj.raw_acc(:,1) <= motion_stop_time, : );
             data(:,1) = data(:,1) - motion_start_time;
@@ -259,8 +213,8 @@ classdef SensorData < handle
         
         function data = getGyro(obj)
             % find valid indices for this segment
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             data = obj.raw_gyro( obj.raw_gyro(:,1) >= motion_start_time & ...
                 obj.raw_gyro(:,1) <= motion_stop_time, : );
             data(:,1) = data(:,1) - motion_start_time;
@@ -268,21 +222,19 @@ classdef SensorData < handle
         
         function data = getMag(obj)
             % find valid indices for this segment
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             data = obj.raw_mag( obj.raw_mag(:,1) >= motion_start_time & ...
                 obj.raw_mag(:,1) <= motion_stop_time, : );
             data(:,1) = data(:,1) - motion_start_time;
         end
         
         function data = getTurns(obj)
-            % MESSAGE TO PAUL from Bo-Jhang: I consider previous implementation as a bug as you access the incorrect indices
-            % MESSAGE TO PAUL from Bo-Jhang: suggest change function name as getEstimatedTurns()
             % find valid indices for this segment. the timestamps of raw
             % est_turns are motion-sensor time as it is derived from motion
             % sensors.
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             data = obj.est_turns( obj.est_turns(:,1) >= motion_start_time & ...
                           obj.est_turns(:,1) <= motion_stop_time, :);
             data(:,1) = data(:,1) - motion_start_time;
@@ -293,8 +245,8 @@ classdef SensorData < handle
             % find valid indices for this segment. the timestamps of raw
             % est_turns are motion-sensor time as it is derived from motion
             % sensors.
-            motion_start_time = obj.segment_start - (-obj.motion_offset);
-            motion_stop_time  = obj.segment_stop  - (-obj.motion_offset);
+            motion_start_time = obj.segment_start;
+            motion_stop_time  = obj.segment_stop;
             turnEvents = obj.est_turn_events( obj.est_turn_events(:,1) >= motion_start_time & ...
                           obj.est_turn_events(:,1) <= motion_stop_time, :);
             turnEvents(:,1) = turnEvents(:,1) - motion_start_time;
@@ -341,8 +293,8 @@ classdef SensorData < handle
         function data = getGps(obj)
             % 7 columns: time, lat, lng, elev, error, speed, source
             % find valid indices for this segment
-            gps_start_time = obj.segment_start - (-obj.gps_offset);
-            gps_stop_time  = obj.segment_stop  - (-obj.gps_offset);
+            gps_start_time = obj.segment_start;
+            gps_stop_time  = obj.segment_stop;
             data = obj.raw_gps( obj.raw_gps(:,1) >= gps_start_time & ...
                 obj.raw_gps(:,1) <= gps_stop_time, : );
             data(:,1) = data(:,1) - gps_start_time;
@@ -350,8 +302,8 @@ classdef SensorData < handle
         
         function speed = getGpsSpeed(obj)
             % find valid indices for this segment
-            gps_start_time = obj.segment_start - (-obj.gps_offset);
-            gps_stop_time  = obj.segment_stop  - (-obj.gps_offset);
+            gps_start_time = obj.segment_start;
+            gps_stop_time  = obj.segment_stop;
             indxs = obj.raw_gps(:,1) >= gps_start_time & obj.raw_gps(:,1) <= gps_stop_time; % use raw_gps to get time information
             speed = obj.gps_speed(indxs,:);
             speed(:,1) = speed(:,1) - gps_start_time;
@@ -359,32 +311,11 @@ classdef SensorData < handle
         
         function gps2ele = getGps2Ele(obj)
             % find valid indices for this segment
-            gps_start_time = obj.segment_start - (-obj.gps_offset);
-            gps_stop_time  = obj.segment_stop  - (-obj.gps_offset);
+            gps_start_time = obj.segment_start;
+            gps_stop_time  = obj.segment_stop;
             gps2ele = obj.raw_gpsele( obj.raw_gpsele(:,1) >= gps_start_time & ...
                 obj.raw_gpsele(:,1) <= gps_stop_time, : );
             gps2ele(:,1) = gps2ele(:,1) - gps_start_time;
-        end
-        
-        % OFFSET
-        % Though we've done so much effort on timestamp alignment, yet
-        % there are still some situation we need to align manually. These
-        % two functions allow you to specify/load the "manual" offset, but
-        % for the precise definition of this value, please refer to the
-        % constructor.
-        function offset = getOffset(obj)
-            offset = 0;
-            if exist(obj.offset_file_name, 'file')
-                fid = fopen(obj.offset_file_name, 'r');
-                offset = fscanf(fid, '%d');
-                fclose(fid);
-            end
-        end
-        
-        function setOffset(obj, offset)
-            fid = fopen(obj.offset_file_name, 'w');
-            fprintf(fid, '%d', offset);
-            fclose(fid);
         end
         
         % VISUALIZATION

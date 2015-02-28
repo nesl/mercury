@@ -1,12 +1,15 @@
+clear all; clc; clf;
+
 %% File set to process:
+
 baro_files = {
-    %'baro_n501_20141201_230214', 1417573441, NaN;
+    %'baro_n501_20141201_230214', 1417573441, NaN;  % fail on butter()
     'baro_n501_20141203_085057', NaN, 1417628515;
-    %'baro_n501_20141213_093710', NaN, 1418494703;
-    %'baro_n501_20141215_212237', 1418717289, NaN;
+    %'baro_n501_20141213_093710', NaN, 1418494703;  % fail on butter()
+    %'baro_n501_20141215_212237', 1418717289, NaN;  % fail on butter()
     'baro_n501_20150108_221546', NaN, NaN;
     'baro_n503_20150110_143636', NaN, NaN;
-    %'baro_n503_20150110_155834', NaN, NaN; % EMPTY GPS SET
+    'baro_n503_20150110_155834', NaN, NaN;
     'baro_n503_20150110_161641', NaN, NaN;
     'baro_n503_20150111_091333', NaN, NaN
 };
@@ -17,7 +20,7 @@ limits = cell(length(baro_files),2); [limits{:}] = deal(NaN);
 
 %% Function, can't think of a name right now
 calWin = 60*10;    % in seconds
-for file=1:length(baro_files)
+for file=1:size(baro_files, 1);
     % Create SensorData for file, parse elevation and barometer
     sensorFile = baro_files{file,1};
     startTime = baro_files{file,2};
@@ -36,6 +39,7 @@ for file=1:length(baro_files)
     end
     
     gpsEle = sData.getGps2Ele();
+    gpsEle(:,1) = floor(gpsEle(:,1));
     eleWin = sData.getElevationTimeWindow();
     % Filter intervals with no data points
     baroWin = [floor(eleWin(:,1)), eleWin(:,2)/sData.PRESSURE_M2HPA + sData.PRESSURE_SEALEVEL];

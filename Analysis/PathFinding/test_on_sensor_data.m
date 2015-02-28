@@ -1,7 +1,8 @@
 clc; clf; clear all;
 
-sensorfile = '../../Data/rawData/baro_n501_20150108_221546.gps.csv';
-%sensorfile = '../../Data/rawData/baro_n503_20150110_143636.gps.csv';
+%sensorfile = '../../Data/rawData/baro_n501_20150108_221546.gps.csv';
+sensorfile = '../../Data/rawData/baro_n503_20150110_143636.gps.csv';
+
 sensor_data = SensorData(sensorfile);
 sensor_data.setSeaPressure(1020);
 sensor_data.setPressureScalar(-8.1);
@@ -19,8 +20,6 @@ minGpsTime = rawGpsele(1, 1)
 maxGpsTime = rawGpsele(end, 1)
 startTime = sensor_data.segment_start;
 stopTime = sensor_data.segment_stop;
-sensor_data.motion_offset
-sensor_data.gps_offset
 
 baroLength = maxBaroTime - minBaroTime
 gpsLength = maxGpsTime - minGpsTime
@@ -36,6 +35,3 @@ plot(stopTime, stopTime, 's');
 %}
 sensor_data.plotElevation()
 
-% set offset:
-%sensor_data.setOffset(62)
-% and then remember to create a new SensorData instance

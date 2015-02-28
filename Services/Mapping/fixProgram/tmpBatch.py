@@ -46,7 +46,7 @@ filenames = [
 'Tucson_6x6.osm',
 'Virginia_Beach_6x6.osm',
 'Washington_6x6.osm',
-'ucla_3x3.osm',
+#'ucla_3x3.osm',
 #'ucla_4x4.osm',
 #'ucla_5x5.osm',
 #'ucla_small.osm',

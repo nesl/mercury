@@ -60,11 +60,21 @@ cnt = 0
 for line in lines:
     cnt += 1
     print(cnt, len(lines))
+    #print(line)
     eles = line.strip().split(',')
     ida = eles[0]
     idb = eles[-3]
     nr = len(eles)
     latLngs = []
+
+    skipFlag = False
+    for i in range(nr // 3 - 1):
+        if abs(float(eles[i*3+1]) - float(eles[i*3+4])) >= 1 or abs(float(eles[i*3+2]) - float(eles[i*3+5])) >= 1:
+            skipFlag = True
+    if skipFlag:
+        print('skip')
+        continue
+
     for i in range(nr // 3 - 1):
         latLngs += linearSpace(
                 (float(eles[i*3+1]), float(eles[i*3+2])),

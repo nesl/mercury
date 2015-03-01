@@ -45,7 +45,7 @@ for i = 1:10
     solver = Solver_dp4(map_data, sensor_data, 0);
     solver.solve();
     webOutputPath = ['../../Data/resultSets/(B)' caseNames{i} '_dp4.rset'];
-    solver.setOutputFilePath(outputWebFile);
+    solver.setOutputFilePath(webOutputPath);
     solver.toWebBeautiful();
     
     solutionResolver_dp4(solver, caseNames{i});

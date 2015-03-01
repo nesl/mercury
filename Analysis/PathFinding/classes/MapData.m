@@ -22,7 +22,6 @@ classdef MapData < handle
         segment_end_orientation;     % a-----==>b
         LATLNG_DSAMPLE = 1;
         ELEV_HPF_FREQN = 1e-5;
-        
     end
     
     methods
@@ -111,23 +110,6 @@ classdef MapData < handle
                     obj.segment_end_orientation(nb_idx, na_idx) = obj.segment_end_orientation(nb_idx, na_idx) + 360;
                 end
                 
-                %{
-                if (na_idx == 53 && nb_idx == 51) || (na_idx == 51 && nb_idx == 53)
-                    fprintf('%d->%d  %f %f %f %f\n', na_idx, nb_idx, ...
-                        obj.segment_start_orientation(na_idx, nb_idx), ...
-                        obj.segment_end_orientation(na_idx, nb_idx), ...
-                        obj.segment_start_orientation(nb_idx, na_idx), ...
-                        obj.segment_end_orientation(nb_idx, na_idx));
-
-                    clf
-                    hold on
-                    plot(obj.segment_latlngs{na_idx, nb_idx}(:,2), obj.segment_latlngs{na_idx, nb_idx}(:,1), 'r-');
-                    plot(obj.segment_latlngs{na_idx, nb_idx}(1,2), obj.segment_latlngs{na_idx, nb_idx}(1,1), 'k^');
-                    axis equal
-                    pause
-                end
-                %}
-    
                 % calculate the geo length in meter
                 obj.segment_length{na_idx, nb_idx} = obj.private_getSegmentLength(na_idx, nb_idx);
                 % store number of elements of each segment
@@ -569,6 +551,46 @@ classdef MapData < handle
                 retNodeIdxs = [retNodeIdxs tmpSegPath(1:end-1)];
             end
             retNodeIdxs = [retNodeIdxs nodeIdxs(end)];
+        end
+        
+        % MAP CHARACTERISTICS
+        function [latlngNE, latlngSW] = getBoundaryCoordinates(obj)
+            %        +----- latlngNE
+            %        |          |
+            %      latlngSW ----+
+            minLat = inf;
+            minLng = inf;
+            maxLat = -inf;
+            maxLng = -inf;
+            for i = 1:size(obj.endNodePairs, 1)
+                tmpSegLatLng = obj.getSegLatLng(obj.endNodePairs(i,:));
+                minLat = min(minLat, min(tmpSegLatLng(:,1)));
+                minLng = min(minLng, min(tmpSegLatLng(:,2)));
+                maxLat = max(maxLat, min(tmpSegLatLng(:,1)));
+                maxLng = max(maxLng, min(tmpSegLatLng(:,2)));
+            end
+            latlngNE = [maxLat, maxLng];
+            latlngSW = [minLat, minLng];
+        end
+        
+        function [meterHorizontal, meterVertical] = getBoundaryDistance(obj)
+            [latlngNE, latlngSW] = obj.getBoundaryCoordinates();
+            latlngNW = [latlngNE(1) latlngSW(2)];      latlngNE;
+            latlngSW;                                  latlngSE = [latlngSW(1) latlngNE(2)];
+            meterHorizontal = (latlng2m(latlngNW, latlngNE) + latlng2m(latlngSW, latlngSE)) / 2;
+            meterVertical   = (latlng2m(latlngNW, latlngSW) + latlng2m(latlngNE, latlngSE)) / 2;
+        end
+        
+        function areaMeterSquare = getBoundingBoxArea(obj)
+            [meterHorizontal, meterVertical] = obj.getBoundaryDistance();
+            areaMeterSquare = meterHorizontal * meterVertical;
+        end
+        
+        function meter = getTotalDistanceOfAllSegments(obj)
+            meter = 0;
+            for i = 1:size(obj.endNodePairs, 1)
+                meter = meter + obj.getSegLength(obj.endNodePairs(i,:));
+            end
         end
         
         % INDEX SYSTEM CONVERSION

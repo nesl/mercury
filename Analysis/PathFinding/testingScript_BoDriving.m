@@ -1,6 +1,7 @@
 clear all; clc; close all;
 
 caseNames = {
+'[Sample]_WeyburnWalking'
 '[Bo-Driving]_1-1'
 '[Bo-Driving]_1-2'
 '[Bo-Driving]_1-3'
@@ -35,7 +36,7 @@ caseNames = {
 };
 
 %for i = 1:size(caseNames, 1)
-for i = 1:10
+for i = 2:6
     fprintf('====== case %d: %s ======\n', i, caseNames{i});
     testCase = TestCase(caseNames{i});
     sensor_data = SensorData(testCase.sensorFilePath);
@@ -45,8 +46,8 @@ for i = 1:10
     solver = Solver_dp4(map_data, sensor_data, 0);
     solver.solve();
     webOutputPath = ['../../Data/resultSets/(B)' caseNames{i} '_dp4.rset'];
-    solver.setOutputFilePath(outputWebFile);
+    solver.setOutputFilePath(webOutputPath);
     solver.toWebBeautiful();
     
-    solutionResolver_dp4(solver, caseNames{i});
+    solutionResolver_dp4(caseNames{i}, solver);
 end

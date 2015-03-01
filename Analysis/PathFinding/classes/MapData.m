@@ -37,6 +37,11 @@ classdef MapData < handle
             fileInfo = dir(mapfile);
             % get rid of "." and ".." files
             fileInfo = fileInfo(3:end);
+            
+            if numel(fileInfo) == 0
+                error('The specified map folder is not existed or empty folder (constructor of MapData)');
+            end
+            
             obj.endNodePairs = [];
             obj.num_nodes = 0;
             obj.map_node2idx = containers.Map('KeyType','int64','ValueType','int32');

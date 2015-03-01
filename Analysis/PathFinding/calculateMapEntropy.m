@@ -1,4 +1,4 @@
-function mapEntropy = calculateMapEntropy(mapData, sequenceLen, numSliding)
+function mapEntropy = calculateMapEntropy(mapData, binWidth, sequenceLen, numSliding)
     [latlngNE, latlngSW] = map_data.getBoundaryCoordinates();
     maxLat = latlngNE(1);
     maxLng = latlngNE(2);
@@ -9,6 +9,8 @@ function mapEntropy = calculateMapEntropy(mapData, sequenceLen, numSliding)
     % the above area
     
     % calculate entropy...
+    % for each segment
+    %   ...
 end
 
 % test:

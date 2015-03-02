@@ -57,14 +57,14 @@ classdef MapManager < handle
         function obj = MapManager()
         end
         
-        function [mapDataObj, mapFolderPath] = getMapDataObject(obj, mapID, mapSize, downSampleSize)
+        function [mapDataObj, mapPath] = getMapDataObject(obj, mapID, mapSize, downSampleSize)
             for i = 1:size(obj.info, 1)
                 if obj.info{i, 1} == mapID
                     if numel(obj.info{i, mapSize+2}) == 0
                         error('Find the map, yet cannot find the corresponding size');
                     end
-                    mapFolderPath = ['../../Data/EleSegmentSets/' obj.info{i, 2} '_' obj.info{i, mapSize+2} '/'];
-                    mapDataObj = MapData(mapFolderPath, downSampleSize);
+                    mapPath = ['../../Data/EleSegmentSets/' obj.info{i, 2} '_' obj.info{i, mapSize+2} '.map'];
+                    mapDataObj = MapData(mapPath, downSampleSize);
                     return
                 end
             end

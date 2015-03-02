@@ -32,15 +32,15 @@ mapSize = 3; % 1 to 5
 %% Inputs:
 
 if mapSize == 1
-    mapfile = '../../Data/EleSegmentSets/ucla_west/';
+    mapfile = '../../Data/EleSegmentSets/ucla_west.map';
 elseif mapSize == 2
-    mapfile = '../../Data/EleSegmentSets/ucla_small/';
+    mapfile = '../../Data/EleSegmentSets/ucla_small.map';
 elseif mapSize == 3
-    mapfile = '../../Data/EleSegmentSets/ucla_3x3/';
+    mapfile = '../../Data/EleSegmentSets/ucla_3x3.map';
 elseif mapSize == 4
-    mapfile = '../../Data/EleSegmentSets/ucla_4x4/';
+    mapfile = '../../Data/EleSegmentSets/ucla_4x4.map';
 elseif mapSize == 5
-    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
+    mapfile = '../../Data/EleSegmentSets/ucla_5x5.map';
 else
     error('Be patient. The map will come out soon.');
 end

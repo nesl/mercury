@@ -33,27 +33,33 @@ classdef MapData < handle
                 obj.LATLNG_DSAMPLE = varargin{1};
             end
             
-            % load all file info
-            fileInfo = dir(mapfile);
-            % get rid of "." and ".." files
-            fileInfo = fileInfo(3:end);
-            
-            if numel(fileInfo) == 0
-                error('The specified map folder is not existed or empty folder (constructor of MapData)');
-            end
-            
             obj.endNodePairs = [];
             obj.num_nodes = 0;
             obj.map_node2idx = containers.Map('KeyType','int64','ValueType','int32');
             obj.map_idx2node = [];
-
-            % --- pre-fetch all segment nodes ---
-            for i = 1:size(fileInfo)
-                % get node boundaries of this segment
-                fname = fileInfo(i).name;
-                split_idx = find(fname == '_');
-                node_a = str2num( fname(1:(split_idx-1)) );
-                node_b = str2num( fname((split_idx+1):end) );
+            
+            % read from the map file. It's not a folder any more
+            fid = fopen(mapfile);
+            tline = fgets(fid);
+            lineIdx = 1;
+            segStructures = {};
+            while ischar(tline)
+                %disp(tline)
+                tline = tline(1:end-1);
+                terms = strsplit(tline, ',');
+                numTerms = numel(terms);
+                if mod(numTerms, 3) ~= 2
+                    error(['Incorrect number of elements at line ' num2str(lineIdx) ' (constructor of MapData)']);
+                end
+                
+                values = cell2mat(cellfun(@(x) str2num(x), terms, 'un', 0));
+                node_a = values(1);
+                node_b = values(2);
+                if node_a == node_b
+                    error(['Same source and destination at line ' num2str(lineIdx) ' (constructor of MapData)']);
+                end
+                numPoints = (numTerms - 2) / 3;
+                data = reshape(values(3:end), [3 numPoints])';
                 
                 % if we haven't seen node a, add it to our dictionary!
                 if ~isKey(obj.map_node2idx, node_a)
@@ -73,9 +79,27 @@ classdef MapData < handle
                 na_idx = obj.nodeToIdx(node_a);
                 nb_idx = obj.nodeToIdx(node_b);
                 obj.endNodePairs = [obj.endNodePairs; [na_idx nb_idx]];
+                
+                % create segment structure
+                tmpSegStructure = [];
+                tmpSegStructure.na_idx = na_idx;
+                tmpSegStructure.nb_idx = nb_idx;
+                tmpSegStructure.data = data;
+                segStructures{lineIdx} = tmpSegStructure;
+
+                
+                % for next iteration
+                tline = fgets(fid);
+                lineIdx = lineIdx + 1;
+            end
+            fclose(fid);
+            
+            if numel(segStructures) == 0
+                error('The specified map folder is not existed or empty folder (constructor of MapData)');
             end
             
-            
+            fprintf('Map file parsed\n');
+      
             % --- load all elevation and lat/lng data ---
             obj.segment_elevations = cell(obj.num_nodes);
             obj.segment_latlngs = cell(obj.num_nodes);
@@ -88,11 +112,10 @@ classdef MapData < handle
             obj.node_latlng = zeros(obj.num_nodes, 2);
             
             % loop through all segments
-            for i = 1:size(obj.endNodePairs,1)
-                na_idx = obj.endNodePairs(i,1);
-                nb_idx = obj.endNodePairs(i,2);
-                % read csv data
-                raw = csvread([mapfile fileInfo(i).name]);
+            for i = 1:numel(segStructures)
+                na_idx = segStructures{i}.na_idx;
+                nb_idx = segStructures{i}.nb_idx;
+                raw = segStructures{i}.data;
                 rawNumRows = size(raw, 1);
                 rawIdx = [1:obj.LATLNG_DSAMPLE:(rawNumRows-1)  rawNumRows];  % in case of down sampling, always make sure to include the end node
                 % store elevation from a-->b only
@@ -130,7 +153,7 @@ classdef MapData < handle
                 obj.node_latlng(nb_idx, :) = raw(end, 2:3);
             end
             
-            %fprintf('finish reading all the trajectories, %d nodes, %d segments\n', num_nodes, numel())
+            fprintf('finish reading all the trajectories, %d nodes, %d segments\n', obj.num_nodes, numel(segStructures));
         end
         
         % ACCESSORS

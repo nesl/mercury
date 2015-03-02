@@ -23,10 +23,9 @@ function mapEntropy = calculateMapEntropy(mapData, binWidth, sequenceLen, numSli
     [~,~,set] = unique(signatures, 'rows');                                 % Get indices
     tb = tabulate(set);                                                     % Get frequencies
     freqs = tb(:,3)/100;
-    mapEntropy = sum(-freqs*log(freqs));                                    % Calculate entropy
+    mapEntropy = sum(-freqs.*log(freqs));                                    % Calculate entropy
 end
 
-% test:
-% map_data = MapData('../../Data/EleSegmentSets/ucla_small/')
-% calculateMapEntropy(map_data, 1, 1)
-% calculateMapEntropy(map_data, 2, 1)
+
+
+

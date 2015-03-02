@@ -54,7 +54,7 @@ info = { 'baro_n503_20150110_143636',  1420929399,  1420931703,  'ucla_5x5';
 info(:,1) = strcat('../../Data/rawData/', info(:,1));
 info(:,1) = strcat(info(:,1), '.baro.csv');
 info(:,4) = strcat('../../Data/EleSegmentSets/', info(:,4));
-info(:,4) = strcat(info(:,4), '/');
+info(:,4) = strcat(info(:,4), '.map');
 
 for i = 1:size(info, 1)
     st = info{i, 2}; % start time

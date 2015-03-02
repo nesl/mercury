@@ -1,4 +1,5 @@
 clear all; clc; close all;
+add_paths
 
 caseNames = {
 '[Sample]_WeyburnWalking'
@@ -36,7 +37,7 @@ caseNames = {
 };
 
 %for i = 1:size(caseNames, 1)
-for i = 2:6
+for i = 7:7
     fprintf('====== case %d: %s ======\n', i, caseNames{i});
     testCase = TestCase(caseNames{i});
     sensor_data = SensorData(testCase.sensorFilePath);

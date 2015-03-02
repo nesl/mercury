@@ -91,9 +91,11 @@ for line in lines:
         ida, idb = idb, ida
         latLngs.reverse()
 
-    if (ida, idb) in segs:  # different segments with same starting/stoping node pair
+    nodePair = (ida, idb)
+    if nodePair in segs:  # different segments with same starting/stoping node pair
         print('Same segment (' + str(ida) + ', ' + str(idb) + ') has been existed, skip')
         continue
+    segs.add(nodePair)
 
     requester = ES.ElevationRequester()
     elevation = requester.query(latLngs)

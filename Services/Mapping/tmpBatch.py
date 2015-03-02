@@ -56,6 +56,7 @@ startIdx = 0
 stopIdx = len(filenames)
 if len(sys.argv) >= 2:
     startIdx = int(sys.argv[1])
+    stopIdx = startIdx
 
 if len(sys.argv) >= 3:
     stopIdx = int(sys.argv[2])

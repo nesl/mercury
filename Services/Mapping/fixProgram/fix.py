@@ -68,10 +68,11 @@ for n in nextNodes:
         tracedNodes |= connectedNodes
 
         criticalNodes = [ x for x in connectedNodes if len(nextNodes[x]) != 2 ]
+        jointNodes = [ x for x in connectedNodes if len(nextNodes[x]) > 2 ]
         if len(criticalNodes) == 0 and flagAllowCycle:
             criticalNodes = connectedNodes[0]
 
-        if len(criticalNodes) < 100:
+        if len(jointNodes) < 100:
             continue
         sys.stderr.write('find component with size ' + str(len(criticalNodes)) + '\n')
 

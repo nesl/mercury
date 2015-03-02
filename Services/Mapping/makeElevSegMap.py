@@ -47,14 +47,16 @@ inRootDir = '../../Data/trajectorySets/'
 outRootDir = '../../Data/EleSegmentSets/'
 
 tfixFilePath = inRootDir + inputTfixName
-outDir = outRootDir + inputTfixName[:-5] + '/'
+outFilePath = outRootDir + inputTfixName[:-5] + '.map'
 
-cmd = 'mkdir -p ' + outDir
-os.system(cmd)
 
 f = open(tfixFilePath)   # input part
 lines = f.readlines()
 f.close()
+
+segs = set()
+
+f = open(outFilePath, 'w')   # output part
 
 cnt = 0
 for line in lines:
@@ -67,12 +69,16 @@ for line in lines:
     nr = len(eles)
     latLngs = []
 
+    if ida == idb:
+        print('Same source and destination, skip')  # this can happen since ida->x->y->z->ida
+        continue
+
     skipFlag = False
     for i in range(nr // 3 - 1):
         if abs(float(eles[i*3+1]) - float(eles[i*3+4])) >= 1 or abs(float(eles[i*3+2]) - float(eles[i*3+5])) >= 1:
             skipFlag = True
     if skipFlag:
-        print('skip')
+        print('segment too long, skip')
         continue
 
     for i in range(nr // 3 - 1):
@@ -85,14 +91,17 @@ for line in lines:
         ida, idb = idb, ida
         latLngs.reverse()
 
+    if (ida, idb) in segs:  # different segments with same starting/stoping node pair
+        print('Same segment (' + str(ida) + ', ' + str(idb) + ') has been existed, skip')
+        continue
+
     requester = ES.ElevationRequester()
     elevation = requester.query(latLngs)
 
     #print(elevation)
     eleLatLng = list(zip(elevation, latLngs))
-    f = open(outDir + ida + '_' + idb, 'w')
-    for x in eleLatLng:
-        f.write(",".join( map(str, [ x[0], x[1][0], x[1][1] ] ) ) + '\n')
-    f.close()
+    strComponents = [ ",".join( map(str, [ x[0], x[1][0], x[1][1] ] ) ) for x in eleLatLng ]  #elev,lat,lng
+    f.write(ida + ',' + idb + ',' + (",".join(strComponents) + '\n') )
+f.close()
 
 

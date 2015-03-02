@@ -60,7 +60,7 @@ if len(sys.argv) > 1:
 for x in filenames:
     if idx in acceptedIdx:
         print('idx=' + str(idx))
-        cmd = 'python3 tmp_script.py ' + x
+        cmd = 'python3 script.py ' + x
         print(cmd)
         os.system(cmd)
     idx += 1

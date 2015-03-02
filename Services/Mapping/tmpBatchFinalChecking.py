@@ -35,9 +35,9 @@ filenames = [
 #'Omaha_6x6.tfix',
 'Philadelphia_6x6.tfix',
 'Phoneix_6x6.tfix',
-#'Portland_6x6.tfix',
+'Portland_6x6.tfix',
 #'Sacramento_6x6.tfix',
-#'San_Antonio_6x6.tfix',
+'San_Antonio_6x6.tfix',
 'San_Diego_6x6.tfix',
 'San_Francisco_6x6.tfix',
 'San_Jose_6x6.tfix',
@@ -48,8 +48,10 @@ filenames = [
 #'Washington_6x6.tfix'
 ]
 
+print(str(len(filenames)) + ' maps are available!')
 for x in filenames:
     for s in range(2, 7):
         cmd = 'python3 makeElevSegMap.py ' + x[:-8] + str(s) + 'x' + str(s) + '.tfix'
         print(cmd)
         os.system(cmd)
+print(str(len(filenames)) + ' maps are available!')

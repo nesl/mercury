@@ -11,21 +11,21 @@ filenames = [
 'Chicago_6x6.tfix',
 #'Cleveland_6x6.tfix',
 #'Columbus_6x6.tfix',
-#'Dallas_6x6.tfix',
+'Dallas_6x6.tfix',
 #'Denver_6x6.tfix',
 #'Detroit_6x6.tfix',
 #'El_Paso_6x6.tfix',
 #'Fort_Worth_6x6.tfix',
 #'Fresno_6x6.tfix',
 'Houston_6x6.tfix',
-#'Indianapolis_6x6.tfix',
+'Indianapolis_6x6.tfix',
 #'Jacksonville_6x6.tfix',
 #'Kansas_City_2_6x6.tfix',
 #'Kansas_City_6x6.tfix',
 #'Las_Vegas_6x6.tfix',
 'Long_Beach_6x6.tfix',
 'Los_Angeles_6x6.tfix',
-#'Memphis_6x6.tfix',
+'Memphis_6x6.tfix',
 'Mesa_6x6.tfix',
 #'Milwaukee_6x6.tfix',
 #'Nashville_6x6.tfix',
@@ -43,9 +43,9 @@ filenames = [
 'San_Jose_6x6.tfix',
 'San_Juan_6x6.tfix',
 'Seattle_6x6.tfix',
-#'Tucson_6x6.tfix',
-#'Virginia_Beach_6x6.tfix',
-#'Washington_6x6.tfix'
+'Tucson_6x6.tfix',
+'Virginia_Beach_6x6.tfix',
+'Washington_6x6.tfix'
 ]
 
 print(str(len(filenames)) + ' maps are available!')

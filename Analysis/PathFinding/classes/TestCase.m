@@ -1,21 +1,28 @@
 classdef TestCase < handle
+    
     properties (SetAccess = private, GetAccess = private)
         MAT_FOLDER = '../../Data/testCasesForSimulation/';
     end
     
-    properties (SetAccess = public, GetAccess = public)  % treat this as a structure only. Thus all the attributes are public
+    properties (SetAccess = public, GetAccess = public)
+        % map set up
+        simulated = false;
         mapFilePath = '';
-        sensorFilePath = '';   % still, all the sensor files should stored under the same folder
-        %seaPressure = 0;  % PAUL: my solver won't take this parameter, delete or uncomment based on whether you need these
-        %setPressureScalar = 0;
-        startAbsTime = 0;  % if the case is manually generated, I guess it's always 0
+        sensorFilePath = '';
+        seaPressure = 0; 
+        PressureScalar = 0;
+        startAbsTime = 0; 
         stopAbsTime = 0;
-        useFakeTurnEvent = 0;  % 0 or (not 0)
         sensorWindowSize = 0;
-        mapDataDownSampling = 1;  % as by default
-        meta;  % can be anything, cell, structure, whatever
-        % PAUL: if you any attribute I didn't consider, just add into the
-        % list
+        mapDataDownSampling = 1;
+        
+        % solutions
+        truePath = [];
+        rankedPaths = {};
+        computeTime = 0;
+
+        % for all the rest:
+        meta;
     end
     
 

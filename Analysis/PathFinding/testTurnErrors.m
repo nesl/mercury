@@ -11,7 +11,7 @@ add_paths;
 
 %% Load Map and Data
 caseNo = 3; % 1 to 5
-mapSize = 2; % 2 to 4 (5 is coming soon)
+mapSize = 3; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
 
@@ -63,8 +63,6 @@ end
 
 % create objects
 sensor_data = SensorData(sensorfile);
-map_data = MapData(mapfile);
-map_lines = map_data.getAllSegLatLng();
 
 if caseNo == 1
     sensor_data.setSeaPressure(1020);
@@ -97,47 +95,44 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
-%% Get elevations
-elev_est = sensor_data.getElevation();
-elev_map = sensor_data.getGps2Ele();
+%% Get estimated turns
+path = [
+     1    20
+    11    22
+    60    26
+    75   164
+    77   240
+   104   253
+   108   293
+   116   298
+   149   301
+   154   323
+   157   328
+   167   332
+   187   338
+   217   317
+   227   315
+   230   316
+   235   307
+   243   303
+   256   291
+   263   275
+   327   219
+   345   230
+   355   213
+   386   204
+   394   189
+   401   162
+   409   143
+   413   130
+   425   108
+   443   100
+   ];
 
-% time align signals
-elev_est_rsz = zeros( size(elev_map,1), 2);
-for i=1:size(elev_map,1)
-    % transfer time over
-    elev_est_rsz(i,1) = elev_map(i,1);
-    % find closest idx in elev_est
-    idx_near = round( size(elev_est,1)*i/size(elev_map,1) );
-    idx_near = min( max(1, idx_near), size(elev_est,1) );
-    elev_est_rsz(i,2) = elev_est(idx_near, 2);
-end
+path = path(:,2);
 
-
-%% Plot elevations
-cfigure(30,30);
-subplot(3,1,1);
-plot(elev_est_rsz(:,1), elev_est_rsz(:,2));
-hold on;
-plot(elev_map(:,1), elev_map(:,4), 'b');
-
-%% Plot error
-subplot(3,1,2);
-estError = elev_est_rsz(:,2) - elev_map(:,4);
-plot(elev_est_rsz(:,1), estError,'r');
-ylim([-5 5]);
-ylabel('Estimation Error');
-
-%% Plot some simulated noise just for fun
-subplot(3,1,3);
-% OU is times, rev_time, variance
-% GOOD VALUES: 150, 0.04
-sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 150, 0.04);
-plot(elev_est_rsz(:,1), sim_noise, 'k');
-ylim([-5 5]);
-ylabel('Simulated Error');
-
-
-
+est_turns = sensor_data.getTurnEvents();
+real_turns = map_data.getPathTurns(path);
 
 
 

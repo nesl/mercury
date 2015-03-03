@@ -251,7 +251,7 @@ classdef MapData < handle
             elseif ~isempty( obj.segment_latlngs{nb_idx, na_idx} )
                 latlng = flipud( obj.segment_latlngs{nb_idx, na_idx} );
             else
-                error('specified segment does not exist (getSegLatLng)');
+                error(['specified segment does not exist: ' num2str(na_idx) ', ' num2str(nb_idx)]);
             end
         end
         

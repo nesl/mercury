@@ -24,16 +24,13 @@ classdef Solver_greedy < handle
         
         % debugging options
         DBG = false;
-        
-        % simulation
-        simulated = false;
+
         
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_greedy(map_data, sensor_data, simulated)
-            obj.simulated = simulated;
+        function obj = Solver_greedy(map_data, sensor_data)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
             obj.DBG = debug;

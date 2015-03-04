@@ -10,7 +10,7 @@ add_paths;
 %% load data
 % borrow from case 3
 
-mapfile =    '../../Data/EleSegmentSets/ucla_small/';
+mapfile =    '../../Data/EleSegmentSets/ucla_small.map';
 sensorfile = '../../Data/rawData/baro_n503_20150111_091333.baro.csv';
 sensor_data = SensorData(sensorfile);
 %{
@@ -80,27 +80,3 @@ axis equal
 % end
 % 
 
-%% Plot mag
-figure();
-mag = sensor_data.getMag();
-acc = sensor_data.getAcc();
-[b,a] = butter(2,0.01);
-grav = [acc(:,1) filtfilt(b,a,acc(:,2)) filtfilt(b,a,acc(:,3)) filtfilt(b,a,acc(:,4))];
-
-heading = [];
-% mag is smaller than acc
-mag2grav_idx = size(grav,1)/size(mag,1);
-alpha = 0.5;
-grav_old = [];
-for i=1:size(mag,1)
-    grav_idx = min(size(grav,1), round(i*mag2grav_idx));
-    g = grav(grav_idx,2:end);
-    
-    r = vrrotvec(grav(grav_idx,2:end), mag(i,2:end));
-    R = vrrotvec2mat(r);
-    mag_compensated = R\mag(i,2:end)'
-    angle = mag_compensated(3);
-    heading = [heading; angle];
-end
-% convert mag reading to compass heading
-plot(heading);

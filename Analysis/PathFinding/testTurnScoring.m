@@ -100,15 +100,37 @@ end
 %% Choose paths to examine
 % correct path (true only under mapSize=2, case=2)
 path_true = [
-         1    33
-    21    36
-   118   256
-   146   269
-   149   267
-   208   268
-   215   234
-   230   153
-   300    18];
+     1    20
+    11    22
+    60    26
+    75   164
+    77   240
+   104   253
+   108   293
+   116   298
+   149   301
+   154   323
+   157   328
+   167   332
+   187   338
+   217   317
+   227   315
+   230   316
+   235   307
+   243   303
+   256   291
+   263   275
+   327   219
+   345   230
+   355   213
+   386   204
+   394   189
+   401   162
+   409   143
+   413   130
+   425   108
+   443   100
+   ];
 path_true = path_true(:,2);
 
 % multiple bad paths
@@ -169,34 +191,39 @@ tmp4 = map_data.nodesToIdxs(tmp4);
 
 path_bad = {tmp1 tmp2 tmp3 tmp4};
 
+%% Get map
+ll = sensor_data.getGps();
+gps = sensor_data.getGps();
+
+plot(ll(:,3), ll(:,2));
+
 %% Get the turn estimates
 turns_sensor = sensor_data.getTurnEvents();
-turns_map_true = map_data.getPathTurns(path_true);
-turns_map_bad = {};
-for i=1:length(path_bad)
-    turns_map_bad = [turns_map_bad;
-        map_data.getPathTurns(path_bad{i})];
+for i=1:size(turns_sensor,1)
+    turn = turns_sensor(i,2);
+    time = turns_sensor(i,1);
+    gps_idx = find( gps(:,1) > time, 1, 'first');
+    lat = gps(gps_idx, 2);
+    lng = gps(gps_idx, 3);
+    text(lng, lat+1e-4, num2str(turn), 'Color', 'r');
+end
+
+%% Get map turns
+turns_map = map_data.getPathTurns(path_true);
+ll_map = map_data.getPathLatLng(path_true);
+
+for i=1:size(turns_map,1)
+    turn = turns_map(i,2);
+    idx = turns_map(i,1);
+    latlng = ll_map(idx,:);
+    text(latlng(2), latlng(1)-1e-4, num2str(turn), 'Color', 'b');
+
 end
 
 
-%% Plot
-close all;
-subplot(4,1,1);
-stem(turns_sensor(:,2),'m','LineWidth',3);
-subplot(4,1,2);
-stem(turns_map_true, 'r','LineWidth',3);
+test = sensor_data.spanTurnEventsToVector();
 
-for i=1:2
-    subplot(4,1,2+i);
-    stem(turns_map_bad{i+2}, 'b','LineWidth',3);
-end
-
-
-fprintf('Correct cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_true));
-fprintf('BAD1 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{3}));
-fprintf('BAD2 cost: %.2f\n', 1e-4*DTW_MSE(turns_sensor(:,2), turns_map_bad{4}));
-
-
+return;
 
 
 

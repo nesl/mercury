@@ -370,8 +370,18 @@ classdef MapData < handle
             end
         end
         
+        
+        function turns = getPathTurnVector(obj, nidxList)
+            events = obj.getPathTurns(nidxList);
+            latlngs = obj.getPathLatLng(nidxList);
+            turns = zeros( size(latlngs,1), 1);
+            if ~isempty(events)
+                turns(events(:,1),:) = events(:,2);
+            end
+        end
+        
         function turns = getPathTurns(obj, nidxList)
-            thresh = 35;
+            thresh = 25;
             % get the lat/lng first
             latlngs = obj.getPathLatLng(nidxList);
             
@@ -421,14 +431,16 @@ classdef MapData < handle
                 end
                 idx = turns(i,1);
                 close_idxs = find( turns(:,1) > idx & turns(:,1) - idx < csize);
-                total = sum(turns([i close_idxs],2));
+                total = sum(turns([i; close_idxs],2));
                 total = mod( total+180, 360) - 180;
                 turns(i,:) = [idx,total];
                 turns(close_idxs,:) = [];
                 
             end
             
-            turns( abs(turns(:,2)) < thresh, :) = [];
+            if ~isempty(turns)
+                turns( abs(turns(:,2)) < thresh, :) = [];
+            end
                         
         end
         
@@ -449,6 +461,11 @@ classdef MapData < handle
             for nidx=1:( length(nidxList)-1 )
                 meter = meter + obj.getSegLength( nidxList( nidx:(nidx+1) ) );
             end
+        end
+        
+        % pick a random node (to start random walk)
+        function node = getRandomNode(obj)
+            node = randi(obj.num_nodes,1);
         end
         
         

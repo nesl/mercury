@@ -75,7 +75,8 @@ classdef Solver_greedy < handle
                 
                 % use turns or not
                 if obj.use_turns
-                    obj.graph_explorers{n}.useTurns();
+                    turnVector = obj.sensor_data.spanTurnEventsToVector();
+                    obj.graph_explorers{n}.useTurns(turnVector);
                 end
             end
             

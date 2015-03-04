@@ -17,6 +17,7 @@ classdef GraphExplorer < handle
         MAX_LEAVES = 4;
         % do we use turns for pruning?
         use_turns = false;
+        sensor_turns = [];
         % score of best branch
         cost = inf;
         % root node
@@ -61,8 +62,9 @@ classdef GraphExplorer < handle
         end
         
         % PRUNE WITH TURNS
-        function useTurns(obj)
+        function useTurns(obj, turnVector)
             obj.use_turns = true;
+            obj.sensor_turns = turnVector;
         end
         
         % EXPLORING NEW NODES
@@ -138,14 +140,15 @@ classdef GraphExplorer < handle
                 estElevations = estElevations(:,2) + obj.elevation_offset;
             end
             
+            
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
             
-            % get turns
             if obj.use_turns
-                mapTurns = obj.map.getPathTurns(path_nodes);
-                estTurns = obj.sensor.getTurns();
-                cost_turns = DTW_greedy_turns(estTurns(:,2), mapTurns);
+                
+                % get segment turns
+                mapTurns = obj.map.getPathTurnVector(path_nodes);
+                cost_turns = DTW_greedy_turns(obj.sensor_turns(:,2), mapTurns);
             end
             
             % combine costs

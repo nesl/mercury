@@ -371,22 +371,65 @@ classdef MapData < handle
         end
         
         function turns = getPathTurns(obj, nidxList)
+            thresh = 35;
             % get the lat/lng first
             latlngs = obj.getPathLatLng(nidxList);
-            % now find absolute turns
+            
+            % now find absolute angles
             angles = [];
             for i=2:size(latlngs,1)
+                % if latlng didn't change, continue
+                if latlngs(i,1) - latlngs(i-1,1) == 0 &&...
+                        latlngs(i,2) - latlngs(i-1,2) == 0
+                    continue;
+                end
                 angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
-                angles = [angles; angle];
+                angles = [angles; [i, angle]];
             end
             
-            % and then relative turns
-            dAngles = diff(angles);
             
-            % and finally discretize into turns above a certain level
-            thresh = 35; % deg
-            % first add a dummy turn of 0 degrees so it's not empty
-            turns = dAngles( abs(dAngles) > thresh );
+            % find turns
+            turns = [];
+            decay = 7;
+            angle_last = angles(1,2);
+            
+            for i=2:size(angles,1)
+                change_since_last = angles(i,2) - angle_last;
+                decay_idx = max(1, i-decay);
+                change_since_decay = angles(i,2) - angles(decay_idx,2);
+                
+                if abs(change_since_last) > abs(change_since_decay)
+                    change = change_since_decay;
+                else
+                    change = change_since_last;
+                end
+                
+                
+                if abs(change) > thresh
+                    turns = [turns; [angles(i,1) change]];
+                    angle_last = angles(i,2);
+                end
+            end
+            
+            
+            % combine clusters of turns
+            csize = 7;
+            
+            for i=1:size(turns,1)
+                if i > size(turns,1)
+                    break;
+                end
+                idx = turns(i,1);
+                close_idxs = find( turns(:,1) > idx & turns(:,1) - idx < csize);
+                total = sum(turns([i close_idxs],2));
+                total = mod( total+180, 360) - 180;
+                turns(i,:) = [idx,total];
+                turns(close_idxs,:) = [];
+                
+            end
+            
+            turns( abs(turns(:,2)) < thresh, :) = [];
+                        
         end
         
         % get all latitude and longitude for nodes in a list

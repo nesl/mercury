@@ -25,11 +25,15 @@ classdef Solver_greedy < handle
         % debugging options
         DBG = false;
         
+        % simulation
+        simulated = false;
+        
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_greedy(map_data, sensor_data, debug)
+        function obj = Solver_greedy(map_data, sensor_data, simulated)
+            obj.simulated = simulated;
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
             obj.DBG = debug;
@@ -66,7 +70,7 @@ classdef Solver_greedy < handle
             num_nodes = obj.map_data.getNumNodes();
             for n=1:num_nodes
                 obj.graph_explorers = [obj.graph_explorers;
-                    {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+                    {GraphExplorer(obj.map_data, obj.sensor_data, n)}];
                 
                 % absolute or relative elvations
                 if obj.use_absolute_elevation

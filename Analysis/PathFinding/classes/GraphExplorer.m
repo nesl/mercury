@@ -33,13 +33,12 @@ classdef GraphExplorer < handle
     
     methods
         % CONSTRUCTOR
-        function obj = GraphExplorer(map, sensor, root_idx, pruning)
+        function obj = GraphExplorer(map, sensor, root_idx)
             obj.map = map;
             obj.sensor = sensor;
             if pruning < 0 || pruning >= 1
                 error('prune factor must be >=0 and < 1');
             end
-            obj.PRUNE_FACTOR_BRANCH = pruning;
             
             % create root node (empty parent)
             obj.root = GraphNode([], root_idx);

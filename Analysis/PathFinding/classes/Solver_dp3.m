@@ -55,10 +55,10 @@ classdef Solver_dp3 < handle
         ACCEPTED_TURN_ANGLE_DIFFERENCE = 90;  % degree
         
         % pruning constants/functions
-        HARD_ELEVATION_THRESHOLD = 6; % meter, consider the nodes as check points and apply the threshold.
-        dtw_pruning_function = @(x) (27 + 10 * x);  % during accessing x-th barometer element in the dtw,
+        HARD_ELEVATION_THRESHOLD = 5; % meter, consider the nodes as check points and apply the threshold.
+        dtw_pruning_function = @(x) (27 + 3 * x);  % during accessing x-th barometer element in the dtw,
                                                     % what is the cutting threshold for corresponding column
-        global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
+        global_pruning_function = @(x) (200 + 3 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
         allowed_num_turn_mistakes = @(x) (2 + 0.34 * x)  % x is number of segments which have been visited.
                                                        

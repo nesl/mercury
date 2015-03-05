@@ -656,6 +656,41 @@ classdef MapData < handle
            end
         end
         
+        % GPS ALLIGNMENT
+        function result = rawGpsAlignment(obj, gpsLatLngs)
+            % return value contains 4 columns which are [lat lng elev error]
+            prevSeg = [];
+            numLatLng = size(gpsLatLngs, 1);
+            result = zeros(numLatLng, 4);
+            for i = 1:numLatLng
+                minDistance = inf;
+                candidateSegs = obj.endNodePairs;
+                if numel(prevSeg) == 2
+                    candidateSegs = [prevSeg; candidateSegs];
+                end
+                for j = 1:size(candidateSegs, 1)
+                    % simple pruning
+                    segLen = obj.getSegLength( candidateSegs(j,:) );
+                    segGps = obj.getSegLatLng( candidateSegs(j,:) );
+                    segElev = obj.getSegElev( candidateSegs(j,:) );
+                    distanceToSegEnd1 = obj.distanceToNodeIdx( gpsLatLngs(i,:), candidateSegs(j,1) );
+                    distanceToSegEnd2 = obj.distanceToNodeIdx( gpsLatLngs(i,:), candidateSegs(j,2) );
+                    if min(distanceToSegEnd1, distanceToSegEnd2) - segLen < minDistance
+                        fprintf('%d,%d\n', i, j);
+                        for k = 1:size(segGps, 1)
+                            meter = latlng2m(segGps(k,:), gpsLatLngs(i,:));
+                            if meter < minDistance
+                                result(i, 1:2) = segGps(k,:);
+                                result(i, 3) = segElev(k);
+                                result(i, 4) = meter;
+                                minDistance = meter;
+                                prevSeg = candidateSegs(j,:);
+                            end
+                        end
+                    end
+                end
+            end
+        end
         
         % METHODS REGARDING ALL PAIRS DTW
         function preProcessAllPairDTW(obj, elevFromBaro)

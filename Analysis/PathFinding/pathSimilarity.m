@@ -2,7 +2,7 @@ clc; clear; clf;
 add_paths
 
 map_manager = MapManager();
-for mapID = [41 2 23 7]
+for mapID = [23 7]
 for mapSize = [4]
 
 %mapfile =    '../../Data/EleSegmentSets/ucla_5x5/';

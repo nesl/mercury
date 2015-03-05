@@ -2,14 +2,12 @@
 clc; close all; clear all;
 add_paths;
 
-%% Random seed
-rng(100);
 
 %% Result Folder
 outpath = 'SimResults/';
 
 %% Number of simulated paths to test per city
-paths_per_city = 5;
+paths_per_city = 10;
 
 %% Random walk stats
 METERS_PER_GPS = 10;
@@ -20,6 +18,7 @@ walk_len_min = 50;
 walk_speed_ave = 10; % m/s
 walk_speed_var = 4;
 walk_speed_min = 5;
+walk_speed_max = 18;
 
 %% Create map manager
 mgr = MapManager('../../Data/EleSegmentSets/');
@@ -33,19 +32,31 @@ for midx=1:length(map_ids)
     map_id = map_ids(midx);
     map_file = mgr.getMapFile(map_id, map_size);
     map_name = mgr.getMapName(map_id, map_size);
-    map_data = mgr.getMapDataObject(map_id, map_size, map_downsample);
+    map_data = mgr.getMapDataObject(map_id, map_size, 1);  % so that's why METERS_PER_GPS is 10
     
     % Loop through walks
     for widx=1:paths_per_city
-        
+        rng(widx);  % reset random generator at the beginning of path generation
+
         % random path length
         path_len = round( walk_len_ave + randn()*walk_len_var );
         path_len = max(walk_len_min, path_len);
         
         % random walk
-        randwalk = map_data.getRandomWalk(map_data.getRandomNode(), path_len, false);
-        randwalk_speed = walk_speed_ave + randn()*walk_speed_var;
-        randwalk_speed = max(walk_speed_min, randwalk_speed);
+        
+        % THIS IS VERY IMPORTANT! DON'T CHANGE THIS PART OF CODE! ========
+        % guide: can only add more cases, shouldn't modify the previous cases
+        if widx <= 10
+            randwalk = map_data.getRandomWalk(map_data.getRandomNode(), path_len, false);
+            randwalk_speed = 0;
+        else
+            fprintf('haven''t assigned... skip')
+        end
+        % UP TO HERE =====================================================
+        
+        while randwalk_speed < walk_speed_min || randwalk_speed > walk_speed_max
+            randwalk_speed = walk_speed_ave + randn()*walk_speed_var;
+        end
         randwalk_gps = map_data.getPathLatLng(randwalk);
         randwalk_len = size(randwalk_gps,1);
         randwalk_dist = randwalk_len*METERS_PER_GPS;
@@ -94,6 +105,7 @@ for midx=1:length(map_ids)
         testCase.sim_elevations_nonoise = [randwalk_times' randwalk_elevs'];
         testCase.sim_turns_nonoise = randwalk_turns;
         testCase.sim_gps = [randwalk_gps_times' randwalk_gps];
+        testCase.sim_speed = randwalk_speed;
         
         caseName = strcat('TESTCASE_SIM_', map_name, '_', num2str(widx));
         fprintf('Test case: %s\n', caseName);

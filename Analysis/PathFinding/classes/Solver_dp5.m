@@ -1,4 +1,4 @@
-classdef Solver_dp4 < handle
+classdef Solver_dp5 < handle
     % This class does the following thing:
     %   1. This solver no longer depends on the pre-assigned pressure
     %      parameter. Technically It tries to list all the possible ones.
@@ -93,10 +93,15 @@ classdef Solver_dp4 < handle
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_dp4(mapData, sensorData, scheduleRandomStart)  % expected MapData and SensorData. they are passed by reference
+        function obj = Solver_dp5(mapData, sensorData, scheduleRandomStart)  % expected MapData and SensorData. they are passed by reference
             obj.map_data = mapData;
             obj.sensor_data = sensorData;
             obj.scheduler_random_start = scheduleRandomStart;
+        end
+        
+        % SEARCH PARAMETER
+        function setUncertaintyRange(obj, meter)
+            obj.uncertain_meter = abs(meter);
         end
         
         % OUTPUT SETTINGS
@@ -124,7 +129,7 @@ classdef Solver_dp4 < handle
                     obj.elev_series_from_baro{i} = obj.sensor_data.getElevationTimeWindow();
                 end
             else
-                startOffset = -obj.uncertain_meter + obj.looping_elevation_step * obj.scheduler_random_start;
+                startOffset = -obj.uncertain_meter + sum(find(obj.scheduler_random_start)) * rand() * min(obj.looping_elevation_step, 2 * obj.uncertain_meter);
                 allOffset = (startOffset):(obj.looping_elevation_step):(obj.uncertain_meter);
                 obj.num_pressure_parameters = numel(allOffset);
                 obj.pressure_parameters = repmat(allOffset', 1, 2);
@@ -576,16 +581,6 @@ classdef Solver_dp4 < handle
         function private_schedulePressureParameters(obj)
             % get min and max baro
             baro = obj.sensor_data.getBaro();
-            %{
-            minBaro = min(baro(:,2));
-            maxBaro = max(baro(:,2));
-            baroDiff = maxBaro - minBaro;
-            baroStep = 1 / baroDiff;
-            scaleNum = ceil(0.4 / baroStep);
-            scaleDelta = 0.4 / scaleNum;
-            scaleTotalRange = scaleDelta * (scaleNum - 1);
-            baroScaleCandidate = -linspace(8.0 - scaleTotalRange / 2, 8.0 + scaleTotalRange / 2, scaleNum);
-            %}
             
             baroScaleCandidate = -8.38; % magic number from analysis
             
@@ -602,7 +597,7 @@ classdef Solver_dp4 < handle
                 curBaroScale = baroScaleCandidate(i);
                 targetElev = minPossibleFirstElev;
                 if obj.scheduler_random_start
-                    targetElev = targetElev + obj.uncertain_meter * rand();
+                    targetElev = targetElev + rand() * min(obj.looping_elevation_step, obj.uncertain_meter * 2);
                 end
                 while targetElev <= maxPossibleFirstElev
                     pressureOffset = firstBaro - targetElev / curBaroScale;

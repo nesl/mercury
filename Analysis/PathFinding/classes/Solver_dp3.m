@@ -40,7 +40,9 @@ classdef Solver_dp3 < handle
                      %                  .dtwScore 
                      %                  .numMistakeTurns
                      %                  .finalScore (the traces are sorted based on this score, see the def. in the code)
-                     
+        processing_time;
+        overall_pruning_ratio_of_dtw_query;
+        overall_pruning_ratio_of_dtw_elements;
         
         % output settings
         max_results = 20;
@@ -91,6 +93,8 @@ classdef Solver_dp3 < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
+            tic
+            
             obj.elevFromBaro = obj.sensor_data.getElevationTimeWindow();
             numElevBaro = size(obj.elevFromBaro, 1);
             
@@ -243,6 +247,10 @@ classdef Solver_dp3 < handle
             end
             obj.res_traces = keptTraces;
             
+            % summarize performance
+            obj.processing_time = toc;
+            [obj.overall_pruning_ratio_of_dtw_query, obj.overall_pruning_ratio_of_dtw_elements] = obj.dtw_helper.pruningRatio();
+            
             % TODO: suppose to truncate the # of res_traces into
             % max_results, but for development and debugging purposes, we
             % didn't do that
@@ -273,10 +281,10 @@ classdef Solver_dp3 < handle
                         end
                     end
                 end
-                fprintf('pass %d-th of specified node\n', i);
+                fprintf('pass %d-th specified node\n', i);
             end
             
-            clear tmp_trace
+            tmp_trace = [];
             tmp_trace.dtwScore = dp(end, end);
             cElevStep = numElevBaro+1;  % current elevation step
             tmp_trace.rawPath = [numElevBaro+1 path(end)];
@@ -414,6 +422,16 @@ classdef Solver_dp3 < handle
                     error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
                 end
             end
+        end
+        
+        % QUERY PERFORMANCE
+        function sec = getProcessingTime(obj)
+            sec = obj.processing_time;
+        end
+        
+        function [ratioDTWQuery, ratioDTWElement] = queryPruningRatio(obj)
+            ratioDTWQuery = obj.overall_pruning_ratio_of_dtw_query;
+            ratioDTWElement = obj.overall_pruning_ratio_of_dtw_elements;
         end
         
         % VISUALIZATION

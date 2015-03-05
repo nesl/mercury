@@ -28,7 +28,7 @@ classdef SensorDataSim < handle
             elev = obj.elevations(1);
         end
 
-        function gps = getGps()
+        function gps = getGps(obj)
             gps = obj.gps;
         end
       

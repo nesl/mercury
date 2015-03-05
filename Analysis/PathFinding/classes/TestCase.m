@@ -23,6 +23,7 @@ classdef TestCase < handle
         sim_turns_nonoise;
         sim_path;
         sim_gps;
+        sim_speed;
 
         % for all the rest:
         meta;

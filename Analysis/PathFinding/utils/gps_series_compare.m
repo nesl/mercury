@@ -1,12 +1,12 @@
 function [ rootMeanSquare ] = gps_series_compare( seriesGnd, seriesEstimation )
 
-% This function compare two <time, lat, lng> series and evaluate the
+% This function compare two <lat, lng> series and evaluate the
 % difference with square-error metric.
 %
 % Parameter explanation:
-%   - seriesGnd: a three column table, with <time, lat, lng>. This suppose
+%   - seriesGnd: a three column table, with <lat, lng>. This suppose
 %                to be the gps data from the mobile phone.
-%   - seriesEstimation: a three column table, with <time, lat, lng>. This
+%   - seriesEstimation: a three column table, with <lat, lng>. This
 %                       should be the estimated result from our searching algorithm.
 %
 % Algorithm:
@@ -18,7 +18,7 @@ numElementEstimation = size(seriesEstimation, 1);
 distances = zeros(numElementGnd, numElementEstimation);
 for i = 1:numElementGnd
     for j = 1:numElementEstimation
-        distances(i, j) = latlng2m(seriesGnd(i,2:3), seriesEstimation(j,2:3));
+        distances(i, j) = latlng2m(seriesGnd(i,1:2), seriesEstimation(j,1:2));
     end
 end
 

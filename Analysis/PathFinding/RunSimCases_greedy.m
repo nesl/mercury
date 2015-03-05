@@ -1,5 +1,6 @@
 %% Housekeeping
 clc; close all; clear all;
+add_paths
 
 %% Get test cases
 testdir = '../../Data/SimTestCases/';
@@ -15,33 +16,16 @@ end
 
 %% Get solved test cases
 soldir = '../../Data/SimResults/';
-all_files = dir(testdir);
-solve_files = {};
-for i=1:length(all_files)
-    fname = all_files(i).name;
-    if isempty( regexp(fname, 'greedy') )
-        continue;
-    end
-    solve_files = [solve_files; fname];
-end
-
 
 %% Loop through all test cases
 for tidx=1:length(test_files)
     tfile = test_files{tidx};
     
-    % have we run this one yet?
-    already_done = false;
-    for sidx=1:length(solve_files)
-        sfile = solve_files{sidx};
-        % get rid of the .mat
-        match_str = tfile(1:(end-4));
-        if ~isempty( regexp(sfile, match_str) ) 
-            fprintf('Skipping file: %s\n', tfile);
-            already_done = true;
-        end
-    end
-    if already_done
+    solfile = [tfile(1:(end-4)), '_greedy.mat'];
+    solpath = [soldir solfile];
+    
+    if exist(solfile)
+        fprintf('skip test caes %s\n', tfile);
         continue;
     end
     
@@ -72,8 +56,7 @@ for tidx=1:length(test_files)
     solver_results.paths = paths;
     
     % save results
-    outpath = strcat(soldir, tfile(1:(end-4)), '_greedy.mat');
-    save(outpath, 'solver_results');
+    save(solpath, 'solver_results');
     
     
 end

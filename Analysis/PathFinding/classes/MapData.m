@@ -681,6 +681,21 @@ classdef MapData < handle
             end
         end
         
+        % The idea of getHomogeneousMap() is considering every points are
+        % the same, meaning that we don't have a hierarchy of end nodes on
+        % the segments, then in each one of them there are several internal
+        % points.
+        % The index is like this: The length of both return values are Nx1
+        % matrix and cell respectively, where as N refers the total points
+        % in this map (apparently much more than num_nodes). The first
+        % num_nodes refer to the same points as (joint) nodes in the map.
+        function [elevs, neighbors] = getHomogeneousMap(obj)
+            numTotalPoints = obj.num_nodes;
+            for i = 1:size(obj.endNodePairs, 1)
+                numTotalPoints = length( obj.getSegLatLng( obj.endNodePairs(i,:) ) ) - 2;
+            end
+        end
+        
         % INDEX SYSTEM CONVERSION
         % convert local node index to OSM index
         function node = idxToNode(obj, nidx)

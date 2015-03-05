@@ -268,24 +268,37 @@ wss.on("connection", function (ws) {
 						lines.push(line);
 					});
 					rd.on('close', function() {
-						re = {gndPath:[], estiPaths:[]}
+						re = {gndPath:[], estiPaths:[], attributes:[], attributeValues:[]}
 						tokens = lines[0].split(",");
 						for (var i = 0; i+2 <= tokens.length; i += 2) {
 							re.gndPath.push( [ parseFloat(tokens[i]) , parseFloat(tokens[i+1]) ] );
 							console.log(re.gndPath[ re.gndPath.length - 1]);
 						}
-						numEstiPaths = parseInt(lines[1]);
+						lines.shift();
+
+						numAttributes = parseInt(lines[0]);
+						lines.shift();
+						for (var i = 0; i < numAttributes; i++) {
+							re.attributes.push(lines[0].replace(/(\r\n|\n|\r)/gm,""));
+							lines.shift();
+						}
+
+						numEstiPaths = parseInt(lines[0]);
+						lines.shift();
 						for (var i = 0; i < numEstiPaths; i++) {
-							tokens = lines[i+2].split(",");
-							tmpPath = {};
-							tmpPath.dtwScore = parseFloat(tokens[0]);
-							tmpPath.pathScore = parseFloat(tokens[1]);
-							tmpPath.pathShapeScore = parseFloat(tokens[2]);
-							tmpPath.path = [];
-							for (var j = 3; j+2 <= tokens.length; j+=2)
-								tmpPath.path.push( [ parseFloat(tokens[j]), parseFloat(tokens[j+1]) ] );
+							tokens = lines[0].split(",");
+							tmpAttr = [];
+							for (var j = 0; j < numAttributes; j++)
+								tmpAttr.push( parseFloat(tokens[j]) );
+							re.attributeValues.push(tmpAttr);
+							tokens = tokens.splice(numAttributes);
+
+							tmpPath = [];
+							for (var j = 0; j+2 <= tokens.length; j+=2)
+								tmpPath.push( [ parseFloat(tokens[j]), parseFloat(tokens[j+1]) ] );
 							re.estiPaths.push(tmpPath);
 							console.log(tmpPath);
+							lines.shift();
 						}
 						//console.log(re);
 						ws.send(JSON.stringify(re));

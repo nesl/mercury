@@ -31,7 +31,6 @@ classdef SensorDataSim < handle
             data = 0;
         end
       
-        % MESSGAE TO PAUL from Bo-Jhang: I add this function
         function turnEvents = getTurnEvents(obj)
             turnEvents = obj.turns;
         end

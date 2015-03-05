@@ -2,7 +2,7 @@ clc; clear; clf;
 add_paths
 
 map_manager = MapManager();
-for mapID = [41 2 23 7]
+for mapID = [2 23 7]
 for mapSize = [4]
 
 %mapfile =    '../../Data/EleSegmentSets/ucla_5x5/';
@@ -35,7 +35,7 @@ end
 fprintf('generated random walk paths\n');
 
 scores = zeros(num_paths);
-parfor i = 1:num_paths
+for i = 1:num_paths
     for j = 1:num_paths
         scores(i, j) = dtw_traditional( elevs{i}, elevs{j} );
     end
@@ -64,3 +64,60 @@ end
 
 imagesc(log10(sortedScores+1));
 colorbar
+
+%% load mat and time to have some insight (for paper)
+
+dirPath = '../../Data/tmpMatFiles/pathSimilarity/';
+%{
+matFileName = {
+'simi-map41-size3.mat'
+'simi-map38-size3.mat'
+'simi-map23-size3.mat'
+'simi-map2-size3.mat'
+'simi-map29-size3.mat'
+'simi-map7-size3.mat'
+};
+%}
+
+matFileName = {
+'simi-map41-size4.mat'
+'simi-map23-size4.mat'
+'simi-map2-size4.mat'
+'simi-map7-size4.mat'
+};
+
+
+scoresAll = {};
+sortedScoresAll = {};
+
+errorThreshold = 100 * 1;
+expectedVisitingTime = 2;
+
+
+fractionControl = expectedVisitingTime * 0.5;
+
+clf
+hold on
+for i = 1:numel(matFileName)
+    matPath = [dirPath matFileName{i}];
+    load(matPath, 'scores');
+    numPath = size(scores, 1);
+    numPath = floor(numPath * fractionControl);
+    scores = scores(1:numPath, 1:numPath);
+    scoresAll{i} = scores;
+    tmpSortedScore = scores;
+    for j = 1:numPath
+        tmpSortedScore(j,:) = sort(scores(j,:));
+        numSimilarPath(j) = sum(tmpSortedScore(j,2:end) < errorThreshold) / (numPath - 1);
+    end
+    sortedScoresAll{i} = tmpSortedScore;
+    %imagesc(log10(tmpSortedScore+1));
+    %colorbar
+    y = linspace(0, 1, numel(numSimilarPath));
+    x = sort(numSimilarPath);
+    plot(x, y, 'Color', hsv2rgb([i/7, 1, 0.8]));
+    %pause
+    xlabel('Percentage of similar paths')
+    ylabel('CDF probability')
+end
+legend('Seattle', 'SF', 'LA', 'Atlanta', 'NY', 'Chicago')

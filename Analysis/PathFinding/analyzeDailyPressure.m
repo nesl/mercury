@@ -136,7 +136,13 @@ for i = 1:numBin
     idx = ((i-1)*windowSize+1):(i*windowSize);
     res(i) = std(baroSmooth(idx));
 end
-sortedRes = sort(res(1:end-3))
-x = sortedRes;
-y = linspace(0, 1, length(sortedRes));
+sortedRes = sort(res);
+x = sortedRes(1:end-3);
+y = linspace(0, 1, length(x));
 plot(x, y);
+xlabel('Standard deviration (hPa)', 'FontSize', 12);
+ylabel('CDF', 'FontSize', 12);
+set(gca, 'XTick', 0:0.02:0.1);
+grid on;
+
+saveplot([rootDir 'pressure_analysis_10min_std']);

@@ -206,7 +206,7 @@ class ElevationRequester:
     while requestAttempt < REQUEST_MAXATTEMPTS and not goodResponse:
       requestAttempt += 1
 
-      time.sleep(0.25)
+      time.sleep(0.1)
       url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
       response = simplejson.load(urllibRequest.urlopen(url))
       # parse elevations

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import traceback
+import time
 
 try:
   import urllib.parse as urllibParse
@@ -205,6 +206,7 @@ class ElevationRequester:
     while requestAttempt < REQUEST_MAXATTEMPTS and not goodResponse:
       requestAttempt += 1
 
+      time.sleep(0.25)
       url = ELEVATION_BASE_URL + '?' + urllibParse.urlencode(elvtn_args)
       response = simplejson.load(urllibRequest.urlopen(url))
       # parse elevations

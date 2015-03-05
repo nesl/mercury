@@ -6,15 +6,17 @@ classdef SensorDataSim < handle
         
         elevations;
         turns;
+        gps;
         
     end
     
     methods
         % CONSTRUCTOR
-        function obj = SensorDataSim(elev, turns)
+        function obj = SensorDataSim(elev, turns, gps)
 
             obj.elevations = elev;
             obj.turns = turns;
+            obj.gps = gps;
             
         end
         
@@ -26,9 +28,8 @@ classdef SensorDataSim < handle
             elev = obj.elevations(1);
         end
 
-        function data = getBaro(obj)
-            % TODO
-            data = 0;
+        function gps = getGps()
+            gps = obj.gps;
         end
       
         function turnEvents = getTurnEvents(obj)

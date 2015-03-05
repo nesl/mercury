@@ -1,21 +1,31 @@
 classdef TestCase < handle
+    
     properties (SetAccess = private, GetAccess = private)
         MAT_FOLDER = '../../Data/testCasesForSimulation/';
     end
     
-    properties (SetAccess = public, GetAccess = public)  % treat this as a structure only. Thus all the attributes are public
+    properties (SetAccess = public, GetAccess = public)
+        % map set up
+        simulated = false;
         mapFilePath = '';
-        sensorFilePath = '';   % still, all the sensor files should stored under the same folder
-        %seaPressure = 0;  % PAUL: my solver won't take this parameter, delete or uncomment based on whether you need these
-        %setPressureScalar = 0;
-        startAbsTime = 0;  % if the case is manually generated, I guess it's always 0
+        sensorFilePath = '';
+        seaPressure = 0; 
+        PressureScalar = 0;
+        startAbsTime = 0; 
         stopAbsTime = 0;
-        useFakeTurnEvent = 0;  % 0 or (not 0)
         sensorWindowSize = 0;
-        mapDataDownSampling = 1;  % as by default
-        meta;  % can be anything, cell, structure, whatever
-        % PAUL: if you any attribute I didn't consider, just add into the
-        % list
+        mapDataDownSampling = 1;
+        
+        % simulation data
+        sim_elevations;
+        sim_turns;
+        sim_elevations_nonoise;
+        sim_turns_nonoise;
+        sim_path;
+        sim_gps;
+
+        % for all the rest:
+        meta;
     end
     
 
@@ -49,6 +59,27 @@ classdef TestCase < handle
             matFilePath = [obj.MAT_FOLDER caseName];
             save(matFilePath, 'obj');
         end
+        
+        function saveTo(obj, fpath, caseName)  % case name is very important, as it should always be unique,
+                                      % also it treats as the mat file name
+            % simple checking
+            if isempty(caseName)
+                error('caseName cannot be an empty string (save())')
+            end
+            if isempty(obj.mapFilePath)
+                error('This test case is incomplete: unspecified mapFilePath (save())')
+            end
+
+            if obj.stopAbsTime - obj.startAbsTime < 30
+                error('Safety check: half-minute test case? (save())')
+            end
+            if obj.sensorWindowSize <= 0
+                error('Didn''t specify sensor window size (save())')
+            end
+            matFilePath = [obj.MAT_FOLDER caseName];
+            save(fpath, 'obj');
+        end
+        
     end
 end
 

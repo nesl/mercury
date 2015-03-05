@@ -11,8 +11,8 @@ add_paths;
 
 %% knot
 solverVersion = 3;  % 2 to 4
-caseNo = 5; % 1 to 5
-mapSize = 3; % 1 to 5
+caseNo = 6; % 1 to 5
+mapSize = 6; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -29,6 +29,8 @@ mapSize = 3; % 1 to 5
 % ucla_small: 361 nodes, 519 segments
 % ucla_4x4:  2080 nodes, 3255 segments
 
+%1420998405000
+%1420998803000
 %% Inputs:
 
 if mapSize == 1
@@ -41,6 +43,8 @@ elseif mapSize == 4
     mapfile = '../../Data/EleSegmentSets/ucla_4x4.map';
 elseif mapSize == 5
     mapfile = '../../Data/EleSegmentSets/ucla_5x5.map';
+elseif mapSize == 6
+    mapfile = '../../Data/EleSegmentSets/Los_Angeles_4x4.map';
 else
     error('Be patient. The map will come out soon.');
 end
@@ -75,12 +79,18 @@ elseif caseNo == 5
     %        time: 444 sec
     %   avg speed: ??mph / ?? km/h / ?? meter/sec
     sensorfile = '../../Data/rawData/baro_n503_20150110_161641.baro.csv';
+elseif caseNo == 6
+    % driving in Los Angeles, with only one turn, keep moving
+    %    distance: ?? mile (?? km)
+    %        time: 444 sec
+    %   avg speed: ??mph / ?? km/h / ?? meter/sec
+    sensorfile = '../../Data/rawData/baro_n503_20150111_091333.baro.csv';
 else
     error('Kidding me? You didn''t choose a correct test case!');
 end
 
-caseDesp = {'weyburn', 'sunset', 'sunset_hilgard', 'one_round_ucla', 'east_ucla_1'};
-mapDesp = {'ucla_west', 'ucla_small', 'ucla_3x3', 'ucla_4x4', 'ucla_5x5'};
+caseDesp = {'weyburn', 'sunset', 'sunset_hilgard', 'one_round_ucla', 'east_ucla_1', 'los_angeles'};
+mapDesp = {'ucla_west', 'ucla_small', 'ucla_3x3', 'ucla_4x4', 'ucla_5x5', 'la_4x4'};
 outputWebFile = ['../../Data/resultSets/(B)case' num2str(caseNo) ...
     '_dp' num2str(solverVersion) '_' mapDesp{mapSize} ...
     '_' caseDesp{caseNo} '_results.rset'];
@@ -108,8 +118,8 @@ elseif caseNo == 3
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
 elseif caseNo == 4
-    sensor_data.setSeaPressure(1018.7);  % correct coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
     %sensor_data.setSeaPressure(1019.3);  % test different coefs. scalar shouldn't matter that much
     %sensor_data.setPressureScalar(-7.8);
     sensor_data.setAbsoluteSegment(1421002200, 1421003019);
@@ -119,6 +129,12 @@ elseif caseNo == 5
     sensor_data.setSeaPressure(1016.0);  % coefficient hand-tuned
     sensor_data.setPressureScalar(-8.3);
     sensor_data.setAbsoluteSegment(1420935640, 1420936084);
+    sensor_data.setWindowSize(1);  % finer case: 0.5
+    map_data = MapData(mapfile, 2);  % finer case: 1
+elseif caseNo == 6
+    sensor_data.setSeaPressure(1019.6);  % coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.3);
+    sensor_data.setAbsoluteSegment(1420998405, 1420998803);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
@@ -178,7 +194,7 @@ solver.setOutputFilePath(outputWebFile);
 tic
 solver.solve();
 totalTime = toc;
-fprintf('Elapsed time is %lf seconds.\n', totalTime);
+fprintf('Elapsed time is %f seconds.\n', totalTime);
 
 fprintf('Generate results....');
 solver.getRawPath(1)
@@ -193,7 +209,7 @@ if solverVersion == 3  % CONSIDER: this violates the data encapsulation
     fprintf('Pruning ratio in terms of DTW request: %.9f\n', ratioOfDTWQuery);
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 elseif solverVersion == 4
-    [ratioOfDTWQuery, ratioOfElements] = solver.pruningRatio();
+    [ratioOfDTWQuery, ratioOfElements] = solver.queryPruningRatio();
     fprintf('Pruning ratio in terms of DTW request: %.9f\n', ratioOfDTWQuery);
     fprintf('Pruning ratio in terms of result of sub-segments: %.9f\n', ratioOfElements);
 end
@@ -242,67 +258,6 @@ sensor_data.plotElevation();
 
 %% answers
 
-% case 3, under map 4x4
-pathAns = [
-    183
-     186
-    1299
-    1376
-    1374
-    1375
-    1250
-     747
-      88
-      86
-      89
-     901
-     153
-     151
-     154
-     156
-     893
-      30
-     894
-     895
-     897
-     632
-     628
-     631
-     633
-];
-
-
-
-%% case 3 dp 3 map 3x3
-rank2 = [
-     1   114
-    11   117
-    60   697
-    75   733
-    77   731
-   104   732
-   108   668
-   116   404
-   149    55
-   154    53
-   157    56
-   167   477
-   187    84
-   217    82
-   227    85
-   230    87
-   235   469
-   243    30
-   256   470
-   263   471
-   327   473
-   345   355
-   355   351
-   395   354
-   425   356
-   432   360
-   443   363
-];
 
 nodes = rank2(:,2);
 nodes = nodes(1:end-2);  % even more correct
@@ -333,5 +288,8 @@ for i = 1:(length(gpsLatLng)-10)
             plot(gpsLatLng(i,3), gpsLatLng(i,2), 'rx', 'MarkerSize', markerSize);
         end
     end
-    
 end
+
+%%
+%34.023412, -118.248511
+%34.064590, -118.254948

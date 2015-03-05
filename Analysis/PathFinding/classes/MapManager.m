@@ -1,5 +1,5 @@
 classdef MapManager < handle
-    properties (SetAccess = private, GetAccess = private)
+    properties (SetAccess = public, GetAccess = public)
         info = {
             % 15       24                       49       58       67       76       85       94       103:cursor location
             % Map_ID   City name                Size 1,  Size 2,  Size 3,  Size 4,  Size 5,  Size 6,  Size 7
@@ -51,10 +51,15 @@ classdef MapManager < handle
               101,     'ucla',                  'west',  'small','3x3',   '4x4',   '5x5',   [],      []       
               % feel free to add more. The Map_ID doesn't need to be continuous.
         };
+    
+        folder = '';
     end
     
     methods
-        function obj = MapManager()
+        function obj = MapManager(varargin)
+            if length(varargin) == 1
+                obj.folder = varargin(1);
+            end
         end
         
         function [mapDataObj, mapPath] = getMapDataObject(obj, mapID, mapSize, downSampleSize)
@@ -63,8 +68,8 @@ classdef MapManager < handle
                     if numel(obj.info{i, mapSize+2}) == 0
                         error('Find the map, yet cannot find the corresponding size');
                     end
-                    mapPath = ['../../Data/EleSegmentSets/' obj.info{i, 2} '_' obj.info{i, mapSize+2} '.map'];
-                    mapDataObj = MapData(mapPath, downSampleSize);
+                    mapPath = strcat(obj.folder, obj.info{i, 2}, '_', obj.info{i, mapSize+2}, '.map');
+                    mapDataObj = MapData(mapPath{1}, downSampleSize);
                     return
                 end
             end
@@ -74,6 +79,46 @@ classdef MapManager < handle
         function mapID = getMapIPByName(obj, cityName)
             % TODO
         end
+        
+        function idx = getMapIdx(obj, id)
+            idx = -1;
+            for i=1:size(obj.info,1)
+                if obj.info{i,1} == id
+                    idx = i;
+                    return;
+                end
+            end
+        end
+        
+        function name = getMapFile(obj, id, sz)
+            idx = obj.getMapIdx(id);
+            name = strcat(obj.folder, obj.info{idx, 2}, '_', obj.info{idx, sz+2}, '.map');
+        end
+        
+        function name = getMapName(obj, id, sz)
+            idx = obj.getMapIdx(id);
+            name = strcat(obj.info{idx, 2}, '_', obj.info{idx, sz+2});
+        end
+        
+        function maps = getValidMaps(obj, sz)
+            maps = {};
+            for i=1:size(obj.info,1)
+                if ~isempty(obj.info{i,2+sz})
+                    fpath = strcat(obj.folder, obj.info{i,2}, '_', obj.info{i,2+sz}, '.map');
+                    maps = [maps; fpath];
+                end
+            end
+        end
+        
+        function ids = getValidMapIds(obj, sz)
+            ids = [];
+            for i=1:size(obj.info,1)
+                if ~isempty(obj.info{i,2+sz})
+                    ids = [ids; obj.info{i,1}];
+                end
+            end
+        end
+        
     end
     
 end

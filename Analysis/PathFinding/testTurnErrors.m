@@ -63,8 +63,6 @@ end
 
 % create objects
 sensor_data = SensorData(sensorfile);
-map_data = MapData(mapfile);
-map_lines = map_data.getAllSegLatLng();
 
 if caseNo == 1
     sensor_data.setSeaPressure(1020);
@@ -97,60 +95,141 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
-%% Get elevations
-elev_est = sensor_data.getElevation();
-elev_map = sensor_data.getGps2Ele();
+%% Get true turns
+path = [
+     1    20
+    11    22
+    60    26
+    75   164
+    77   240
+   104   253
+   108   293
+   116   298
+   149   301
+   154   323
+   157   328
+   167   332
+   187   338
+   217   317
+   227   315
+   230   316
+   235   307
+   243   303
+   256   291
+   263   275
+   327   219
+   345   230
+   355   213
+   386   204
+   394   189
+   401   162
+   409   143
+   413   130
+   425   108
+   443   100
+   ];
 
-% time align signals
-elev_est_rsz = zeros( size(elev_map,1), 2);
-for i=1:size(elev_map,1)
-    % transfer time over
-    elev_est_rsz(i,1) = elev_map(i,1);
-    % find closest idx in elev_est
-    idx_near = round( size(elev_est,1)*i/size(elev_map,1) );
-    idx_near = min( max(1, idx_near), size(elev_est,1) );
-    elev_est_rsz(i,2) = elev_est(idx_near, 2);
+path = path(:,2);
+
+real_turns = map_data.getPathTurns(path);
+
+
+%%
+
+% get the lat/lng first
+latlngs = map_data.getPathLatLng(path);
+plot(latlngs(:,2), latlngs(:,1), 'bo-','MarkerSize',3);
+hold on;
+axis equal;
+
+% now find absolute angles
+angles = [];
+for i=2:size(latlngs,1)
+    % if latlng didn't change, continue
+    if latlngs(i,1) - latlngs(i-1,1) == 0 &&...
+       latlngs(i,2) - latlngs(i-1,2) == 0
+       continue;
+    end
+    angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
+    angles = [angles; [i, angle]];
 end
 
 
-%% Plot elevations
-cfigure(30,30);
-subplot(3,1,1);
-plot(elev_est_rsz(:,1), elev_est_rsz(:,2));
-hold on;
-plot(elev_map(:,1), elev_map(:,4), 'b');
+% find turns
+turns = [];
+thresh = 30;
+decay = 7;
+angle_last = angles(1,2);
 
-%% Plot error
-subplot(3,1,2);
-estError = elev_est_rsz(:,2) - elev_map(:,4);
-plot(elev_est_rsz(:,1), estError,'r');
-ylim([-5 5]);
-ylabel('Estimation Error');
+for i=2:size(angles,1)
+    change_since_last = angles(i,2) - angle_last;
+    decay_idx = max(1, i-decay);
+    change_since_decay = angles(i,2) - angles(decay_idx,2);
+    
+    if abs(change_since_last) > abs(change_since_decay)
+        change = change_since_decay;
+    else
+        change = change_since_last;
+    end
+    
 
-%% Plot some simulated noise just for fun
-subplot(3,1,3);
-% OU is times, rev_time, variance
-% GOOD VALUES: 150, 0.04
-sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 150, 0.04);
-plot(elev_est_rsz(:,1), sim_noise, 'k');
-ylim([-5 5]);
-ylabel('Simulated Error');
-
-
-
+    if abs(change) > thresh
+        turns = [turns; [angles(i,1) change]];
+        angle_last = angles(i,2);
+    end
+end
 
 
+% combine clusters of turns
+csize = 7;
+
+for i=1:size(turns,1)
+    if i > size(turns,1)
+        break;
+    end
+    idx = turns(i,1);
+    close_idxs = find( turns(:,1) > idx & turns(:,1) - idx < csize);
+    total = sum(turns([i close_idxs],2));
+    total = mod( total+180, 360) - 180;
+    turns(i,:) = [idx,total];
+    turns(close_idxs,:) = [];
+   
+end
+
+turns( abs(turns(:,2)) < 30, :) = [];
+
+
+for i=1:size(turns,1)
+    idx = turns(i,1);
+    angle = turns(i,2);
+    text(latlngs(idx,2), latlngs(idx,1)+0.0001, num2str(angle));
+    
+end
 
 
 
+return;
+
+%% Get estimated turns
+est_turns = sensor_data.getTurnEvents();
 
 
+%% 
+% let's roughly say our turn detection error is Gaussian with a std of 
+% ...
 
 
+E = [
+    54 - 35
+    29 - 30
+    49 - 31
+    61 - 37
+    48 - 30
+    69 - 48
+    31 - 30
+    ];
 
-
-
-
+% 10 deg.
 
 
 

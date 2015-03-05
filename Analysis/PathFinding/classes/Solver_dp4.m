@@ -33,7 +33,7 @@ classdef Solver_dp4 < handle
         uncertain_meter = 5;  % correct elevation +/- this unterainty
         
         % solver looping option
-        looping_elevation_step = 2;  % meters
+        looping_elevation_step = 1.3;  % meters
         scheduler_random_start = 0;  % 0 means the first pressure setting always equal to the smallest possible offset,
                                      % whereas 1 means it shifts. All other numbers just return an exception
         
@@ -78,10 +78,10 @@ classdef Solver_dp4 < handle
         ACCEPTED_TURN_ANGLE_DIFFERENCE = 90;  % degree
         
         % pruning constants/functions
-        HARD_ELEVATION_THRESHOLD = 6; % meter, consider the nodes as check points and apply the threshold.
-        dtw_pruning_function = @(x) (27 + 10 * x);  % during accessing x-th barometer element in the dtw,
+        HARD_ELEVATION_THRESHOLD = 5; % meter, consider the nodes as check points and apply the threshold.
+        dtw_pruning_function = @(x) (27 + 3 * x);  % during accessing x-th barometer element in the dtw,
                                                     % what is the cutting threshold for corresponding column
-        global_pruning_function = @(x) (200 + 10 * x)  % during accessing x-th barometer element in the dynamic programming,
+        global_pruning_function = @(x) (200 + 3 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
         allowed_num_turn_mistakes = @(x) (2 + 0.34 * x)  % x is number of segments which have been visited.
                                                        
@@ -565,6 +565,7 @@ classdef Solver_dp4 < handle
         function private_schedulePressureParameters(obj)
             % get min and max baro
             baro = obj.sensor_data.getBaro();
+            %{
             minBaro = min(baro(:,2));
             maxBaro = max(baro(:,2));
             baroDiff = maxBaro - minBaro;
@@ -573,6 +574,9 @@ classdef Solver_dp4 < handle
             scaleDelta = 0.4 / scaleNum;
             scaleTotalRange = scaleDelta * (scaleNum - 1);
             baroScaleCandidate = -linspace(8.0 - scaleTotalRange / 2, 8.0 + scaleTotalRange / 2, scaleNum);
+            %}
+            
+            baroScaleCandidate = -8.38; % magic number from analysis
             
             % get first baro value and elevation as calibration center
             firstBaro = mean(baro(1:15, 2));  % average the first 15 samples which is equivalent to 0.5 second

@@ -1,7 +1,7 @@
 clear all; clc; clf;
 
 %% File set to process:
-
+%{
 baro_files = {
     %'baro_n501_20141201_230214', 1417573441, NaN;  % fail on butter()
     'baro_n501_20141203_085057', NaN, 1417628515;
@@ -12,6 +12,19 @@ baro_files = {
     'baro_n503_20150110_155834', NaN, NaN;
     'baro_n503_20150110_161641', NaN, NaN;
     'baro_n503_20150111_091333', NaN, NaN
+};
+%}
+
+baro_files = {
+    %'baro_n501_20141201_230214', 1417573441, NaN;  % fail on butter()
+    %'baro_n501_20141203_085057', NaN, 1417628515;   % suffer by highway
+    %'baro_n501_20141213_093710', NaN, 1418494703;  % fail on butter()
+    %'baro_n501_20141215_212237', 1418717289, NaN;  % fail on butter()
+    %'baro_n501_20150108_221546', NaN, NaN;  % suffer by highway
+    %'baro_n503_20150110_143636', NaN, NaN;  % can fix  % don't know why it's noisy
+    'baro_n503_20150110_155834', NaN, NaN;  % can fix
+    %'baro_n503_20150110_161641', NaN, NaN;  % can fix  % but this is super clean
+    %'baro_n503_20150111_091333', NaN, NaN  % also super clean
 };
 
 baro_files(:,1) = strcat('../../Data/rawData/',baro_files(:,1));

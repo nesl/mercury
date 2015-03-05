@@ -17,6 +17,7 @@ classdef GraphExplorer < handle
         MAX_LEAVES = 4;
         % do we use turns for pruning?
         use_turns = false;
+        sensor_turns = [];
         % score of best branch
         cost = inf;
         % root node
@@ -32,13 +33,9 @@ classdef GraphExplorer < handle
     
     methods
         % CONSTRUCTOR
-        function obj = GraphExplorer(map, sensor, root_idx, pruning)
+        function obj = GraphExplorer(map, sensor, root_idx)
             obj.map = map;
             obj.sensor = sensor;
-            if pruning < 0 || pruning >= 1
-                error('prune factor must be >=0 and < 1');
-            end
-            obj.PRUNE_FACTOR_BRANCH = pruning;
             
             % create root node (empty parent)
             obj.root = GraphNode([], root_idx);
@@ -61,8 +58,9 @@ classdef GraphExplorer < handle
         end
         
         % PRUNE WITH TURNS
-        function useTurns(obj)
+        function useTurns(obj, turnVector)
             obj.use_turns = true;
+            obj.sensor_turns = turnVector;
         end
         
         % EXPLORING NEW NODES
@@ -138,14 +136,15 @@ classdef GraphExplorer < handle
                 estElevations = estElevations(:,2) + obj.elevation_offset;
             end
             
+            
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
             
-            % get turns
             if obj.use_turns
-                mapTurns = obj.map.getPathTurns(path_nodes);
-                estTurns = obj.sensor.getTurns();
-                cost_turns = DTW_greedy_turns(estTurns(:,2), mapTurns);
+                
+                % get segment turns
+                mapTurns = obj.map.getPathTurnVector(path_nodes);
+                cost_turns = DTW_greedy_turns(obj.sensor_turns(:,2), mapTurns);
             end
             
             % combine costs
@@ -279,7 +278,7 @@ classdef GraphExplorer < handle
                     if obj.all_nodes{n}.isLeaf()
                         
                         % if it's too big, throw it out!
-                        if obj.all_nodes{n}.path_cost > sorted_costs(obj.MAX_LEAVES)
+                        if obj.all_nodes{n}.path_cost >= sorted_costs(obj.MAX_LEAVES)
                             leaves_to_prune = [leaves_to_prune; n];
                         end
                         

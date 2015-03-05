@@ -19,20 +19,21 @@ classdef Solver_greedy < handle
         
         % pruning rules
         %    0 --> 1
-        PRUNE_RATE = 0.500;
+        PRUNE_RATE = 0.650;
         use_turns = false;
         
         % debugging options
         DBG = false;
+
         
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_greedy(map_data, sensor_data, debug)
+        function obj = Solver_greedy(map_data, sensor_data)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
-            obj.DBG = debug;
+            obj.DBG = false;
             
         end
         
@@ -66,7 +67,7 @@ classdef Solver_greedy < handle
             num_nodes = obj.map_data.getNumNodes();
             for n=1:num_nodes
                 obj.graph_explorers = [obj.graph_explorers;
-                    {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+                    {GraphExplorer(obj.map_data, obj.sensor_data, n)}];
                 
                 % absolute or relative elvations
                 if obj.use_absolute_elevation
@@ -75,7 +76,8 @@ classdef Solver_greedy < handle
                 
                 % use turns or not
                 if obj.use_turns
-                    obj.graph_explorers{n}.useTurns();
+                    turnVector = obj.sensor_data.spanTurnEventsToVector();
+                    obj.graph_explorers{n}.useTurns(turnVector);
                 end
             end
             
@@ -89,7 +91,7 @@ classdef Solver_greedy < handle
                 % --- explore and get path costs ---
                 all_path_costs = [];
                 for e=1:length(obj.graph_explorers)
-                    fprintf('Explorer %d/%d\n', e, length(obj.graph_explorers));
+                    %fprintf('Explorer %d/%d\n', e, length(obj.graph_explorers));
                     % explore new nodes
                     obj.graph_explorers{e}.exploreNewNodes();
                     costs = obj.graph_explorers{e}.getPathCosts();
@@ -104,7 +106,7 @@ classdef Solver_greedy < handle
                 prune_cost_idx = max(obj.max_results, prune_goal);
                 
                                 
-                fprintf(' ------------ SUMMARY ----------- \n');
+                %fprintf(' ------------ SUMMARY ----------- \n');
                 fprintf('    Explorers: %d \t Paths: %d\n', length(obj.graph_explorers), length(all_path_costs));
                 
                 
@@ -113,6 +115,7 @@ classdef Solver_greedy < handle
                     cost_thresh = sorted_costs( prune_cost_idx );
                     
                     % --- prune paths above the threshold ---
+                    fprintf('    Pruning paths...');
                     explorers_to_prune = [];
                     for e=1:length(obj.graph_explorers)
                         % if the best cost of this explorer doesn't meet the
@@ -125,6 +128,7 @@ classdef Solver_greedy < handle
                         end
                     end
                     obj.graph_explorers(explorers_to_prune) = [];
+                    fprintf('DONE\n');
                 end
                 
                 

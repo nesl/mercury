@@ -251,7 +251,7 @@ classdef MapData < handle
             elseif ~isempty( obj.segment_latlngs{nb_idx, na_idx} )
                 latlng = flipud( obj.segment_latlngs{nb_idx, na_idx} );
             else
-                error('specified segment does not exist (getSegLatLng)');
+                error(['specified segment does not exist: ' num2str(na_idx) ', ' num2str(nb_idx)]);
             end
         end
         
@@ -370,23 +370,78 @@ classdef MapData < handle
             end
         end
         
+        
+        function turns = getPathTurnVector(obj, nidxList)
+            events = obj.getPathTurns(nidxList);
+            latlngs = obj.getPathLatLng(nidxList);
+            turns = zeros( size(latlngs,1), 1);
+            if ~isempty(events)
+                turns(events(:,1),:) = events(:,2);
+            end
+        end
+        
         function turns = getPathTurns(obj, nidxList)
+            thresh = 25;
             % get the lat/lng first
             latlngs = obj.getPathLatLng(nidxList);
-            % now find absolute turns
+            
+            % now find absolute angles
             angles = [];
             for i=2:size(latlngs,1)
+                % if latlng didn't change, continue
+                if latlngs(i,1) - latlngs(i-1,1) == 0 &&...
+                        latlngs(i,2) - latlngs(i-1,2) == 0
+                    continue;
+                end
                 angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
-                angles = [angles; angle];
+                angles = [angles; [i, angle]];
             end
             
-            % and then relative turns
-            dAngles = diff(angles);
             
-            % and finally discretize into turns above a certain level
-            thresh = 35; % deg
-            % first add a dummy turn of 0 degrees so it's not empty
-            turns = dAngles( abs(dAngles) > thresh );
+            % find turns
+            turns = [];
+            decay = 7;
+            angle_last = angles(1,2);
+            
+            for i=2:size(angles,1)
+                change_since_last = angles(i,2) - angle_last;
+                decay_idx = max(1, i-decay);
+                change_since_decay = angles(i,2) - angles(decay_idx,2);
+                
+                if abs(change_since_last) > abs(change_since_decay)
+                    change = change_since_decay;
+                else
+                    change = change_since_last;
+                end
+                
+                
+                if abs(change) > thresh
+                    turns = [turns; [angles(i,1) change]];
+                    angle_last = angles(i,2);
+                end
+            end
+            
+            
+            % combine clusters of turns
+            csize = 7;
+            
+            for i=1:size(turns,1)
+                if i > size(turns,1)
+                    break;
+                end
+                idx = turns(i,1);
+                close_idxs = find( turns(:,1) > idx & turns(:,1) - idx < csize);
+                total = sum(turns([i; close_idxs],2));
+                total = mod( total+180, 360) - 180;
+                turns(i,:) = [idx,total];
+                turns(close_idxs,:) = [];
+                
+            end
+            
+            if ~isempty(turns)
+                turns( abs(turns(:,2)) < thresh, :) = [];
+            end
+                        
         end
         
         % get all latitude and longitude for nodes in a list
@@ -406,6 +461,11 @@ classdef MapData < handle
             for nidx=1:( length(nidxList)-1 )
                 meter = meter + obj.getSegLength( nidxList( nidx:(nidx+1) ) );
             end
+        end
+        
+        % pick a random node (to start random walk)
+        function node = getRandomNode(obj)
+            node = randi(obj.num_nodes,1);
         end
         
         
@@ -656,6 +716,41 @@ classdef MapData < handle
            end
         end
         
+        % GPS ALLIGNMENT
+        function result = rawGpsAlignment(obj, gpsLatLngs)
+            % return value contains 4 columns which are [lat lng elev error]
+            prevSeg = [];
+            numLatLng = size(gpsLatLngs, 1);
+            result = zeros(numLatLng, 4);
+            for i = 1:numLatLng
+                minDistance = inf;
+                candidateSegs = obj.endNodePairs;
+                if numel(prevSeg) == 2
+                    candidateSegs = [prevSeg; candidateSegs];
+                end
+                for j = 1:size(candidateSegs, 1)
+                    % simple pruning
+                    segLen = obj.getSegLength( candidateSegs(j,:) );
+                    segGps = obj.getSegLatLng( candidateSegs(j,:) );
+                    segElev = obj.getSegElev( candidateSegs(j,:) );
+                    distanceToSegEnd1 = obj.distanceToNodeIdx( gpsLatLngs(i,:), candidateSegs(j,1) );
+                    distanceToSegEnd2 = obj.distanceToNodeIdx( gpsLatLngs(i,:), candidateSegs(j,2) );
+                    if min(distanceToSegEnd1, distanceToSegEnd2) - segLen < minDistance
+                        fprintf('%d,%d\n', i, j);
+                        for k = 1:size(segGps, 1)
+                            meter = latlng2m(segGps(k,:), gpsLatLngs(i,:));
+                            if meter < minDistance
+                                result(i, 1:2) = segGps(k,:);
+                                result(i, 3) = segElev(k);
+                                result(i, 4) = meter;
+                                minDistance = meter;
+                                prevSeg = candidateSegs(j,:);
+                            end
+                        end
+                    end
+                end
+            end
+        end
         
         % METHODS REGARDING ALL PAIRS DTW
         function preProcessAllPairDTW(obj, elevFromBaro)

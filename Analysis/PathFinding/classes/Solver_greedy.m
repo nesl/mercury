@@ -24,12 +24,13 @@ classdef Solver_greedy < handle
         
         % debugging options
         DBG = false;
+
         
     end
     
     methods
         % CONSTRUCTOR
-        function obj = Solver_greedy(map_data, sensor_data, debug)
+        function obj = Solver_greedy(map_data, sensor_data)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
             obj.DBG = debug;
@@ -66,7 +67,7 @@ classdef Solver_greedy < handle
             num_nodes = obj.map_data.getNumNodes();
             for n=1:num_nodes
                 obj.graph_explorers = [obj.graph_explorers;
-                    {GraphExplorer(obj.map_data, obj.sensor_data, n, 0.5)}];
+                    {GraphExplorer(obj.map_data, obj.sensor_data, n)}];
                 
                 % absolute or relative elvations
                 if obj.use_absolute_elevation
@@ -75,7 +76,8 @@ classdef Solver_greedy < handle
                 
                 % use turns or not
                 if obj.use_turns
-                    obj.graph_explorers{n}.useTurns();
+                    turnVector = obj.sensor_data.spanTurnEventsToVector();
+                    obj.graph_explorers{n}.useTurns(turnVector);
                 end
             end
             

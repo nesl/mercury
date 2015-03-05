@@ -11,7 +11,7 @@ add_paths;
 
 %% Load Map and Data
 caseNo = 3; % 1 to 5
-mapSize = 3; % 2 to 4 (5 is coming soon)
+mapSize = 2; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
 
@@ -95,7 +95,7 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
-%% Get estimated turns
+%% Get true turns
 path = [
      1    20
     11    22
@@ -131,21 +131,105 @@ path = [
 
 path = path(:,2);
 
-est_turns = sensor_data.getTurnEvents();
 real_turns = map_data.getPathTurns(path);
 
 
+%%
+
+% get the lat/lng first
+latlngs = map_data.getPathLatLng(path);
+plot(latlngs(:,2), latlngs(:,1), 'bo-','MarkerSize',3);
+hold on;
+axis equal;
+
+% now find absolute angles
+angles = [];
+for i=2:size(latlngs,1)
+    % if latlng didn't change, continue
+    if latlngs(i,1) - latlngs(i-1,1) == 0 &&...
+       latlngs(i,2) - latlngs(i-1,2) == 0
+       continue;
+    end
+    angle = atan2d( latlngs(i,1)-latlngs(i-1,1), latlngs(i,2)-latlngs(i-1,2) );
+    angles = [angles; [i, angle]];
+end
+
+
+% find turns
+turns = [];
+thresh = 30;
+decay = 7;
+angle_last = angles(1,2);
+
+for i=2:size(angles,1)
+    change_since_last = angles(i,2) - angle_last;
+    decay_idx = max(1, i-decay);
+    change_since_decay = angles(i,2) - angles(decay_idx,2);
+    
+    if abs(change_since_last) > abs(change_since_decay)
+        change = change_since_decay;
+    else
+        change = change_since_last;
+    end
+    
+
+    if abs(change) > thresh
+        turns = [turns; [angles(i,1) change]];
+        angle_last = angles(i,2);
+    end
+end
+
+
+% combine clusters of turns
+csize = 7;
+
+for i=1:size(turns,1)
+    if i > size(turns,1)
+        break;
+    end
+    idx = turns(i,1);
+    close_idxs = find( turns(:,1) > idx & turns(:,1) - idx < csize);
+    total = sum(turns([i close_idxs],2));
+    total = mod( total+180, 360) - 180;
+    turns(i,:) = [idx,total];
+    turns(close_idxs,:) = [];
+   
+end
+
+turns( abs(turns(:,2)) < 30, :) = [];
+
+
+for i=1:size(turns,1)
+    idx = turns(i,1);
+    angle = turns(i,2);
+    text(latlngs(idx,2), latlngs(idx,1)+0.0001, num2str(angle));
+    
+end
 
 
 
+return;
+
+%% Get estimated turns
+est_turns = sensor_data.getTurnEvents();
 
 
+%% 
+% let's roughly say our turn detection error is Gaussian with a std of 
+% ...
 
 
+E = [
+    54 - 35
+    29 - 30
+    49 - 31
+    61 - 37
+    48 - 30
+    69 - 48
+    31 - 30
+    ];
 
-
-
-
+% 10 deg.
 
 
 

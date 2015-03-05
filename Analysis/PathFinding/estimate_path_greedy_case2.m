@@ -16,11 +16,11 @@ mapSize = 2; % 2 to 4 (5 is coming soon)
 %% Inputs:
 
 if mapSize == 2
-    mapfile = '../../Data/EleSegmentSets/ucla_small/';
+    mapfile = '../../Data/EleSegmentSets/ucla_small.map';
 elseif mapSize == 3
-    mapfile = '../../Data/EleSegmentSets/ucla_3x3/';
+    mapfile = '../../Data/EleSegmentSets/ucla_3x3.map';
 elseif mapSize == 4
-    mapfile = '../../Data/EleSegmentSets/ucla_4x4/';
+    mapfile = '../../Data/EleSegmentSets/ucla_4x4.map';
 %elseif mapSize == 5
 %    mapfile = '../../Data/EleSegmentSets/ucla_5x5/';
 else
@@ -63,8 +63,6 @@ end
 
 % create objects
 sensor_data = SensorData(sensorfile);
-map_data = MapData(mapfile);
-map_lines = map_data.getAllSegLatLng();
 
 if caseNo == 1
     sensor_data.setSeaPressure(1020);
@@ -97,12 +95,15 @@ elseif caseNo == 5
     map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
+map_lines = map_data.getAllSegLatLng();
+
+
 %% Create Solver Object
 DEBUG = true;
 solver = Solver_greedy(map_data, sensor_data, DEBUG);
 solver.setNumPathsToKeep(40);
 solver.useAbsoluteElevation();
-%solver.useTurns();
+solver.useTurns();
 
 %% Solve !
 tic;

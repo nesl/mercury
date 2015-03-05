@@ -17,7 +17,7 @@ ELEV_WIN_SIZE = 1; % sec
 walk_len_ave = 400; % gps pts
 walk_len_var = 100;
 walk_len_min = 50;
-walk_speed_ave = 13; % m/s
+walk_speed_ave = 10; % m/s
 walk_speed_var = 4;
 walk_speed_min = 5;
 

@@ -8,7 +8,7 @@ rng(100);
 outpath = 'SimResults/';
 
 %% Number of simulated paths to test per city
-paths_per_city = 50;
+paths_per_city = 5;
 
 %% Random walk stats
 METERS_PER_GPS = 10;
@@ -87,9 +87,9 @@ for midx=1:length(map_ids)
         testCase.mapDataDownSampling = map_downsample;
         testCase.simulated = true;
         testCase.sim_path = randwalk;
-        testCase.sim_elevations = [randwalk_times randwalk_elevs_noise];
+        testCase.sim_elevations = [randwalk_times' randwalk_elevs_noise'];
         testCase.sim_turns = [randwalk_turns(:,1) randwalk_turns_noise];
-        testCase.sim_elevations_nonoise = [randwalk_times randwalk_elevs];
+        testCase.sim_elevations_nonoise = [randwalk_times' randwalk_elevs'];
         testCase.sim_turns_nonoise = randwalk_turns;
         testCase.sim_gps = randwalk_gps;
         

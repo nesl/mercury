@@ -22,8 +22,10 @@ classdef SensorDataSim < handle
             elev = obj.elevations;
         end
         
-       
-        
+        function elev = getElevationStart(obj)
+            elev = obj.elevations(1);
+        end
+
         function data = getBaro(obj)
             % TODO
             data = 0;

@@ -36,9 +36,6 @@ classdef GraphExplorer < handle
         function obj = GraphExplorer(map, sensor, root_idx)
             obj.map = map;
             obj.sensor = sensor;
-            if pruning < 0 || pruning >= 1
-                error('prune factor must be >=0 and < 1');
-            end
             
             % create root node (empty parent)
             obj.root = GraphNode([], root_idx);
@@ -281,7 +278,7 @@ classdef GraphExplorer < handle
                     if obj.all_nodes{n}.isLeaf()
                         
                         % if it's too big, throw it out!
-                        if obj.all_nodes{n}.path_cost > sorted_costs(obj.MAX_LEAVES)
+                        if obj.all_nodes{n}.path_cost >= sorted_costs(obj.MAX_LEAVES)
                             leaves_to_prune = [leaves_to_prune; n];
                         end
                         

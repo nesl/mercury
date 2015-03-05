@@ -19,7 +19,7 @@ classdef Solver_greedy < handle
         
         % pruning rules
         %    0 --> 1
-        PRUNE_RATE = 0.500;
+        PRUNE_RATE = 0.650;
         use_turns = false;
         
         % debugging options
@@ -33,7 +33,7 @@ classdef Solver_greedy < handle
         function obj = Solver_greedy(map_data, sensor_data)
             obj.map_data = map_data;
             obj.sensor_data = sensor_data;
-            obj.DBG = debug;
+            obj.DBG = false;
             
         end
         
@@ -91,7 +91,7 @@ classdef Solver_greedy < handle
                 % --- explore and get path costs ---
                 all_path_costs = [];
                 for e=1:length(obj.graph_explorers)
-                    fprintf('Explorer %d/%d\n', e, length(obj.graph_explorers));
+                    %fprintf('Explorer %d/%d\n', e, length(obj.graph_explorers));
                     % explore new nodes
                     obj.graph_explorers{e}.exploreNewNodes();
                     costs = obj.graph_explorers{e}.getPathCosts();
@@ -106,7 +106,7 @@ classdef Solver_greedy < handle
                 prune_cost_idx = max(obj.max_results, prune_goal);
                 
                                 
-                fprintf(' ------------ SUMMARY ----------- \n');
+                %fprintf(' ------------ SUMMARY ----------- \n');
                 fprintf('    Explorers: %d \t Paths: %d\n', length(obj.graph_explorers), length(all_path_costs));
                 
                 
@@ -115,6 +115,7 @@ classdef Solver_greedy < handle
                     cost_thresh = sorted_costs( prune_cost_idx );
                     
                     % --- prune paths above the threshold ---
+                    fprintf('    Pruning paths...');
                     explorers_to_prune = [];
                     for e=1:length(obj.graph_explorers)
                         % if the best cost of this explorer doesn't meet the
@@ -127,6 +128,7 @@ classdef Solver_greedy < handle
                         end
                     end
                     obj.graph_explorers(explorers_to_prune) = [];
+                    fprintf('DONE\n');
                 end
                 
                 

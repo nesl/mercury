@@ -55,7 +55,7 @@ for tidx=1:length(test_files)
     sensor_data = SensorDataSim(testcase.sim_elevations, ...
         testcase.sim_turns);
     % map data
-    map_data = MapData(testcase.mapFilePath, testcase.mapDataDownSampling);
+    map_data = MapData(testcase.mapFilePath{1}, testcase.mapDataDownSampling);
     % solver
     solver = Solver_greedy(map_data, sensor_data);
     solver.setNumPathsToKeep(40);

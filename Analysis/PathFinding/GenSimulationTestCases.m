@@ -1,5 +1,6 @@
 %% Housekeeping
 clc; close all; clear all;
+add_paths;
 
 %% Random seed
 rng(100);
@@ -52,6 +53,7 @@ for midx=1:length(map_ids)
         % get sampled random walk time vs. elevation
         randwalk_elev_samp = map_data.getPathElev(randwalk);
         randwalk_times_samp = linspace(0,randwalk_time,size(randwalk_elev_samp,1));
+        randwalk_gps_times = linspace(0,randwalk_time,size(randwalk_gps,1));
         % we may need to interpolation if our speed is slow
         randwalk_times = 0:ELEV_WIN_SIZE:randwalk_time;
         randwalk_elevs = interp1(randwalk_times_samp, randwalk_elev_samp, randwalk_times);
@@ -91,7 +93,7 @@ for midx=1:length(map_ids)
         testCase.sim_turns = [randwalk_turns(:,1) randwalk_turns_noise];
         testCase.sim_elevations_nonoise = [randwalk_times' randwalk_elevs'];
         testCase.sim_turns_nonoise = randwalk_turns;
-        testCase.sim_gps = randwalk_gps;
+        testCase.sim_gps = [randwalk_gps_times' randwalk_gps];
         
         caseName = strcat('TESTCASE_SIM_', map_name, '_', num2str(widx));
         fprintf('Test case: %s\n', caseName);

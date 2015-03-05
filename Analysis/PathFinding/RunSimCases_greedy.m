@@ -53,7 +53,7 @@ for tidx=1:length(test_files)
     
     % sensor data
     sensor_data = SensorDataSim(testcase.sim_elevations, ...
-        testcase.sim_turns);
+        testcase.sim_turns, testcase.sim_gps);
     % map data
     map_data = MapData(testcase.mapFilePath{1}, testcase.mapDataDownSampling);
     % solver

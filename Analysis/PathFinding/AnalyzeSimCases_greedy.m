@@ -92,11 +92,23 @@ return;
 
 %% plotting
 
-rankOfInterest = [1 3 5 10 15 20 30 40];
+rankOfInterest = [1 3 5 10 15 20 30 50 inf];
+topNPathError = [];  % numel(rankOfInterest) by num_available_solution
+topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
+pathVSshapeError = [];
+
+atidx = 0;
 for tidx=1:length(test_files)
-%for tidx=1
     tfile = test_files{tidx};
     outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_greedy.rset'];
+    
+    if ~exist(outputWebFile)
+        continue;
+    end
+    
+    atidx = atidx + 1;
+    
+    fprintf([outputWebFile '\n']);
     
     fid = fopen(outputWebFile);
     for i = 1:5
@@ -111,16 +123,44 @@ for tidx=1:length(test_files)
     for i = 1:numPaths
     	tline = fgets(fid);
         tline = tline(1:end-1);
-        
+        terms = strsplit(tline, ',');
+        pathError(i) = str2num(terms{1});
+        shapeError(i) = str2num(terms{2});
     end
     fclose(fid);
+    
+    for i = 1:length(rankOfInterest)
+        rank = min(rankOfInterest(i), numPaths);
+        topNPathError(i, atidx) = min(pathError(1:rank));
+        topNShapeError(i, atidx) = min(shapeError(1:rank));
+    end
+    
+    pathVSshapeError = [pathVSshapeError; [pathError shapeError]];
 end
 
+%
 
+clf
 
+subplot(1, 3, 1);
+hold on
+for i = 1:length(rankOfInterest)
+    x = sort(topNPathError(i,:));
+    y = linspace(0, 1, length(x));
+    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+end
 
+subplot(1, 3, 2);
+hold on
+for i = 1:length(rankOfInterest)
+    x = sort(topNShapeError(i,:));
+    y = linspace(0, 1, length(x));
+    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+end
 
-
-
+subplot(1, 3, 3);
+plot(pathVSshapeError(:,1), pathVSshapeError(:,2), '.');
+xlabel('path error');
+ylabel('shape error');
 
 

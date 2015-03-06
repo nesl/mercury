@@ -36,7 +36,8 @@ classdef Solver_dp5 < handle
         looping_elevation_step = 1.3;  % meters
         scheduler_random_start = 0;  % 0 means the first pressure setting always equal to the smallest possible offset,
                                      % whereas 1 means it shifts. All other numbers just return an exception
-        
+        use_turn_assistance = 0;  % no turn assist by default
+                                     
         % about scheduler
         pressure_parameters;  % an n-by-2 array, each row is [scalar, offset]
                               % the setting is assigned when solve() is triggered only.
@@ -45,6 +46,11 @@ classdef Solver_dp5 < handle
         % associated objects
         map_data;
         sensor_data;
+        
+        % about the map
+        map_elevs;
+        map_latlngs;
+        map_neighbors;
         
         % elevations from barometer; continuous turn
         elev_series_from_baro; % a cell of arrays since it's pressure parameter dependent
@@ -56,7 +62,8 @@ classdef Solver_dp5 < handle
         
         % output result / performance
         final_res_traces;  % which is always sorted
-                           % a trace includes .rawPath ([step node_idx] columns)
+                           % a trace includes .rawPath (Nx2 matrix, which is [time nodeIdx])
+                           %                  .latlng (Nx2, N equals the length of baromtere data)
                            %                  .pressureParamIdx
                            %                  .dtwScore
                            %                  .numMistakeTurns
@@ -66,8 +73,11 @@ classdef Solver_dp5 < handle
         overall_pruning_ratio_of_dtw_elements;
                      
         % output settings
-        max_results = 30;
+        max_results = 40;
         outputFilePath;
+        
+        % output assistance
+        evaluator;
         
         % parameter for turn detections
         TURN_EVENT_DELAY = 5;  % barometer index, +/- slots
@@ -78,13 +88,14 @@ classdef Solver_dp5 < handle
         ACCEPTED_TURN_ANGLE_DIFFERENCE = 90;  % degree
         
         % pruning constants/functions
-        HARD_ELEVATION_THRESHOLD = 5; % meter, consider the nodes as check points and apply the threshold.
-        dtw_pruning_function = @(x) (27 + 3 * x);  % during accessing x-th barometer element in the dtw,
-                                                    % what is the cutting threshold for corresponding column
+        %HARD_ELEVATION_THRESHOLD = 5; % meter, consider the nodes as check points and apply the threshold.
         global_pruning_function = @(x) (200 + 3 * x)  % during accessing x-th barometer element in the dynamic programming,
                                                        % what is the cutting threshold for corresponding column
         allowed_num_turn_mistakes = @(x) (2 + 0.34 * x)  % x is number of segments which have been visited.
-                                                       
+        maximum_candidate_node_ratio = 0.1;
+        %destropy_by_no_reason_probability = 0.5;
+        group_search_across_range = 400;  % meter;
+        
         % parameters for finding the oracle path
         NUM_GPS_SAMPLES_TO_ASSURE_NODE_IS_VISITED = 2;
         DISTANCE_THRESHOLD_TO_BE_CONSIDERED_AS_VISITED = 20; % meter, this constraint is very important to avoid false path
@@ -97,11 +108,22 @@ classdef Solver_dp5 < handle
             obj.map_data = mapData;
             obj.sensor_data = sensorData;
             obj.scheduler_random_start = scheduleRandomStart;
+            obj.evaluator = Evaluator(sensorData, mapData);
         end
         
         % SEARCH PARAMETER
         function setUncertaintyRange(obj, meter)
             obj.uncertain_meter = abs(meter);
+        end
+        
+        function useTurns(obj, varargin)
+            if numel(varargin) == 0
+                obj.use_turn_assistance = 1;
+            elseif varargin{1}
+                obj.use_turn_assistance = 1;
+            else
+                obj.use_turn_assistance = 0;
+            end
         end
         
         % OUTPUT SETTINGS
@@ -140,41 +162,93 @@ classdef Solver_dp5 < handle
             end
             fprintf('pressure parameters scheduled and related stuff initialized\n');
             
-            numMapNodes = obj.map_data.getNumNodes();
+            numJointNodes = obj.map_data.getNumNodes();
             numElevBaro = size(obj.elev_series_from_baro{1}, 1);  % every series has the same length
             
-            % take turns
-            turnVector = obj.sensor_data.spanTurnEventsToVector();
-            obj.driving_angle_max = zeros(numElevBaro, 1);
-            obj.driving_angle_min = zeros(numElevBaro, 1);
+            [obj.map_elevs, obj.map_latlngs, obj.map_neighbors] = obj.map_data.getHomogeneousMap();
+            numTotalNodes = numel(obj.map_elevs);
             
-            % then, we want to specify the possible max and min angles at
-            % each time points. We use sliding window approach
-            for i = 1:numElevBaro
-                sidx = max(i - obj.TURN_EVENT_DELAY, 1);
-                eidx = min(i + obj.TURN_EVENT_DELAY, numElevBaro);
-                obj.driving_angle_max(i) = max( turnVector(sidx:eidx, 2) ) + obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
-                obj.driving_angle_min(i) = min( turnVector(sidx:eidx, 2) ) - obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+            %{
+            numel(obj.map_latlngs)
+            clf
+            hold on
+            %}
+            %{
+            for i = 1:size(obj.map_latlngs, 1)
+                plot(obj.map_latlngs(i,2), obj.map_latlngs(i,1), '.');
+            end
+            %}
+            %{
+            for i = 1:size(obj.map_neighbors, 1)
+                for j = 1:numel(obj.map_neighbors{i})
+                    idx = [i obj.map_neighbors{i}];
+                    plot(obj.map_latlngs(idx,2), obj.map_latlngs(idx,1), '-');
+                end
+            end
+            pause
+            %}
+            
+            
+            obj.driving_angle_max = inf(numElevBaro, 1);
+            obj.driving_angle_min = -inf(numElevBaro, 1);
+            if obj.use_turn_assistance
+                % take turns
+                turnVector = obj.sensor_data.spanTurnEventsToVector();
+                obj.driving_angle_max = zeros(numElevBaro, 1);
+                obj.driving_angle_min = zeros(numElevBaro, 1);
+
+                % then, we want to specify the possible max and min angles at
+                % each time points. We use sliding window approach
+                for i = 1:numElevBaro
+                    sidx = max(i - obj.TURN_EVENT_DELAY, 1);
+                    eidx = min(i + obj.TURN_EVENT_DELAY, numElevBaro);
+                    obj.driving_angle_max(i) = max( turnVector(sidx:eidx, 2) ) + obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+                    obj.driving_angle_min(i) = min( turnVector(sidx:eidx, 2) ) - obj.ACCEPTED_TURN_ANGLE_DIFFERENCE;
+                end
             end
             
+            candidateSetSizeThreshold = numTotalNodes * obj.maximum_candidate_node_ratio;
+            
             tmpResTracesForAllPressureParameters = cell(obj.num_pressure_parameters, 1);
-            tmpDTWPruningRatioQuery = zeros(obj.num_pressure_parameters, 1);
-            tmpDTWPruningRatioElement = zeros(obj.num_pressure_parameters, 1);
             for preIdx = 1:obj.num_pressure_parameters  % pressure index
-                curDtwHelper = SubSegmentDTWHelper(obj.map_data, obj.elev_series_from_baro{preIdx}(:,2), obj.dtw_cost_function, obj.dtw_pruning_function);
-                
                 % find the possible starting points
-                beginElev = obj.elev_series_from_baro{preIdx}(1,2);
+                curTimeElevFromBaro = obj.elev_series_from_baro{preIdx};
+                curElevFromBaro = curTimeElevFromBaro(:,2);
+                beginElev = curElevFromBaro(1);
                 tmpElevDiff = beginElev - obj.map_data.getNodeIdxsElev(1:obj.map_data.num_nodes);
-                startingNodeSet = find( abs(tmpElevDiff) <= obj.INITIAL_ELEVATION_DIFFERENCE_SCREEN );  
-                startingNodeSet = startingNodeSet';  % transpose to make sure it's a row vector.
+                startingNodeCandidates = find( abs(tmpElevDiff) <= obj.INITIAL_ELEVATION_DIFFERENCE_SCREEN );
+                remainingNodes = startingNodeCandidates;
+                seedNodeIdxs = [];
+                
+                % group algorithm:
+                %    1. Select seeds which are not within a certain range
+                %    2. cluster all candidate nodes to the closest seeds
+                while numel(remainingNodes) > 0
+                    seedIdx = ceil(rand() * numel(remainingNodes));
+                    seed = remainingNodes(seedIdx);
+                    seedNodeIdxs(end+1) = seed;
+                    dis = latlng2m( obj.map_latlngs(remainingNodes,:), obj.map_latlngs(seed,:) );
+                    outRangeIdx = (dis > obj.group_search_across_range);
+                    remainingNodes = remainingNodes(outRangeIdx);
+                end
+                
+                dis = latlng2m( obj.map_latlngs(seedNodeIdxs,:), obj.map_latlngs(startingNodeCandidates,:) );
+                [~, seedIdx] = min(dis);
+                
+                startGroups = cell(numel(seedNodeIdxs), 1);
+                for i = 1:numel(seedNodeIdxs)
+                    startGroups{i} = startingNodeCandidates( seedIdx == i );
+                end
+                
+                fprintf('%d nodes -> %d groups\n', numel(startingNodeCandidates), numel(startGroups));
                 
                 tmpResTraces = [];
-                for initStartNodeIdx = startingNodeSet  % for start point
+                for groupIdx = 1:numel(startGroups)  % for start point
+                    
                     % dynamic programming
-                    dp = inf(numMapNodes, numElevBaro+1);  % dp(node idx, baro elev step)
-                    dp(initStartNodeIdx,1) = 0;
-                    from = zeros(numMapNodes, numElevBaro+1, 4);  % from(a, b) = [last node idx, last baro elev step, # segs visited, # of turn mistakes]
+                    dp = inf(numTotalNodes, numElevBaro+1);  % dp(node idx, baro elev step)
+                    dp( startGroups{groupIdx} ,1) = 0;
+                    from = zeros(numTotalNodes, numElevBaro+1, 4);  % from(a, b) = [last node idx, forbid idx ,# segs visited, # of turn mistakes]
                 
                     % GUIDELINE: think about we start from
                     %     dp(nIdxStart, bIdxStart) -------- consume baro data (bIdxStart:(bIdxEnd-1)) --------> dp(nIdxEnd, bIdxEnd)
@@ -184,84 +258,100 @@ classdef Solver_dp5 < handle
                     % the traveling time, or more precisely, consumption of barometer data, is (bIdxEnd - bIdxStart + 1)
 
                     for bIdxStart = 1:numElevBaro  % starting barometer index
+                        bIdxEnd = bIdxStart+1;
                         earlyDPPruningScore = obj.global_pruning_function(bIdxStart);
-                        for nIdxStart = 1:numMapNodes  % starting node index
+                        candidateStartIdxs = find(dp(:, bIdxStart) <= earlyDPPruningScore)';  % make sure it's a row
+                        if numel(candidateStartIdxs) > candidateSetSizeThreshold
+                            maxScore = max(dp(candidateStartIdxs, bIdxStart));
+                            minScore = min(dp(candidateStartIdxs, bIdxStart));
+                            threshold = (maxScore + minScore) / 2;
+                            candidateStartIdxs = candidateStartIdxs(dp(candidateStartIdxs, bIdxStart) < threshold);
+                            fprintf('cut\n');
+                            %pause
+                        end
+                        for nIdxStart = candidateStartIdxs  % starting node index
                             %[bIdxStart nIdxStart obj.elevFromBaro(bIdxStart) obj.map_data.getNodeIdxsElev(nIdxStart)]
-                            if dp(nIdxStart, bIdxStart) < earlyDPPruningScore ...     % global pruning. 
-                                    && abs(obj.elev_series_from_baro{preIdx}(bIdxStart, 2) - obj.map_data.getNodeIdxsElev(nIdxStart)) < obj.HARD_ELEVATION_THRESHOLD
-                                for nIdxEnd = obj.map_data.getNeighbors(nIdxStart);
-                                    prevNodeIdx = from(nIdxStart, bIdxStart, 1);
-                                    if prevNodeIdx == nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
-                                        continue;
-                                    end
+                            %if dp(nIdxStart, bIdxStart) < earlyDPPruningScore ...     % global pruning. 
+                            %        && abs(obj.elev_series_from_baro{preIdx}(bIdxStart, 2) - obj.map_data.getNodeIdxsElev(nIdxStart)) < obj.HARD_ELEVATION_THRESHOLD
+                            
+                            prevNodeIdx = from(nIdxStart, bIdxStart, 2);
+                            
+                            % self
+                            nextScore = dp(nIdxStart, bIdxStart) + (obj.map_elevs(nIdxStart) - curElevFromBaro(bIdxStart)) ^ 2;
+                            if nextScore < dp(nIdxStart, bIdxEnd)
+                                dp(nIdxStart, bIdxEnd) = nextScore;
+                                %from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart, pastNumSegments+1, curNumTurnMistakes];
+                                from(nIdxStart, bIdxEnd, :) = [nIdxStart  prevNodeIdx  0  0];
+                            end
+                            
+                            % neighbors
+                            for nIdxEnd = obj.map_neighbors{nIdxStart}
+                                if prevNodeIdx == nIdxEnd  % next node is not previous node   <prevNodeIdx> -- <nIdxStart> -- <nIdxEnd>
+                                    continue;
+                                end
 
-                                    numElementOfSeg = obj.map_data.getSegNumElement( [nIdxStart, nIdxEnd] );
-                                    pastNumSegments = from(nIdxStart, bIdxStart, 3);
-                                    pastNumTurnMistakes = from(nIdxStart, bIdxStart, 4);
-                                    curNumTurnMistakes = pastNumTurnMistakes;
-                                
-                                    % impose the turn mistake penalty
-                                    if prevNodeIdx ~= 0 % means we can find out the previous node
-                                        % then we try to exam the turn from sensor is valid, i.e., meet the
-                                        % accpeted angles reported from the map. since we need to consider
-                                        % the angle space is continuous, i.e., -180 = 180 degrees,
-                                        % we calculate 3 equivalent angles (i.e, -360, +0, +360)
-                                        jointAngleFromMapSet = obj.map_data.getAdjacentSegmentsAngle([prevNodeIdx nIdxStart nIdxEnd]) + 360 * (-1:1);
-                                        if sum(obj.driving_angle_min(bIdxStart) <= jointAngleFromMapSet & jointAngleFromMapSet <= obj.driving_angle_max(bIdxStart)) == 0 % means that all the angles are mismatched
-                                            curNumTurnMistakes = curNumTurnMistakes + 1;
-                                        end
-                                    end
-                                    
-                                    if curNumTurnMistakes <= obj.allowed_num_turn_mistakes(pastNumSegments)
-                                        earliestPossibleBaroIdxEnd = bIdxStart + numElementOfSeg;
-                                        for bIdxEnd = earliestPossibleBaroIdxEnd:(numElevBaro+1)
-                                            tmpScore = dp(nIdxStart, bIdxStart) + curDtwHelper.query(nIdxStart, nIdxEnd, bIdxStart, bIdxEnd-1);
-
-                                            % purning: if tmpScore is inf, meaning that it is pruned by the
-                                            % pruning score when performing DTW. no need to continue anymore
-                                            if tmpScore == inf
-                                                break
-                                            end
-
-                                            if tmpScore < dp(nIdxEnd, bIdxEnd)
-                                                dp(nIdxEnd, bIdxEnd) = tmpScore;
-                                                from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart, pastNumSegments+1, curNumTurnMistakes];
-                                            end
-                                        end
+                                %{
+                                % not sure how to integrate turns
+                                % impose the turn mistake penalty
+                                if prevNodeIdx ~= 0 % means we can find out the previous node
+                                    % then we try to exam the turn from sensor is valid, i.e., meet the
+                                    % accpeted angles reported from the map. since we need to consider
+                                    % the angle space is continuous, i.e., -180 = 180 degrees,
+                                    % we calculate 3 equivalent angles (i.e, -360, +0, +360)
+                                    jointAngleFromMapSet = obj.map_data.getAdjacentSegmentsAngle([prevNodeIdx nIdxStart nIdxEnd]) + 360 * (-1:1);
+                                    if sum(obj.driving_angle_min(bIdxStart) <= jointAngleFromMapSet & jointAngleFromMapSet <= obj.driving_angle_max(bIdxStart)) == 0 % means that all the angles are mismatched
+                                        curNumTurnMistakes = curNumTurnMistakes + 1;
                                     end
                                 end
+                                %}
+                                %if curNumTurnMistakes <= obj.allowed_num_turn_mistakes(pastNumSegments)
+                                %earliestPossibleBaroIdxEnd = bIdxStart + numElementOfSeg;
+                                
+                                nextScore = dp(nIdxStart, bIdxStart) + (obj.map_elevs(nIdxEnd) - curElevFromBaro(bIdxStart)) ^ 2;
+                                if nextScore < dp(nIdxEnd, bIdxEnd)
+                                    dp(nIdxEnd, bIdxEnd) = nextScore;
+                                    %from(nIdxEnd, bIdxEnd, :) = [nIdxStart bIdxStart, pastNumSegments+1, curNumTurnMistakes];
+                                    from(nIdxEnd, bIdxEnd, :) = [nIdxStart  nIdxStart  0  0];
+                                end
+                                %end
                             end
                         end
-                        fprintf('pressureParam=%.2f,%.2f sp=%d, time=%d\n', ...
-                            obj.pressure_parameters(preIdx, 1), obj.pressure_parameters(preIdx, 2), initStartNodeIdx, bIdxStart)
+                        fprintf('pressureParam=%.2f,%.2f group=%d/%d, time=%d\n', ...
+                            obj.pressure_parameters(preIdx, 1), obj.pressure_parameters(preIdx, 2), groupIdx, numel(startGroups), bIdxStart)
                     end
             
                     % back tracking
-                    for i = 1:numMapNodes
+                    for i = 1:numJointNodes
                         if dp(i, numElevBaro+1) < inf
                             tmpTrace = [];
                             tmpTrace.pressureParamIdx = preIdx;
                             tmpTrace.dtwScore = dp(i, numElevBaro+1);
-                            tmpTrace.numMistakeTurns = from(i, numElevBaro+1, 4);
-                            tmpTrace.finalScore = tmpTrace.dtwScore * tmpTrace.numMistakeTurns;
+                            tmpTrace.numMistakeTurns = from(i, numElevBaro+1, 3);
+                            %tmpTrace.finalScore = tmpTrace.dtwScore * tmpTrace.numMistakeTurns;
+                            tmpTrace.finalScore = tmpTrace.dtwScore;
                             cNodeIdx = i;  % current node index
                             cElevStep = numElevBaro+1;  % current elevation step
-                            tmpTrace.rawPath = [numElevBaro+1 i];
+                            pointIds = zeros(numElevBaro, 1);
                             while cElevStep ~= 1
                                 pNodeIdx = from(cNodeIdx, cElevStep, 1);  % previous node index
-                                pElevStep = from(cNodeIdx, cElevStep, 2);  % previous elevation step
+                                pElevStep = cElevStep - 1;  % previous elevation step
+                                pointIds(pElevStep) = pNodeIdx;
                                 cNodeIdx = pNodeIdx;
                                 cElevStep = pElevStep;
-                                tmpTrace.rawPath = [ [ pElevStep pNodeIdx ] ; tmpTrace.rawPath];
                             end
+                            tmpTrace.latlng = obj.map_latlngs(pointIds, :);
+                            jointPointIdIdx = find(pointIds <= numJointNodes);
+                            jointPointId = pointIds(jointPointIdIdx);
+                            tmpRawPath = [ jointPointIdIdx  jointPointId ; [numElevBaro+1 i] ];
+                            nonDuplicatedIdx = [true ; tmpRawPath(2:end-1,2) ~= tmpRawPath(1:end-2,2) ; true];
+                            tmpTrace.rawPath = tmpRawPath(nonDuplicatedIdx, :);
                             tmpResTraces = [tmpResTraces tmpTrace];
                         end
                     end
                 end
-                tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces;
-                [pruningQuery, pruningElement] = curDtwHelper.pruningRatio();
-                tmpDTWPruningRatioQuery(preIdx) = pruningQuery;
-                tmpDTWPruningRatioElement(preIdx) = pruningElement;
+                tmpResTraces = nestedSortStruct(tmpResTraces, {'finalScore'});
+                numTracesToKeep = min(numel(tmpResTraces), obj.max_results);
+                tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces(1:numTracesToKeep);
             end
             fprintf('Finish searching. Summarize the result....\n');
             
@@ -276,7 +366,7 @@ classdef Solver_dp5 < handle
                 return;
             end
             
-            obj.final_res_traces = nestedSortStruct(obj.final_res_traces, {'dtwScore'});
+            obj.final_res_traces = nestedSortStruct(obj.final_res_traces, {'finalScore'});
             
             % remove similar traces
             keptTraces = [];
@@ -292,7 +382,7 @@ classdef Solver_dp5 < handle
                 if findSimilarPath == 0
                     keptTraces = [keptTraces obj.final_res_traces(i)];
                 end
-                if i >= 1000
+                if i >= obj.max_results
                     break;
                 end
             end
@@ -300,12 +390,6 @@ classdef Solver_dp5 < handle
             
             % summarize performance
             obj.processing_time = toc;
-            obj.overall_pruning_ratio_of_dtw_query = mean(tmpDTWPruningRatioQuery);
-            obj.overall_pruning_ratio_of_dtw_elements = mean(tmpDTWPruningRatioElement);
-            
-            % TODO: suppose to truncate the # of res_traces into
-            % max_results, but for development and debugging purposes, we
-            % didn't do that
         end
         
         function forceInsertingAPath(obj, path)  % an row vector of nodeIdxs
@@ -394,6 +478,10 @@ classdef Solver_dp5 < handle
         end
         
         % RETRIEVE PATHS
+        function num = getNumResults(obj)
+            num = numel( obj.final_res_traces );
+        end
+        
         function rawPath = getRawPath(obj, traceIdx)
             rawPath = obj.final_res_traces(traceIdx).rawPath;
         end
@@ -402,43 +490,29 @@ classdef Solver_dp5 < handle
             dtwScore = obj.final_res_traces(traceIdx).dtwScore;
         end
         
-        function latlngs = getPathLatLng(obj, traceIdx)
-            preIdx = obj.final_res_traces(traceIdx).pressureParamIdx;
-            rawPath = obj.final_res_traces(traceIdx).rawPath;
-            latlngs = [];
-            for i = 1:length(rawPath)-1
-                elevMapSeg = obj.map_data.getSegElev( rawPath(i:i+1, 2) );
-                latlngMapSeg = obj.map_data.getSegLatLng( rawPath(i:i+1, 2) );
-                a = rawPath(i  , 1);
-                b = rawPath(i+1, 1) - 1;
-                elevBaroSeg = obj.elev_series_from_baro{preIdx}(a:b, 2);
-                [~, dtwIdxBaro2Map, ~] = dtw_basic( elevMapSeg, elevBaroSeg, obj.dtw_cost_function, @(x) (inf) );
-                latlngs = [latlngs ; latlngMapSeg(dtwIdxBaro2Map,:)];
-            end
-
-            %latlngs = [ latlngs; obj.map_data.nodeIdxToLatLng( rawPath(end, 2) ) ];
-        end
         
         function timeLatLngs = getTimeLatLngPath(obj, traceIdx)
             tmpElevFromBaro = obj.elev_series_from_baro{1};  % we only care about time column. every series have the same timestamps
-            timeLatLngs = [ tmpElevFromBaro(:,1)  obj.getPathLatLng(traceIdx) ];
+            timeLatLngs = [ tmpElevFromBaro(:,1)  obj.final_res_traces(traceIdx).latlng ];
         end
         
         % see time_gps_series_compare.m for more information
         % [ row vector ] = getPathSimilarityConsideringTime(obj)  // get up to <max_result> results
         % [ row vector ] = getPathSimilarityConsideringTime(obj, traceIdxs)
         function rmsInMeter = getPathSimilarityConsideringTime(obj, varargin) 
-            indxs = 1:min(obj.max_results, numel(obj.final_res_traces));
+            indxs = 1:numel(obj.final_res_traces);
             if numel(varargin) >= 1
                 indxs = varargin{1};
             end
-            rmsInMeter = [];
+            
+            groundTruthTimeLatLngs = obj.sensor_data.getGps();
+            groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
+                
+            rmsInMeter = zeros(numel(indxs), 1);
             for i = indxs
-                estimatedTimeLatLngs = obj.getTimeLatLngPath(i);
-                groundTruthTimeLatLngs = obj.sensor_data.getGps();
-                groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
-                rmsInMeter = [rmsInMeter; ...
-                    time_gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
+                traceIdx = indxs(i);
+                estimatedTimeLatLngs = obj.getTimeLatLngPath(traceIdx);
+                rmsInMeter(i) = time_gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs);
             end
         end
         
@@ -450,21 +524,22 @@ classdef Solver_dp5 < handle
             if numel(varargin) >= 1
                 indxs = varargin{1};
             end
-            rmsInMeter = [];
+            
+            groundTruthTimeLatLngs = obj.sensor_data.getGps();
+            groundTruthLatLngs = groundTruthTimeLatLngs(:, 2:3);
+                
+            rmsInMeter = zeros(numel(indxs), 1);
             for i = indxs
-                estimatedTimeLatLngs = obj.getTimeLatLngPath(i);
-                groundTruthTimeLatLngs = obj.sensor_data.getGps();
-                groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
-                rmsInMeter = [rmsInMeter; ...
-                    gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
+                traceIdx = indxs(i);
+                rmsInMeter(i) = gps_series_compare(groundTruthLatLngs, obj.final_res_traces(traceIdx).latlng);
             end
         end
         
         % arguments should be passed as strings, including
         % 'index', 'dtwScore' and 'squareError'
         function res = summarizeResult(obj, varargin)
-            error('need to be upgraded (and also get parameters)');
-            numRow = min(obj.max_results, numel(obj.final_res_traces));
+            % ('pathError',  'shapeError',  'dtwScore', 'numMistakeTurns',    'seaPressure')
+            numRow = numel(obj.final_res_traces);
             res = zeros(numRow, 0);
             for i = 1:numel(varargin)
                 if strcmp(varargin{i}, 'index') == 1
@@ -474,11 +549,24 @@ classdef Solver_dp5 < handle
                     for j = 1:numRow
                         tmp(j) = obj.final_res_traces(j).dtwScore;
                     end
-                    res = [res roundn(tmp, -8)];
-                elseif strcmp(varargin{i}, 'path') == 1
-                    res = [ res roundn(obj.getPathSimilarityConsideringTime(), -8) ];
-                elseif strcmp(varargin{i}, 'pathShape') == 1
-                    res = [ res roundn(obj.getPathShapeSimilarity(), -8) ];
+                    res = [res tmp];
+                elseif strcmp(varargin{i}, 'numMistakeTurns') == 1
+                    tmp = zeros(numRow, 1);
+                    for j = 1:numRow
+                        tmp(j) = obj.final_res_traces(j).numMistakeTurns;
+                    end
+                    res = [res tmp];
+                elseif strcmp(varargin{i}, 'seaPressure') == 1
+                    tmp = zeros(numRow, 1);
+                    for j = 1:numRow
+                        preIdx = obj.final_res_traces(j).pressureParamIdx;
+                        tmp(j) = obj.pressure_parameters(preIdx, 2);
+                    end
+                    res = [res tmp];
+                elseif strcmp(varargin{i}, 'pathError') == 1
+                    res = [ res obj.getPathSimilarityConsideringTime() ];
+                elseif strcmp(varargin{i}, 'shapeError') == 1
+                    res = [ res obj.getPathShapeSimilarity() ];
                 else
                     error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
                 end
@@ -503,7 +591,7 @@ classdef Solver_dp5 < handle
             plot( gpsData(:,3), gpsData(:,2), 'k*' );
             legendTexts = {'Ground'};
             for i = tracesIdxList
-                estiLatLng = obj.getPathLatLng(i);
+                estiLatLng = obj.final_res_traces(i).latlng;
                 color = hsv2rgb([ rand() , 1, 0.7 ]);
                 plot( estiLatLng(:,2), estiLatLng(:,1), '-', 'Color', color );
                 legendTexts = { legendTexts{:} ['Rank ' num2str(i)] };
@@ -565,13 +653,29 @@ classdef Solver_dp5 < handle
         end
         
         % TO WEB
-        function toWeb(obj)
-            obj.private_toWeb(0);
+        function toWeb(obj, varargin)
+            flagBeautiful = 1;
+            if numel(varargin) == 1 && ~varargin{1}
+                flagBeautiful = 0;
+            end
+            
+            if isempty(obj.outputFilePath)
+                error('set output file path to the solver first (in toWeb())');
+            end
+            
+            %attributes, attributeValues, paths
+            attributes      =                    {'Path error', 'Shape error', 'DTW',      '# of mistake turns', 'Sea pressure'};
+            attributeValues = obj.summarizeResult('pathError',  'shapeError',  'dtwScore', 'numMistakeTurns',    'seaPressure');
+            
+            numPaths = numel(obj.final_res_traces);
+            paths = cell(numPaths, 1);
+            for i = 1:numPaths
+                paths{i} = obj.final_res_traces(i).latlng;
+            end
+            
+            obj.evaluator.toWeb(obj.outputFilePath, flagBeautiful, attributes, attributeValues, paths);
         end
         
-        function toWebBeautiful(obj)
-            obj.private_toWeb(1);
-        end
         
         % +-----------------+
         % | PRIVATE METHODS |
@@ -621,48 +725,6 @@ classdef Solver_dp5 < handle
             end
             lcs = dp(end, end);
             score = lcs * lcs / lenA / lenB;
-        end
-        
-        % help for generating results to the web
-        function private_toWeb(obj, flagBeautiful)
-            if isempty(obj.outputFilePath)
-                error('set output file path to the solver first (in toWeb())');
-            end
-            
-            fid = fopen([ obj.outputFilePath ], 'w');
-            gpsData = obj.sensor_data.getGps();
-            for i = 1:size(gpsData, 1)
-                fprintf(fid, '%f,%f,', gpsData(i,2), gpsData(i,3) );
-            end
-            fprintf(fid, '-1\n');
-            
-            numRes = min(obj.max_results, numel(obj.final_res_traces));
-            fprintf(fid, '%d\n', numRes);
-            for i = 1:numRes
-                rmsErrorPath = obj.getPathSimilarityConsideringTime(i);
-                rmsErrorPathShape = obj.getPathShapeSimilarity(i);
-                fprintf(fid, '%f,%f,%f', obj.final_res_traces(i).dtwScore, rmsErrorPath, rmsErrorPathShape);
-                
-                if flagBeautiful == 0
-                    rawPath = obj.getRawPath(i);
-                    for j=1:size(rawPath, 1)
-                        latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
-                        fprintf(fid, ',%f,%f', latlngs(1), latlngs(2));
-                    end
-                    fprintf(fid,'-1\n');
-                elseif flagBeautiful == 1
-                    estiLatLng = obj.getPathLatLng(i);
-                    for j=1:size(estiLatLng, 1)
-                        fprintf(fid, ',%f,%f', estiLatLng(j,1), estiLatLng(j,2));
-                    end
-                else
-                    error('Unsupported mode of generating result (in private_toWeb())');
-                end
-                
-                fprintf(fid, '\n');
-            end
-            fprintf(['File created. Please check file "' obj.outputFilePath '"\n']);
-            fclose(fid);
         end
     end
     

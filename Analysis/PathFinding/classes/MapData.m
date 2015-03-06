@@ -686,13 +686,35 @@ classdef MapData < handle
         % the segments, then in each one of them there are several internal
         % points.
         % The index is like this: The length of both return values are Nx1
-        % matrix and cell respectively, where as N refers the total points
+        % matrice or cell, where as N refers the total points
         % in this map (apparently much more than num_nodes). The first
         % num_nodes refer to the same points as (joint) nodes in the map.
-        function [elevs, neighbors] = getHomogeneousMap(obj)
+        function [elevs, latlngs, neighbors] = getHomogeneousMap(obj)
             numTotalPoints = obj.num_nodes;
             for i = 1:size(obj.endNodePairs, 1)
-                numTotalPoints = length( obj.getSegLatLng( obj.endNodePairs(i,:) ) ) - 2;
+                numTotalPoints = numTotalPoints + length( obj.getSegLatLng( obj.endNodePairs(i,:) ) ) - 2;
+            end
+            elevs = zeros(numTotalPoints, 1);
+            latlngs = zeros(numTotalPoints, 2);
+            neighbors = cell(numTotalPoints, 1);
+            
+            elevs(1:obj.num_nodes) = obj.getNodeIdxsElev( 1:obj.num_nodes );
+            latlngs(1:obj.num_nodes, :) = obj.getNodeIdxsLatLng( 1:obj.num_nodes );
+            
+            nextStartIdx = obj.num_nodes + 1;
+            for i = 1:size(obj.endNodePairs, 1)
+                tmpElev = obj.getSegElev( obj.endNodePairs(i,:) );
+                tmpLatLng = obj.getSegLatLng( obj.endNodePairs(i,:) );
+                numInternalNodes = length(tmpElev) - 2;
+                internalIds = (1:numInternalNodes) - 1 + nextStartIdx;
+                elevs(internalIds) = tmpElev(2:end-1);
+                latlngs(internalIds, :) = tmpLatLng(2:end-1, :);
+                allIds = [ obj.endNodePairs(i,1)  internalIds  obj.endNodePairs(i,2) ];
+                for j = 1:length(allIds)-1
+                    neighbors{ allIds(j  ) } = [ neighbors{ allIds(j  ) }   allIds(j+1) ];
+                    neighbors{ allIds(j+1) } = [ neighbors{ allIds(j+1) }   allIds(j  ) ];
+                end
+                nextStartIdx = nextStartIdx + numInternalNodes;
             end
         end
         

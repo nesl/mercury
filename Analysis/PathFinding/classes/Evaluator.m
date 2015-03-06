@@ -108,18 +108,24 @@ classdef Evaluator < handle
                 end
                 
                 rawPath = paths{i};
-                if flagBeautiful == 0
+                if size(rawPath, 2) == 2
                     for j=1:size(rawPath, 1)
-                        latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
-                        fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
-                    end
-                elseif flagBeautiful == 1
-                    estiLatLng = obj.map_data.getPathLatLng(rawPath);
-                    for j=1:size(estiLatLng, 1)
-                        fprintf(fid, '%f,%f,', estiLatLng(j,1), estiLatLng(j,2));
+                        fprintf(fid, '%f,%f,', rawPath(j,1), rawPath(j,2));
                     end
                 else
-                    error('Unsupported mode of generating result (in private_toWeb())');
+                    if flagBeautiful == 0
+                        for j=1:size(rawPath, 1)
+                            latlngs = obj.map_data.getNodeIdxLatLng( rawPath(j,2) );
+                            fprintf(fid, '%f,%f,', latlngs(1), latlngs(2));
+                        end
+                    elseif flagBeautiful == 1
+                        estiLatLng = obj.map_data.getPathLatLng(rawPath);
+                        for j=1:size(estiLatLng, 1)
+                            fprintf(fid, '%f,%f,', estiLatLng(j,1), estiLatLng(j,2));
+                        end
+                    else
+                        error('Unsupported mode of generating result (in private_toWeb())');
+                    end
                 end
                 
                 fprintf(fid, '-1\n');

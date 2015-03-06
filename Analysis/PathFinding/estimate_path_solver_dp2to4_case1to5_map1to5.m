@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% knot
-solverVersion = 3;  % 2 to 4
+solverVersion = 5;  % 2 to 5
 caseNo = 6; % 1 to 5
 mapSize = 6; % 1 to 5
 
@@ -145,6 +145,8 @@ elseif solverVersion == 3
     solver = Solver_dp3(map_data, sensor_data);
 elseif solverVersion == 4
     solver = Solver_dp4(map_data, sensor_data, 0);
+elseif solverVersion == 5
+    solver = Solver_dp5(map_data, sensor_data, 0);
 else
     error('Concentrate. There''s no this kind of solver...');
 end
@@ -159,6 +161,8 @@ if solverVersion == 2
     elseif caseNo == 4
         solver.setHardDTWScoreThreshold(3500);  % have no idea about the threshold
     end
+elseif solverVersion == 5
+    solver.setUncertaintyRange(0);
 end        
 
 %% to check the information very quickly
@@ -199,8 +203,8 @@ fprintf('Elapsed time is %f seconds.\n', totalTime);
 fprintf('Generate results....');
 solver.getRawPath(1)
 solver.plotPathComparison(1)
-%solver.toWeb();
-solver.toWebBeautiful();
+solver.toWeb();
+%solver.toWebBeautiful();
 fprintf('\n');
 
 % for solver statistics
@@ -233,6 +237,7 @@ return;
 %    4      5     4x4    4     16080
 %    4      5     5x5    4     13596
 %    4p     2     small  1     97
+%    5      4     4x4    1     314
 
 
 %% test and insert the oracle path based on the true gps

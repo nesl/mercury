@@ -3,9 +3,11 @@ clc; close all; clear all;
 add_paths
 
 %SOLVER = 'dp3';
-SOLVER = 'dp4';
+%SOLVER = 'dp4';
+%SOLVER = 'dp5o';
+SOLVER = 'dp5L';
 
-if ~strcmp(SOLVER, 'dp3') && ~strcmp(SOLVER, 'dp4')
+if ~strcmp(SOLVER, 'dp3') && ~strcmp(SOLVER, 'dp4') && ~strcmp(SOLVER, 'dp5o') && ~strcmp(SOLVER, 'dp5L')
     error('Which solver are you choosing?')
 end
 
@@ -27,15 +29,16 @@ soldir = '../../Data/SimResults/';
 %% Loop through all test cases
 
 order = 1:length(test_files);
-order = reshape(reshape(order, 5, [])', 1, []);
-order = order(2:2:end);
+order = reshape(reshape(order, 10, [])', 1, []);
+order = order(1:2:end);
 
 for tidx = order
+%for tidx = 270
     tfile = test_files{tidx};
     solfile = [tfile(1:(end-4)) '_' SOLVER '.mat'];
     solpath = [soldir solfile];
     
-    if exist(solfile)
+    if exist(solpath)
         fprintf('skip test caes %s\n', tfile);
         continue;
     end
@@ -57,6 +60,11 @@ for tidx = order
         solver = Solver_dp3(map_data, sensor_data);
     elseif strcmp(SOLVER, 'dp4')
         solver = Solver_dp4(map_data, sensor_data, 0);
+    elseif strcmp(SOLVER, 'dp5o')
+        solver = Solver_dp5(map_data, sensor_data, 0);
+        solver.setUncertaintyRange(0);
+    elseif strcmp(SOLVER, 'dp5L')
+        solver = Solver_dp5(map_data, sensor_data, 1);
     end
     
     outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
@@ -68,16 +76,17 @@ for tidx = order
     fprintf('Elapsed time is %f seconds.\n', totalTime);
 
     fprintf('Generate results....');
-    solver.getRawPath(1)
-    solver.plotPathComparison(1)
-    pause(0.1)
-    solver.toWebBeautiful();
-    fprintf('\n');
+    if solver.getNumResults() > 0
+        solver.getRawPath(1)
+        solver.plotPathComparison(1)
+        pause(0.1)
+        solver.toWeb();
+    end
     
     % save results
     
     save(solpath, 'solver');
-
+    fprintf('\n');
     
 end
 

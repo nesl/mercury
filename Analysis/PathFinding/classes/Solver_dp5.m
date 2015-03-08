@@ -537,6 +537,26 @@ classdef Solver_dp5 < handle
             end
         end
         
+        % [ row vector ] = getPathShapeSimilarity(obj)  // get up to <max_result> results
+        % [ row vector ] = getPathShapeSimilarity(obj, traceIdxs)
+        function rmsInMeter = getPathShapeSimilarityBiDirection(obj, varargin) 
+            indxs = 1:min(obj.max_results, numel(obj.final_res_traces));
+            if numel(varargin) >= 1
+                indxs = varargin{1};
+            end
+            
+            groundTruthTimeLatLngs = obj.sensor_data.getGps();
+            groundTruthLatLngs = groundTruthTimeLatLngs(:, 2:3);
+                
+            rmsInMeter = zeros(numel(indxs), 1);
+            for i = indxs
+                traceIdx = indxs(i);
+                scoreGndEsti = gps_series_compare(groundTruthLatLngs, obj.final_res_traces(traceIdx).latlng);
+                scoreEstiGnd = gps_series_compare(obj.final_res_traces(traceIdx).latlng, groundTruthLatLngs);
+                rmsInMeter(i) = rms(scoreGndEsti, scoreEstiGnd);
+            end
+        end
+        
         % arguments should be passed as strings, including
         % 'index', 'dtwScore' and 'squareError'
         function res = summarizeResult(obj, varargin)

@@ -8,8 +8,8 @@ soldir = '../../Data/SimResults/';
 
 %% knobs
 
-%SOLVER = 'dp5o';
-SOLVER = 'dp5L';
+SOLVER = 'dp5o';
+%SOLVER = 'dp5L';
 
 if ~strcmp(SOLVER, 'dp5o') && ~strcmp(SOLVER, 'dp5L')
     error('Which solver are you choosing?')
@@ -28,13 +28,15 @@ end
 
 %% plotting
 
-rankOfInterest = [1 3 5 10 15 20 30 50 inf];
+rankOfInterest = [1 3 10];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
+topNBiShapeError = [];  % numel(rankOfInterest) by num_available_solution
 pathVSshapeError = [];
 
 atidx = 0;
 for tidx=1:length(test_files)
+%for tidx=538
     tfile = test_files{tidx};
     outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
     
@@ -47,14 +49,15 @@ for tidx=1:length(test_files)
     fprintf([outputWebFile '\n']);
     
     fid = fopen(outputWebFile);
-    for i = 1:7
+    for i = 1:8
         tline = fgets(fid);
     end
     
-    tline = fgets(fid);
+    tline = fgets(fid)
     numPaths = str2num( tline(1:end-1) );
     pathError = zeros(numPaths, 1);
     shapeError = zeros(numPaths, 1);
+    biShapeError = zeros(numPaths, 1);
     
     for i = 1:numPaths
     	tline = fgets(fid);
@@ -62,6 +65,7 @@ for tidx=1:length(test_files)
         terms = strsplit(tline, ',');
         pathError(i) = str2num(terms{1});
         shapeError(i) = str2num(terms{2});
+        biShapeError(i) = str2num(terms{3});
     end
     fclose(fid);
     
@@ -69,32 +73,44 @@ for tidx=1:length(test_files)
         rank = min(rankOfInterest(i), numPaths);
         topNPathError(i, atidx) = min(pathError(1:rank));
         topNShapeError(i, atidx) = min(shapeError(1:rank));
+        topNBiShapeError(i, atidx) = min(biShapeError(1:rank));
     end
     
-    pathVSshapeError = [pathVSshapeError; [pathError shapeError]];
+    pathVSshapeError = [pathVSshapeError; [pathError biShapeError]];
 end
 
 %
 
 clf
 
-subplot(1, 3, 1);
-hold on
-for i = 1:length(rankOfInterest)
-    x = sort(topNPathError(i,:));
-    y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
-end
-
-subplot(1, 3, 2);
+subplot(2, 2, 1);
 hold on
 for i = 1:length(rankOfInterest)
     x = sort(topNShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
 end
+xlabel('shape error');
 
-subplot(1, 3, 3);
+subplot(2, 2, 2);
+hold on
+for i = 1:length(rankOfInterest)
+    x = sort(topNBiShapeError(i,:));
+    y = linspace(0, 1, length(x));
+    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+end
+xlabel('bi-shape error');
+
+subplot(2, 2, 3);
+hold on
+for i = 1:length(rankOfInterest)
+    x = sort(topNPathError(i,:));
+    y = linspace(0, 1, length(x));
+    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+end
+xlabel('path error');
+
+subplot(2, 2, 4);
 plot(pathVSshapeError(:,1), pathVSshapeError(:,2), '.');
 xlabel('path error');
 ylabel('shape error');
@@ -174,3 +190,73 @@ for tidx=1:length(test_files)
 end
 xlabel('std')
 ylabel('num of turns')
+
+%% relation between relative entropy/variation -> difficulty?
+
+
+
+%% patch: add biShape to rset
+%{
+
+all fixed
+for tidx=1:length(test_files)
+    tfile = test_files{tidx};
+    
+    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
+    
+    solfile = [tfile(1:(end-4)), '_' SOLVER '.mat'];
+    solpath = [soldir solfile];
+    
+    fprintf('\n');
+    
+    if ~exist(solpath) || ~exist(outputWebFile)
+        continue;
+    end
+    
+    fprintf('Retrieve solver: %s\n', solpath);
+    load(solpath, 'solver');
+    
+    fprintf(['Modify result ' outputWebFile '\n']);
+    
+    modifiedContent = {};
+    fid = fopen(outputWebFile);
+
+    modifiedContent{end+1} = fgets(fid);
+    fgets(fid);
+    modifiedContent{end+1} = ['6' char(10)];
+    for i = 2:3
+        modifiedContent{end+1} = fgets(fid);
+    end
+    modifiedContent{end+1} = ['Bi shape error' char(10)];
+    for i = 4:6
+        modifiedContent{end+1} = fgets(fid);
+    end
+
+    tline = fgets(fid);
+    numPaths = str2num( tline(1:end-1) );
+    pathError = zeros(numPaths, 1);
+    shapeError = zeros(numPaths, 1);
+
+    modifiedContent{end+1} = tline;
+
+    groundTruthTimeLatLngs = solver.sensor_data.getGps();
+    groundTruthLatLngs = groundTruthTimeLatLngs(:, 2:3);
+    for i = 1:numPaths
+    	tline = fgets(fid);
+        commaIdxs = find(tline == ',');
+        insertIdx = commaIdxs(2) + 1;
+        scoreGndEsti = gps_series_compare(groundTruthLatLngs, solver.final_res_traces(i).latlng);
+        scoreEstiGnd = gps_series_compare(solver.final_res_traces(i).latlng, groundTruthLatLngs);
+        finalScore = rms([scoreGndEsti scoreEstiGnd]);
+        modifiedContent{end+1} = [ tline(1:(insertIdx-1)) num2str(finalScore) ',' tline(insertIdx:end) ];
+    end
+    fclose(fid);
+    
+    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
+    fid = fopen(outputWebFile, 'w');
+    for i = 1:numel(modifiedContent)
+        fprintf(fid, '%s', modifiedContent{i});
+    end
+    fclose(fid);
+end
+%}

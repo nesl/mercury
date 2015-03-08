@@ -2,6 +2,15 @@
 clc; close all; clear all;
 add_paths
 
+SOLVER = 'greedyA';
+%SOLVER = 'greedyAT';
+%SOLVER = 'greedyR';
+%SOLVER = 'greedyRT';
+
+if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
+    error('Which solver are you choosing?')
+end
+
 %% Get test cases
 testdir = '../../Data/SimTestCases/';
 all_files = dir(testdir);
@@ -19,10 +28,10 @@ soldir = '../../Data/SimResults/';
 
 %% Loop through all test cases
 for tidx=1:length(test_files)
-%for tidx=1
+%for tidx=28
     tfile = test_files{tidx};
     
-    solfile = [tfile(1:(end-4)), '_greedy.mat'];
+    solfile = [tfile(1:(end-4)), '_' SOLVER '.mat'];
     solpath = [soldir solfile];
     
     fprintf('\n');
@@ -65,25 +74,34 @@ for tidx=1:length(test_files)
     
     pathError = zeros(numPaths, 1);
     shapeError = zeros(numPaths, 1);
+    shapeErrorBi = zeros(numPaths, 1);
     
     %pathsLatLng = cell(size(solver_results.paths));
     for i = 1:numel(solver_results.paths)
         pathNodeIdxs = solver_results.paths{i};
         pathLatLng = map_data.getPathLatLng(pathNodeIdxs);
         pathElev = map_data.getPathElev(pathNodeIdxs);
-        [~, dtwIdxBaro2Map, ~] = dtw_basic( pathElev, elevBaro, @(x) (x.^2), @(x) (inf) );
-        estiLatLngs = pathLatLng(dtwIdxBaro2Map, :);
+        %[~, dtwIdxBaro2Map, ~] = dtw_basic( pathElev, elevBaro, @(x) (x.^2), @(x) (inf) );
+        [idxFrom, idxTo, ~] = dp_backtracking(elevBaro, pathElev);
+        mapToPath = zeros(1, length(elevBaro));
+        for j = 1:length(elevBaro)
+            idxsOfInterest = (idxFrom == j);
+            mapToPath(j) = round( mean(idxTo(idxsOfInterest)) );
+        end
+        estiLatLngs = pathLatLng(mapToPath, :);
         estiTimeLatLngs = [ elevBaroWithTime(:,1) estiLatLngs ];
         pathError(i) = evaluator.getPathSimilarityConsideringTime(estiTimeLatLngs);
         shapeError(i) = evaluator.getPathShapeSimilarity(estiLatLngs);
+        shapeErrorBi(i) = evaluator.getPathShapeSimilarityBiDirection(estiLatLngs);
     end
     
-    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_greedy.rset'];
-    reportAttributes =      {'pathError', 'shapeError', 'rawScore'};
-    reportAttributeValues = [ pathError    shapeError    solver_results.scores];
+    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
+    reportAttributes =      {'pathError', 'shapeError', 'shapeErrorBi', 'rawScore'};
+    reportAttributeValues = [ pathError    shapeError    shapeErrorBi,   solver_results.scores];
     evaluator.toWeb(outputWebFile, 1, reportAttributes, reportAttributeValues, solver_results.paths);
     fprintf('min path error: %f\n', min(pathError)); 
     fprintf('min shape error: %f\n', min(shapeError)); 
+    fprintf('min bi-dir shape error: %f\n', min(shapeErrorBi)); 
 end
 
 
@@ -100,7 +118,7 @@ pathVSshapeError = [];
 atidx = 0;
 for tidx=1:length(test_files)
     tfile = test_files{tidx};
-    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_greedy.rset'];
+    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
     
     if ~exist(outputWebFile)
         continue;

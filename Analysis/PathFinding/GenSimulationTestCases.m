@@ -135,7 +135,6 @@ return
 mapManager = MapManager('../../Data/EleSegmentSets/');
 mapData = mapManager.getMapDataObject(24, 3, 1);
 
-%%
 figure
 for i = 1:6
     subplot(2, 3, i)
@@ -146,4 +145,25 @@ for i = 1:6
     end
     latlngs = mapData.getPathLatLng(path);
     plot(latlngs(:,2), latlngs(:,1));
+end
+
+%% calculate path entropy
+mgr = MapManager('../../Data/EleSegmentSets/');
+map_size = 3;
+map_downsample = 2;
+map_ids = mgr.getValidMapIds(map_size);
+
+relativeEntropies = zeros( length(map_ids), paths_per_city );
+for midx=1:length(map_ids)
+    map_id = map_ids(midx);
+    map_name = mgr.getMapName(map_id, map_size);
+    randomWalkManager = RandomWalkManager(map_id, map_size, 1);
+    randomWalkManager.generatePaths(1);
+    
+    for widx=1:paths_per_city
+        caseName = strcat('../../Data/SimTestCases/TESTCASE_SIM_', map_name, '_', num2str(widx), '.mat');
+        loaded = load(caseName);
+        testcase = loaded.obj;
+        relativeEntropies(midx, widx) = randomWalkManager.getRelativeEntropy(testcase.sim_elevations(:,2))
+    end
 end

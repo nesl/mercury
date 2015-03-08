@@ -48,26 +48,38 @@ classdef Evaluator < handle
         function rmsInMeter = getPathShapeSimilarity(obj, varargin)
             % Each varargin serves as a <lat, lng> series, which should be a Nx2 matrix.
             % Thus, return value is a row vector whose size is the same as number of paths.
-            rmsInMeter = [];
+            rmsInMeter = zeros(numel(varargin), 1);
             for i = numel(varargin)
                 estimatedTimeLatLngs = varargin{i};  
                 groundTruthTimeLatLngs = obj.sensor_data.getGps();
                 groundTruthLatLngs = groundTruthTimeLatLngs(:, 2:3);
-                rmsInMeter = [rmsInMeter; ...
-                    gps_series_compare(groundTruthLatLngs, estimatedTimeLatLngs)];
+                rmsInMeter(i) = gps_series_compare(groundTruthLatLngs, estimatedTimeLatLngs);
+            end
+        end
+        
+        function rmsInMeter = getPathShapeSimilarityBiDirection(obj, varargin)
+            % Each varargin serves as a <lat, lng> series, which should be a Nx2 matrix.
+            % Thus, return value is a row vector whose size is the same as number of paths.
+            rmsInMeter = zeros(numel(varargin), 1);
+            for i = numel(varargin)
+                estimatedTimeLatLngs = varargin{i};  
+                groundTruthTimeLatLngs = obj.sensor_data.getGps();
+                groundTruthLatLngs = groundTruthTimeLatLngs(:, 2:3);
+                scoreGroundEsti = gps_series_compare(groundTruthLatLngs, estimatedTimeLatLngs);
+                scoreEstiGround = gps_series_compare(estimatedTimeLatLngs, groundTruthLatLngs);
+                rmsInMeter(i) = rms([scoreGroundEsti scoreEstiGround]);
             end
         end
         
         function rmsInMeter = getPathSimilarityConsideringTime(obj, varargin) 
             % Each varargin serves as a <time, lat, lng> series, which should be a Nx3 matrix.
             % Thus, return value is a row vector whose size is the same as number of paths.
-            rmsInMeter = [];
+            rmsInMeter = zeros(numel(varargin), 1);
             for i = numel(varargin)
                 estimatedTimeLatLngs = varargin{i};
                 groundTruthTimeLatLngs = obj.sensor_data.getGps();
                 groundTruthTimeLatLngs = groundTruthTimeLatLngs(:, 1:3);
-                rmsInMeter = [rmsInMeter; ...
-                    time_gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs)];
+                rmsInMeter(i) = time_gps_series_compare(groundTruthTimeLatLngs, estimatedTimeLatLngs);
             end
         end
         

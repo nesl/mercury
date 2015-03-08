@@ -13,15 +13,8 @@ function [ rootMeanSquare ] = gps_series_compare( seriesGnd, seriesEstimation )
 %   For every point in seriesEstimation, find the closest points in
 %   seriesGnd. Return the root mean square of these closest distances.
 
-numElementGnd = size(seriesGnd, 1);
-numElementEstimation = size(seriesEstimation, 1);
-distances = zeros(numElementGnd, numElementEstimation);
-for i = 1:numElementGnd
-    for j = 1:numElementEstimation
-        distances(i, j) = latlng2m(seriesGnd(i,1:2), seriesEstimation(j,1:2));
-    end
-end
 
+distances = latlng2m(seriesGnd, seriesEstimation);
 rootMeanSquare = rms(min(distances));
 
 end

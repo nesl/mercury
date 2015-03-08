@@ -22,7 +22,7 @@ for tidx=1:length(test_files)
 %for tidx=1
     tfile = test_files{tidx};
     
-    solfile = [tfile(1:(end-4)), '_greedy.mat'];
+    solfile = [tfile(1:(end-4)), '_greedyA.mat'];
     solpath = [soldir solfile];
     
     fprintf('\n');

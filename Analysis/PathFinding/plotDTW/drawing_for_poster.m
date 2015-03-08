@@ -1,4 +1,4 @@
-baroFile = '../../../Data/eleSegments/test_case/case1_baro_query.csv';
+baroFile = '../../../Data/BaroTrajTestCases/case1_surround_weyburn/case1_baro_query.csv';
 dataq = csvread(baroFile);
 
 % plot(dataq(:,1), dataq(:,2) is the first figure
@@ -26,7 +26,7 @@ all=[
 
 segInd = [1 4 7 9 10];
 
-eleTrajDir = '../../../Data/eleSegments/ucla_west/';
+eleTrajDir = '../../../Data/EleSegmentSets/ucla_west/';
 
 fileProfile = dir(eleTrajDir);
 fileProfile = fileProfile(3:end);
@@ -73,14 +73,14 @@ ele = [];
 for i = 1:9
     a = num2str(all(i  ));
     b = num2str(all(i+1));
-    ele = [ele; eleTrajs{nodeName2ind(a), nodeName2ind(b)}(2:end)];
+    ele = [ele eleTrajs{nodeName2ind(a), nodeName2ind(b)}(2:end)];
     xind(i+1) = length(ele);
 end
 
 hue = [0, 0.3, 0.8, 0.15];
 for j = 1:4
     ind = xind(segInd(j)):(xind(segInd(j+1)));
-    plot(ind*1.8, ele(ind), 'Color', hsl2rgb([hue(j), 1, 0.5]), 'LineWidth', 2)
+    plot(ind*1.8, ele(ind), 'Color', hsv2rgb([hue(j), 1, 0.5]), 'LineWidth', 2)
 end
 
 ylim([90 130])
@@ -93,5 +93,5 @@ for j = 2:2
     s1 = height(ind,2);
     ind = xind(segInd(j)):(xind(segInd(j+1)));
     s2 = ele(ind);
-    dtw(s1,s2,pflag,hsl2rgb([hue(j), 1, 0.5]));
+    dtw(s1,s2,pflag,hsv2rgb([hue(j), 1, 0.5]));
 end

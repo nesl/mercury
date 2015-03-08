@@ -2,10 +2,12 @@
 clc; close all; clear all;
 add_paths
 
-%SOLVER = 'greedy';
-SOLVER = 'greedyT';
+%SOLVER = 'greedyA';
+%SOLVER = 'greedyAT';
+%SOLVER = 'greedyR';
+%SOLVER = 'greedyRT';
 
-if ~strcmp(SOLVER, 'greedy') && ~strcmp(SOLVER, 'greedyT')
+if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
     error('Which solver are you choosing?')
 end
 
@@ -25,8 +27,8 @@ end
 soldir = '../../Data/SimResults/';
 
 %% Loop through all test cases
-%for tidx=1:length(test_files)
-for tidx = 500;
+for tidx=1:length(test_files)
+%for tidx = 500;
     tfile = test_files{tidx};
     
     solfile = [tfile(1:(end-4)), '_' SOLVER '.mat'];
@@ -51,8 +53,10 @@ for tidx = 500;
     % solver
     solver = Solver_greedy(map_data, sensor_data);
     solver.setNumPathsToKeep(40);
-    solver.useAbsoluteElevation();
-    if strcmp(SOLVER, 'greedyT')
+    if strcmp(SOLVER, 'greedyA') || strcmp(SOLVER, 'greedyAT')
+        solver.useAbsoluteElevation();
+    end
+    if strcmp(SOLVER, 'greedyAT') || strcmp(SOLVER, 'greedyRT')
         solver.useTurns();
     end
     

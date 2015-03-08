@@ -73,8 +73,12 @@ ele = [];
 for i = 1:9
     a = num2str(all(i  ));
     b = num2str(all(i+1));
-    ele = [ele eleTrajs{nodeName2ind(a), nodeName2ind(b)}(2:end)];
+    numElev = length(eleTrajs{nodeName2ind(a), nodeName2ind(b)}) / 3;
+    elevs = eleTrajs{nodeName2ind(a), nodeName2ind(b)}(2:numElev)
+    eleTrajs{nodeName2ind(a), nodeName2ind(b)}
+    ele = [ele eleTrajs{nodeName2ind(a), nodeName2ind(b)}(2:numElev)];
     xind(i+1) = length(ele);
+    pause
 end
 
 hue = [0, 0.3, 0.8, 0.15];
@@ -88,7 +92,7 @@ plot(xind(segInd(:))*1.8, ele(xind(segInd(:))), 'k+', 'MarkerSize', 6)
 
 hind = [0 150 480 660 900];
 pflag = 1;
-for j = 2:2
+for j = 1:4
     ind = (hind(j) <= height(:,1) & height(:,1) <= hind(j+1));
     s1 = height(ind,2);
     ind = xind(segInd(j)):(xind(segInd(j+1)));

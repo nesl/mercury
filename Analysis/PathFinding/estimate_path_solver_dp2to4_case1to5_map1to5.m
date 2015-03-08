@@ -11,8 +11,8 @@ add_paths;
 
 %% knot
 solverVersion = 5;  % 2 to 5
-caseNo = 6; % 1 to 5
-mapSize = 6; % 1 to 5
+caseNo = 3; % 1 to 5
+mapSize = 2; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)

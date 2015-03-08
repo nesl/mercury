@@ -16,8 +16,8 @@ times = times./3600; % hours
 
 cfigure(14,8);
 plot(times, samples, 'b-o','MarkerSize',5);
-xlabel('Time (hours)', 'FontSize',14);
-ylabel('Change in Pressure (hPa)', 'FontSize', 14);
+xlabel('Time (hours)', 'FontSize',12);
+ylabel('Change in Pressure (hPa)', 'FontSize', 12);
 grid on;
 
 %% how much change per hour?

@@ -7,7 +7,8 @@ add_paths;
 outpath = 'SimResults/';
 
 %% Number of simulated paths to test per city
-paths_per_city = 10;
+paths_per_city = 20;
+start_path_idx = 11;
 
 %% Random walk stats
 METERS_PER_GPS = 10;
@@ -29,6 +30,7 @@ map_ids = mgr.getValidMapIds(map_size);
 %% Loop through maps
 
 for midx=1:length(map_ids)
+%for midx=2
     map_id = map_ids(midx);
     map_file = mgr.getMapFile(map_id, map_size);
     map_name = mgr.getMapName(map_id, map_size);
@@ -36,8 +38,14 @@ for midx=1:length(map_ids)
     
     % Loop through walks
     for widx=1:paths_per_city
+    %for widx=15
         rng(widx);  % reset random generator at the beginning of path generation
 
+        if widx < start_path_idx
+            fprintf('force skipping...\n')
+            continue;
+        end
+        
         % random path length
         path_len = round( walk_len_ave + randn()*walk_len_var );
         path_len = max(walk_len_min, path_len);
@@ -48,12 +56,16 @@ for midx=1:length(map_ids)
         % guide: can only add more cases, shouldn't modify the previous cases
         if widx <= 10
             randwalk = map_data.getRandomWalk(map_data.getRandomNode(), path_len, false);
-            randwalk_speed = 0;
+        elseif widx <= 15
+            randwalk = map_data.getRandomWalkConstrainedByTurn(-1, path_len, false, path_len / 1);
+        elseif widx <= 20
+            randwalk = map_data.getRandomWalkConstrainedByTurn(-1, path_len, false, path_len / 3);
         else
             fprintf('haven''t assigned... skip')
         end
         % UP TO HERE =====================================================
         
+        randwalk_speed = 0;
         while randwalk_speed < walk_speed_min || randwalk_speed > walk_speed_max
             randwalk_speed = walk_speed_ave + randn()*walk_speed_var;
         end
@@ -115,4 +127,23 @@ for midx=1:length(map_ids)
     end
 
     
+end
+
+return
+
+%% compare with and without turns
+mapManager = MapManager('../../Data/EleSegmentSets/');
+mapData = mapManager.getMapDataObject(24, 3, 1);
+
+%%
+figure
+for i = 1:6
+    subplot(2, 3, i)
+    if mod(i, 2) == 1
+        path = mapData.getRandomWalk(-1, 300, 0);
+    else
+        path = mapData.getRandomWalkConstrainedByTurn(-1, 300, 0, 50);
+    end
+    latlngs = mapData.getPathLatLng(path);
+    plot(latlngs(:,2), latlngs(:,1));
 end

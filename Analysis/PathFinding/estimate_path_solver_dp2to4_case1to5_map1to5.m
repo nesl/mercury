@@ -106,14 +106,14 @@ if caseNo == 1
     sensor_data.setAbsoluteSegment(1418102835, 1418103643);
     map_data = MapData(mapfile, 1);   % correct:1
 elseif caseNo == 2
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
 elseif caseNo == 3
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1

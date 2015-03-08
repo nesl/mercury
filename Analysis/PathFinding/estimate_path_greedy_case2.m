@@ -10,7 +10,7 @@ clear all; clc; close all;
 add_paths;
 
 %% Load Map and Data
-caseNo = 3; % 1 to 5
+caseNo = 4; % 1 to 5
 mapSize = 2; % 2 to 4 (5 is coming soon)
 
 %% Inputs:
@@ -65,25 +65,29 @@ end
 sensor_data = SensorData(sensorfile);
 
 if caseNo == 1
+    %sensor_data.setSeaPressure(1020);  % correct coefficient
+    %sensor_data.setPressureScalar(-8.15);
     sensor_data.setSeaPressure(1020);
-    sensor_data.setPressureScalar(-8.15);
+    sensor_data.setPressureScalar(-8.1);
     sensor_data.setAbsoluteSegment(1418102835, 1418103643);
     map_data = MapData(mapfile, 1);   % correct:1
 elseif caseNo == 2
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
     sensor_data.setAbsoluteSegment(1421002543, 1421002693);
     sensor_data.setWindowSize(0.5);   % correct:0.5
     map_data = MapData(mapfile, 1);   %correct:1
 elseif caseNo == 3
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
     sensor_data.setAbsoluteSegment(1421002543, 1421002988);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
 elseif caseNo == 4
-    sensor_data.setSeaPressure(1018.7);  % coefficient hand-tuned
-    sensor_data.setPressureScalar(-8.2);
+    sensor_data.setSeaPressure(1018.3);  % correct coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.4);
+    %sensor_data.setSeaPressure(1019.3);  % test different coefs. scalar shouldn't matter that much
+    %sensor_data.setPressureScalar(-7.8);
     sensor_data.setAbsoluteSegment(1421002200, 1421003019);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
@@ -93,6 +97,12 @@ elseif caseNo == 5
     sensor_data.setAbsoluteSegment(1420935640, 1420936084);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
+elseif caseNo == 6
+    sensor_data.setSeaPressure(1019.6);  % coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.3);
+    sensor_data.setAbsoluteSegment(1420998405, 1420998803);
+    sensor_data.setWindowSize(1);  % finer case: 0.5
+    map_data = MapData(mapfile, 2);  % finer case: 1
 end
 
 map_lines = map_data.getAllSegLatLng();
@@ -100,7 +110,7 @@ map_lines = map_data.getAllSegLatLng();
 
 %% Create Solver Object
 DEBUG = true;
-solver = Solver_greedy(map_data, sensor_data, DEBUG);
+solver = Solver_greedy(map_data, sensor_data);
 solver.setNumPathsToKeep(40);
 solver.useAbsoluteElevation();
 solver.useTurns();
@@ -112,7 +122,7 @@ toc;
     
 %% Plot best 3 results
 [costs,paths] = solver.getResults();
-
+figure
 % plot map
 for l=1:length(map_lines)
     line = map_lines{l};
@@ -164,59 +174,68 @@ hold off;
 return;
 
 
+%% get weight function
+% y = C * log(x-A) + B
+% 0.5         0
+% 0.9         20
+% 1           1000
 
+exp21 = exp(0.4);
+exp32 = exp(0.1);
 
+%ax^2 + bx + c
+coefl = conv([-1 0], [-1 1000]) * exp21;
+coefr = conv([-1 20], [-1 20]) * exp32;
+coeff = coefl - coefr;
+fa = coeff(1);
+fb = coeff(2);
+fc = coeff(3);
+fD = sqrt(fb * fb - 4 * fa * fc);
+fx1 = (-fb + fD) / 2 / fa;
+fx2 = (-fb - fD) / 2 / fa;
+% we want nagative one
+A = fx2;
+C = 0.4 / log((20-A) / -A);
+B = 0.5 - C * log(-A);
+[A B C];
+x = 0:1000;
+y = C * log(x-A) + B
 
+plot(x, y)
 
+%% test case 3 under map size 2
 
+rank1 = [
+         1    20
+    11    22
+    60    26
+    75   164
+    77   240
+   104   253
+   108   293
+   116   298
+   149   301
+   154   323
+   157   328
+   167   332
+   187   338
+   217   317
+   227   315
+   230   316
+   235   307
+   243   303
+   256   291
+   263   275
+   327   219
+   345   230
+   355   213
+   386   204
+   394   189
+   401   162
+   409   143
+   413   130
+   425   108
+   443   100
+ ];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+elev = map_data.getPathElev(rank1(:,2));

@@ -349,9 +349,11 @@ classdef Solver_dp5 < handle
                         end
                     end
                 end
-                tmpResTraces = nestedSortStruct(tmpResTraces, {'finalScore'});
-                numTracesToKeep = min(numel(tmpResTraces), obj.max_results);
-                tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces(1:numTracesToKeep);
+                if numel(tmpResTraces) > 0
+                    tmpResTraces = nestedSortStruct(tmpResTraces, {'finalScore'});
+                    numTracesToKeep = min(numel(tmpResTraces), obj.max_results);
+                    tmpResTracesForAllPressureParameters{preIdx} = tmpResTraces(1:numTracesToKeep);
+                end
             end
             fprintf('Finish searching. Summarize the result....\n');
             

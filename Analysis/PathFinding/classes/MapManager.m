@@ -58,7 +58,7 @@ classdef MapManager < handle
     methods
         function obj = MapManager(varargin)
             if length(varargin) == 1
-                obj.folder = varargin(1);
+                obj.folder = varargin{1};
             end
         end
         
@@ -69,7 +69,7 @@ classdef MapManager < handle
                         error('Find the map, yet cannot find the corresponding size');
                     end
                     mapPath = strcat(obj.folder, obj.info{i, 2}, '_', obj.info{i, mapSize+2}, '.map');
-                    mapDataObj = MapData(mapPath{1}, downSampleSize);
+                    mapDataObj = MapData(mapPath, downSampleSize);
                     return
                 end
             end

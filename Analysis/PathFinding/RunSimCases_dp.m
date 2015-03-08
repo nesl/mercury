@@ -30,7 +30,8 @@ soldir = '../../Data/SimResults/';
 
 order = 1:length(test_files);
 order = reshape(reshape(order, 10, [])', 1, []);
-order = order(1:2:end);
+%order = order(3:4:end);
+order = order(end:-2:1);
 
 for tidx = order
 %for tidx = 270
@@ -79,7 +80,7 @@ for tidx = order
     if solver.getNumResults() > 0
         solver.getRawPath(1)
         solver.plotPathComparison(1)
-        pause(0.1)
+        pause(1)
         solver.toWeb();
     end
     

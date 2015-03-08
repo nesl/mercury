@@ -528,6 +528,85 @@ classdef MapData < handle
             end
         end
         
+        function path = getRandomWalkConstrainedByTurn(obj, startNodeIdx, pathLength, allowImmediateBack, avgLengthPerTurn)
+            if startNodeIdx >= 0
+                path = startNodeIdx;
+            else
+                path = round(1 + (obj.num_nodes - 1)*rand(1));
+            end
+            
+            curLength = 0;
+            
+            probNoTurnPerNode = 1 - 1/avgLengthPerTurn;
+            probStraight = 1;
+            strike = 0;
+            while curLength < pathLength
+                cur_node = path(end);
+                next_nodes = obj.getNeighbors(cur_node);
+                
+                if numel(path) == 1
+                    prev_node = -1;  % previous node doesn't exist
+                else
+                    prev_node = path(end-1);
+                end
+            
+                if ~allowImmediateBack
+                    next_nodes = next_nodes(next_nodes ~= prev_node);
+                end
+                
+                angles = zeros(size(next_nodes));  % by default, assume that I don't need take turns to reach my neighbors. Especially handle no previous node case
+                if prev_node ~= -1  % there's a previous node
+                    for i = 1:numel(next_nodes)
+                        angles(i) = obj.getAdjacentSegmentsAngle( [path(end-1:end) next_nodes(i)] );
+                    end
+                end
+                
+                %path
+                %next_nodes
+                %angles
+                shouldIGoStraight = (rand() < probStraight(end));
+                if shouldIGoStraight
+                    threshold = 45 * (1.1 ^ strike(end));
+                    possibleNeighborIdxs = (-threshold <= angles & angles <= threshold);
+                else
+                    threshold = 45 / (1.1 ^ strike(end));
+                    possibleNeighborIdxs = (angles < -threshold | angles > threshold);
+                end
+                possibleNeighbors = next_nodes(possibleNeighborIdxs);
+                
+                if numel(possibleNeighbors) == 0  % omg, cannot go any further. roll back
+                    stepsToGetBack = ceil(rand() * 6);
+                    stepsToGetBack = min(stepsToGetBack, numel(path) - 1);
+                    while stepsToGetBack > 0
+                        curLength = curLength - numel(obj.getSegElev([path(end) path(end-1)])) + 1;
+                        %path
+                        path         = path(1:end-1);
+                        probStraight = probStraight(1:end-1);
+                        strike       = strike(1:end-1);
+                        %[path ;probStraight; strike]
+                        stepsToGetBack = stepsToGetBack - 1;
+                    end
+                    strike(end) = strike(end)+1;
+                else
+                    selectedNode = possibleNeighbors( ceil(rand() * numel(possibleNeighbors)) );
+                    segLength = numel(obj.getSegElev([cur_node selectedNode])) - 1;
+                    curLength = curLength + numel(obj.getSegElev([cur_node selectedNode])) - 1;
+                    path(end+1) = selectedNode;
+                    probStraightAfterSeg = probNoTurnPerNode ^ segLength;
+                    if shouldIGoStraight
+                        probStraight(end+1) = probStraight(end) * probStraightAfterSeg;
+                    else
+                        probStraight(end+1) = probStraightAfterSeg;
+                    end
+                    strike(end+1) = floor(strike(end) / 3);
+                end
+                %path
+                %[path ;probStraight; strike]
+                %fprintf('%d\n', curLength);
+                %pause
+            end
+        end
+        
         % QUERY BY GEO INFORMATION
         function meter = distanceToNodeIdx(obj, latlng, nodeIdx)
             meter = latlng2m(latlng, obj.getNodeIdxLatLng(nodeIdx));

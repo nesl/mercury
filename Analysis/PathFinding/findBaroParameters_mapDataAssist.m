@@ -7,9 +7,9 @@ baro_files = {
     %'baro_n501_20141213_093710', NaN, 1418494703;  % fail on butter()
     %'baro_n501_20141215_212237', 1418717289, NaN;  % fail on butter()
     %'baro_n501_20150108_221546', NaN, NaN;  % suffer by highway
-    'baro_n503_20150110_143636', 1420929573, 1420931703, 101, 2;
-    'baro_n503_20150110_155834', NaN, NaN, 101, 4;
-    'baro_n503_20150110_161641', NaN, NaN, NaN, NaN;
+    %'baro_n503_20150110_143636', 1420929573, 1420931703, 101, 2;
+    %'baro_n503_20150110_155834', NaN, NaN, 101, 4;
+    %'baro_n503_20150110_161641', NaN, NaN, NaN, NaN;
     %'baro_n503_20150111_091333', NaN, NaN, NaN, NaN  % not that clean, so break down, if have time, there's brill hill, too.
     %'baro_n503_20150111_091333', 1420997164, 1421000350, 23, 6  % Los Angeles   % run for long time... I've save the result, try to grab that
     'baro_n503_20150111_091333', 1421001984, 1421003596, 101, 2  % not that clean %too many ucla data....
@@ -50,7 +50,7 @@ for file=1:size(baro_files, 1);
     
     gpsEleFromMap = gpsEle;  % default value, see if we can be assisted from map
     if ~isnan(baro_files{file,4})
-        mapManager = MapManager();
+        mapManager = MapManager('../../Data/EleSegmentSets/');
         mapData = mapManager.getMapDataObject(baro_files{file,4}, baro_files{file,5}, 1);
 
         % not use gpsEle. Instead, based on the gps coordinate, query the
@@ -138,6 +138,9 @@ for file=1:size(baro_files, 1);
     
 end
 
+%%
+save('gpsEleFromMap', 'gpsEleFromMap');
+save('fullPred', 'fullPred');
 return
 %% just for debug
 idx = (1400 < gpsEleFromMap(:,1) & gpsEleFromMap(:,1) < 1650);

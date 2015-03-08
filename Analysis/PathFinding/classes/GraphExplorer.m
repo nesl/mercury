@@ -136,7 +136,7 @@ classdef GraphExplorer < handle
                 estElevations = estElevations(:,2) + obj.elevation_offset;
             end
             
-            
+            %{
             % get greedy elevation cost (template, partial)
             cost_elev = DTW_greedy(estElevations, mapElevations);
             
@@ -154,6 +154,16 @@ classdef GraphExplorer < handle
                 cost = cost_elev*-1*cost_turns;
             else
                 cost = cost_elev;
+            end
+            %}
+            
+            % consider elevs and turns together
+            if ~obj.use_turns
+                cost = DTW_greedy(estElevations, mapElevations);
+            else
+                % get segment turns
+                mapTurns = obj.map.getPathTurnVector(path_nodes);
+                cost = DTW_greedy_elev_turn(estElevations, obj.sensor_turns(:,2), mapElevations, mapTurns);
             end
         end
                     

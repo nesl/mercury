@@ -31,7 +31,7 @@ end
 load('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
 
 
-rankOfInterest = [1 3 10];
+rankOfInterest = [1 3 5 20];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
 topNBiShapeError = [];  % numel(rankOfInterest) by num_available_solution
@@ -83,41 +83,55 @@ for tidx=1:length(test_files)
     pathVSshapeError = [pathVSshapeError; [pathError biShapeError]];
 end
 
-%
+%%
+colors = {'bs-', 'r^-', 'mo-', 'k*-'};
+skip = 20;
 
+
+cfigure(14,8);
 clf
 
-subplot(2, 2, 1);
 hold on
-for i = 1:length(rankOfInterest)
+for i = length(rankOfInterest):-1:1
     x = sort(topNShapeError(i,:));
     y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('shape error');
+xlabel('Shape Error (m)','FontSize',12);
+ylabel('Probability','FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_dp_shape');
 
-subplot(2, 2, 2);
+
+cfigure(14,8);
 hold on
-for i = 1:length(rankOfInterest)
+for i = length(rankOfInterest):-1:1
     x = sort(topNBiShapeError(i,:));
     y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('bi-shape error');
+xlabel('Bi-shape Error (m)','FontSize',12);
+ylabel('Probability','FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_dp_bishape');
 
-subplot(2, 2, 3);
+
+cfigure(14,8);
 hold on
-for i = 1:length(rankOfInterest)
+for i = length(rankOfInterest):-1:1
     x = sort(topNPathError(i,:));
     y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('path error');
+xlabel('Path Error (m)','FontSize',12);
+ylabel('Probability','FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_dp_path');
 
-subplot(2, 2, 4);
-plot(pathVSshapeError(:,1), pathVSshapeError(:,2), '.');
-xlabel('path error');
-ylabel('shape error');
+
 
 
 

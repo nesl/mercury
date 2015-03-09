@@ -1,6 +1,9 @@
 addpath('../utils');
 addpath('../classes');
 
+rootDir = '~/Dropbox/MercuryWriting/figures/';
+
+
 % sensor case 3
 sensorfile = '../../../Data/rawData/baro_n503_20150111_091333.baro.csv';
 sensor_data = SensorData(sensorfile);
@@ -44,12 +47,43 @@ estimatedAnswer = [
 sensorElev = sensor_data.getElevationTimeWindow();
 mapElev = map_data.getPathElev(estimatedAnswer(:,2));
 
-close all
+%%
+
 clf
+
+
+cfigure(14,8);
 hold on
+%a=axes('units','normalized','position',[.1 .25 .8 .7],'xlim',[0 144],'xtick',0:12:144)
+%xlabel(a,'Inches')
+plot((1:length(mapElev)) * 8 / 1000, mapElev - mapElev(1), 'b--','LineWidth',2);
+plot(sensorElev(1,1), sensorElev(1,2), 'r', 'LineWidth', 2);
+ylim([-70 20]);
+xlabel('Traveling distance (Km, bottom) and time (Sec, top)', 'FontSize', 12);
+ylabel('Shifted elevation (meter)', 'FontSize', 12);
+h_legend = legend({'Map', 'Barometer'});
+set(h_legend, 'FontSize', 12);
+grid on;
 
-plot(1:length(sensorElev), sensorElev(:,2) - mapElev(1), 'b');
-plot(1:length(mapElev), mapElev - mapElev(1), 'r');
+ax1 = gca; % current axes
+ax1_pos = get(ax1,'Position'); % position of first axes
 
+ax2 = axes('Position',ax1_pos,...
+    'XAxisLocation','top',...
+    'YAxisLocation','right',...
+    'Color','none');
+
+%b=axes('units','normalized','position',[.1 .1 .8 0.000001],'xlim',[0 12],'color','none')
+%xlabel(b,'Feet')
+line(sensorElev(:,1), sensorElev(:,2) - mapElev(1), 'Color', 'r', 'Parent', ax2, 'LineWidth',2)
+
+ylim([-70 20]);
+set(gca, 'YTickLabel', {})
+%xlabel('Traveling time (Sec)', 'FontSize', 12);
+
+%plot((1:length(mapElev)) * 8, mapElev - mapElev(1), 'r');
+saveplot([rootDir 'elev_dtw_1']);
+
+return
 pflag = 1;
 dtw(sensorElev(:,2),mapElev,pflag,[1 0 0]);

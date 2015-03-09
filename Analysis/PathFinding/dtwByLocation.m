@@ -3,11 +3,11 @@ clc; close all; clear all;
 add_paths;
 rng(100);
 
-NUM_TRUE_PATHS = 200;
-NUM_FAKE_PATHS = 100;
+NUM_TRUE_PATHS = 100;
+NUM_FAKE_PATHS = 50;
 
 path_len_min = 2;
-path_len_max = 500;
+path_len_max = 300;
 
 % Goal: for each location, pick a number of random true paths. for each
 % random true path, pick a number of fake candidate paths and perform dtw.
@@ -28,8 +28,9 @@ for midx = 1:length(map_ids)
     
     for tidx=1:NUM_TRUE_PATHS
                 
-        % random length
-        len = randi([path_len_min, path_len_max]);
+        % path len
+        all_lengths = linspace(path_len_min, path_len_max, NUM_TRUE_PATHS);
+        len = all_lengths(tidx);
         
         % random walk for a true path
         start_node = map_data.getRandomNode();
@@ -69,7 +70,10 @@ for midx = 1:length(map_ids)
         end
     end
 end
+
+save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
+    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
     
 
 %% Analyze and Plot Results
-    
+load('cache/dtwByLocation');

@@ -8,8 +8,8 @@ soldir = '../../Data/SimResults/';
 
 %% knobs
 
-SOLVER = 'dp5o';
-%SOLVER = 'dp5L';
+%SOLVER = 'dp5o';
+SOLVER = 'dp5L';
 
 if ~strcmp(SOLVER, 'dp5o') && ~strcmp(SOLVER, 'dp5L')
     error('Which solver are you choosing?')
@@ -28,10 +28,14 @@ end
 
 %% plotting
 
+load('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
+
+
 rankOfInterest = [1 3 10];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
 topNBiShapeError = [];  % numel(rankOfInterest) by num_available_solution
+
 pathVSshapeError = [];
 
 atidx = 0;
@@ -115,6 +119,8 @@ plot(pathVSshapeError(:,1), pathVSshapeError(:,2), '.');
 xlabel('path error');
 ylabel('shape error');
 
+
+
 return
 
 %% what are the standard deviation?
@@ -158,7 +164,6 @@ ylabel('num of turns')
 
 %% variance v.s. processing time?
 
-
 clf
 hold on
 
@@ -193,11 +198,81 @@ ylabel('num of turns')
 
 %% relation between relative entropy/variation -> difficulty?
 
+load('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
+
+rankOfInterest = 3;
+
+errorSP = nan(length(test_files), 2);
+
+atidx = 0;
+for tidx=1:length(test_files)
+%for tidx=538
+    tfile = test_files{tidx};
+    outputWebFile = ['../../Data/resultSets/(B)[TEST_SIM]_' tfile(14:end-4) '_' SOLVER '.rset'];
+    
+    if ~exist(outputWebFile)
+        continue;
+    end
+    
+    atidx = atidx + 1;
+    
+    fprintf([outputWebFile '\n']);
+    
+    fid = fopen(outputWebFile);
+    for i = 1:8
+        tline = fgets(fid);
+    end
+    
+    tline = fgets(fid);
+    numPaths = str2num( tline(1:end-1) );
+    pathError = zeros(numPaths, 1);
+    biShapeError = zeros(numPaths, 1);
+    
+    for i = 1:numPaths
+    	tline = fgets(fid);
+        tline = tline(1:end-1);
+        terms = strsplit(tline, ',');
+        pathError(i) = str2num(terms{1});
+        biShapeError(i) = str2num(terms{3});
+    end
+    fclose(fid);
+    
+    for i = 1:length(rankOfInterest)
+        rank = min(rankOfInterest(i), numPaths);
+        errorSP(tidx, 1) = min(biShapeError(1:rank));
+        errorSP(tidx, 2) = min(pathError(1:rank));
+    end
+end
+
+%
+
+clf
+
+availableIdx = ~isnan( errorSP(:, 1) );
+
+ytext = {'3rd shape error', '3rd path error'};
+xtext = {'path variance', 'kl', 'map entropy', 'map variance'};
+%%
+for i = 1:8
+    subplot(2, 4, i)
+    r = ceil(i / 4);
+    c = i - 4 * (r-1);
+    plot(resultEV(availableIdx,c), errorSP(availableIdx,r), '+');
+end
+
+%%
+clf
+hold on
+for i = find(availableIdx)'
+    i
+    plot([resultEV(i,1) resultEV(i,4)], [errorSP(i,1) errorSP(i,1)], '-')
+    pause
+end
 
 
 %% patch: add biShape to rset
-%{
 
+%{
 all fixed
 for tidx=1:length(test_files)
     tfile = test_files{tidx};

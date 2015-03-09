@@ -147,6 +147,61 @@ for i = 1:6
     plot(latlngs(:,2), latlngs(:,1));
 end
 
+%% KL(path||map), variation(path) -> how likely to find the path
+elevBinWidth = 0.3;
+
+mgr = MapManager('../../Data/EleSegmentSets/');
+map_size = 3;
+map_downsample = 2;
+map_ids = mgr.getValidMapIds(map_size);
+
+% kl(path||map)  variation(path)  entropy(map)  variation(map)
+resultEV = zeros( length(map_ids) * paths_per_city, 2);
+
+for midx=1:length(map_ids)
+%for midx=4:4
+    map_id = map_ids(midx);
+    map_name = mgr.getMapName(map_id, map_size);
+    map_data = mgr.getMapDataObject(map_id, map_size, 1);  % so that's why METERS_PER_GPS is 10
+    
+    mapAllElevs = [];
+    for j = 1:size(map_data.endNodePairs, 1)
+        mapAllElevs = [mapAllElevs; map_data.getPathElev( map_data.endNodePairs(j,:) ) ];
+    end
+    mapElevVar = var(mapAllElevs);
+    tmp = tabulate(mapAllElevs);
+    tmp = tmp(:,3) / 100;
+    tmp = tmp( tmp > 0 );
+    mapElevEntropy = sum( tmp(:) * log2(tmp(:)) );
+    
+    for widx=1:paths_per_city
+        saveIdx = (midx-1) * paths_per_city + widx + 1;
+        caseName = strcat('../../Data/SimTestCases/TESTCASE_SIM_', map_name, '_', num2str(widx), '.mat');
+        loaded = load(caseName);
+        testcase = loaded.obj;
+        tableMap = tabulate( ceil(mapAllElevs / elevBinWidth) );
+        tablePath = tabulate( ceil(testcase.sim_elevations(:,2) / elevBinWidth) );
+        minBinIdx = min(tableMap(1,1), tablePath(1,1));
+        tableMap(:,1) = tableMap(:,1) - minBinIdx + 1;
+        tablePath(:,1) = tablePath(:,1) - minBinIdx + 1;
+        maxBinIdx = max(tableMap(end,1), tablePath(end,1));
+        merge = zeros(maxBinIdx, 2);
+        merge(tablePath(:,1) ,1) = tablePath(:,3) / 100;
+        merge(tableMap(:,1) ,2) = tableMap(:,3) / 100;
+        if sum(merge(:,1) > 0 & merge(:,2) == 0)
+            warning('violate KL def');
+        end
+        merge = merge( merge(:,1) > 0 & merge(:,2) > 0, :);
+        resultEV(saveIdx, 1) = sum( merge(:,1) .* log2( merge(:,1) ./ merge(:,2) ) );
+        resultEV(saveIdx, 2) = var( testcase.sim_elevations(:,2) );
+        resultEV(saveIdx, 3) = mapElevEntropy;
+        resultEV(saveIdx, 4) = mapElevVar;
+        fprintf('KL=%f, VAR=%f\n', resultEV(saveIdx, 1), resultEV(saveIdx, 2));
+    end
+end
+
+save('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
+
 %% calculate path entropy
 mgr = MapManager('../../Data/EleSegmentSets/');
 map_size = 3;

@@ -183,10 +183,10 @@ for i = length(rankOfInterest):-1:1
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('Path Error (m)','FontSize',12);
+xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
 saveplot('figs/sim_greedyA_path');
 
 
@@ -199,10 +199,10 @@ for i = length(rankOfInterest):-1:1
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-xlabel('Shape Error (m)', 'FontSize',12);
+xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
-legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
 saveplot('figs/sim_greedyA_shape');
 
 % bi-shape
@@ -216,9 +216,9 @@ for i = length(rankOfInterest):-1:1
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-xlabel('Bi-Shape Error (m)', 'FontSize',12);
+xlabel('Bi-Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
-legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
 saveplot('figs/sim_greedyA_bishape');
 

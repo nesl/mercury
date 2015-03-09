@@ -172,7 +172,7 @@ for midx=1:length(map_ids)
     tmp = tabulate(mapAllElevs);
     tmp = tmp(:,3) / 100;
     tmp = tmp( tmp > 0 );
-    mapElevEntropy = sum( tmp(:) * log2(tmp(:)) );
+    mapElevEntropy = sum( tmp(:) .* log2(tmp(:)) );
     
     for widx=1:paths_per_city
         saveIdx = (midx-1) * paths_per_city + widx + 1;

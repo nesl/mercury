@@ -553,7 +553,7 @@ classdef Solver_dp5 < handle
                 traceIdx = indxs(i);
                 scoreGndEsti = gps_series_compare(groundTruthLatLngs, obj.final_res_traces(traceIdx).latlng);
                 scoreEstiGnd = gps_series_compare(obj.final_res_traces(traceIdx).latlng, groundTruthLatLngs);
-                rmsInMeter(i) = rms(scoreGndEsti, scoreEstiGnd);
+                rmsInMeter(i) = rms([scoreGndEsti scoreEstiGnd]);
             end
         end
         
@@ -589,6 +589,8 @@ classdef Solver_dp5 < handle
                     res = [ res obj.getPathSimilarityConsideringTime() ];
                 elseif strcmp(varargin{i}, 'shapeError') == 1
                     res = [ res obj.getPathShapeSimilarity() ];
+                elseif strcmp(varargin{i}, 'biShapeError') == 1
+                    res = [ res obj.getPathShapeSimilarityBiDirection() ];
                 else
                     error(['unrecognized column name ' varargin{i} ' (in resultSummarize())']);
                 end
@@ -686,8 +688,8 @@ classdef Solver_dp5 < handle
             end
             
             %attributes, attributeValues, paths
-            attributes      =                    {'Path error', 'Shape error', 'DTW',      '# of mistake turns', 'Sea pressure'};
-            attributeValues = obj.summarizeResult('pathError',  'shapeError',  'dtwScore', 'numMistakeTurns',    'seaPressure');
+            attributes      =                    {'Path error', 'Shape error', 'Bi shape error', 'DTW',      '# of mistake turns', 'Sea pressure'};
+            attributeValues = obj.summarizeResult('pathError',  'shapeError',  'biShapeError',   'dtwScore', 'numMistakeTurns',    'seaPressure');
             
             numPaths = numel(obj.final_res_traces);
             paths = cell(numPaths, 1);

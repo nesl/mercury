@@ -26,6 +26,8 @@ end
 %% Get solved test cases
 soldir = '../../Data/SimResults/';
 
+%{
+
 %% Loop through all test cases
 for tidx=1:length(test_files)
 %for tidx=28
@@ -107,13 +109,18 @@ end
 
 return;
 
+%}
 
-%% plotting
 
-rankOfInterest = [1 3 5 10 15 20 30 50 inf];
+%% load for plotting
+
+%rankOfInterest = [1 3 5 10 15 20 30 50 inf];
+rankOfInterest = [1 3 5 20];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
 pathVSshapeError = [];
+topNBiShapeError = [];  % numel(rankOfInterest) by num_available_solution
+
 
 atidx = 0;
 for tidx=1:length(test_files)
@@ -137,6 +144,7 @@ for tidx=1:length(test_files)
     numPaths = str2num( tline(1:end-1) );
     pathError = zeros(numPaths, 1);
     shapeError = zeros(numPaths, 1);
+    biShapeError = zeros(numPaths, 1);
     
     for i = 1:numPaths
     	tline = fgets(fid);
@@ -144,6 +152,7 @@ for tidx=1:length(test_files)
         terms = strsplit(tline, ',');
         pathError(i) = str2num(terms{1});
         shapeError(i) = str2num(terms{2});
+        biShapeError(i) = str2num(terms{3});
     end
     fclose(fid);
     
@@ -151,34 +160,65 @@ for tidx=1:length(test_files)
         rank = min(rankOfInterest(i), numPaths);
         topNPathError(i, atidx) = min(pathError(1:rank));
         topNShapeError(i, atidx) = min(shapeError(1:rank));
+        topNBiShapeError(i, atidx) = min(biShapeError(1:rank));
     end
     
-    pathVSshapeError = [pathVSshapeError; [pathError shapeError]];
+    pathVSshapeError = [pathVSshapeError; [pathError biShapeError]];
 end
 
+%% Plotting
+
 %
+cfigure(14,8);
 
 clf
 
-subplot(1, 3, 1);
+colors = {'bs-', 'r^-', 'mo-', 'k*-'};
+skip = 20;
+
+%subplot(1, 3, 1);
 hold on
-for i = 1:length(rankOfInterest)
+for i = length(rankOfInterest):-1:1
     x = sort(topNPathError(i,:));
     y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
+xlabel('Path Error (m)','FontSize',12);
+ylabel('Probability','FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_greedyA_path');
 
-subplot(1, 3, 2);
+
+cfigure(14,8);
+
 hold on
-for i = 1:length(rankOfInterest)
+for i = length(rankOfInterest):-1:1
     x = sort(topNShapeError(i,:));
     y = linspace(0, 1, length(x));
-    plot(x, y, 'Color', hsv2rgb([ i/length(rankOfInterest) 1 0.9 ]));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-subplot(1, 3, 3);
-plot(pathVSshapeError(:,1), pathVSshapeError(:,2), '.');
-xlabel('path error');
-ylabel('shape error');
+xlabel('Shape Error (m)', 'FontSize',12);
+ylabel('Probability', 'FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_greedyA_shape');
 
+% bi-shape
+
+cfigure(14,8);
+
+hold on
+for i = length(rankOfInterest):-1:1
+    x = sort(topNBiShapeError(i,:));
+    y = linspace(0, 1, length(x));
+    plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
+end
+
+xlabel('Bi-Shape Error (m)', 'FontSize',12);
+ylabel('Probability', 'FontSize',12);
+grid on;
+legend('1 path', '3 paths', '5 paths', '20 paths','Location','SE');
+saveplot('figs/sim_greedyA_bishape');
 

@@ -265,9 +265,17 @@ clf
 hold on
 for i = find(availableIdx)'
     i
-    plot([resultEV(i,1) resultEV(i,4)], [errorSP(i,1) errorSP(i,1)], '-')
-    pause
+    %plot([resultEV(i,1) resultEV(i,4)], [errorSP(i,1) errorSP(i,1)], '-')
+    plot(resultEV(i,1) * resultEV(i,4), errorSP(i,1) , '+')
 end
+
+%%
+clf
+loglog(resultEV(availableIdx,2), errorSP(availableIdx,1), '+')
+
+%%
+figure
+cdfplot(errorSP(availableIdx,1))
 
 
 %% patch: add biShape to rset

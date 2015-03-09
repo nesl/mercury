@@ -129,7 +129,7 @@ for tidx=1:length(test_files)
     fprintf([outputWebFile '\n']);
     
     fid = fopen(outputWebFile);
-    for i = 1:5
+    for i = 1:6
         tline = fgets(fid);
     end
     

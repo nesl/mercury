@@ -5,7 +5,7 @@ add_paths
 %SOLVER = 'greedyA';
 %SOLVER = 'greedyAT';
 %SOLVER = 'greedyR';
-%SOLVER = 'greedyRT';
+SOLVER = 'greedyRT';
 
 if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
     error('Which solver are you choosing?')
@@ -27,6 +27,12 @@ end
 soldir = '../../Data/SimResults/';
 
 %% Loop through all test cases
+
+order = 1:length(test_files);
+order = reshape(reshape(order, 10, [])', 1, []);
+order = order(6:10:end);
+
+
 for tidx=1:length(test_files)
 %for tidx = 500;
     tfile = test_files{tidx};

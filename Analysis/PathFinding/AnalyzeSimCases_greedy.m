@@ -2,9 +2,9 @@
 clc; close all; clear all;
 add_paths
 
-SOLVER = 'greedyA';
+%SOLVER = 'greedyA';
 %SOLVER = 'greedyAT';
-%SOLVER = 'greedyR';
+SOLVER = 'greedyR';
 %SOLVER = 'greedyRT';
 
 if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')

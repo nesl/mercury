@@ -16,7 +16,7 @@ path_len_max = 300;
 
 map_manager = MapManager('../../Data/EleSegmentSets/');
 map_size = 2;
-map_ids = map_manager.getValidMapIds(map_size);
+map_ids = [7, 1, 41];
 
 all_results_abs = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);
 all_results_rel = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);

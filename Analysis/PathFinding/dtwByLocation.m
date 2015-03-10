@@ -71,8 +71,8 @@ for midx = 1:length(map_ids)
     end
 end
 
-save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
-    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
+%save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
+%    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
     
 
 %% Analyze and Plot Results
@@ -118,7 +118,6 @@ xlabel('Path Length (m)','FontSize',12);
 ylabel('% Error vs. True Path','FontSize',12);
 legend([handles(1), handles(3), handles(5)], 'Seattle', 'Albuquerque', 'Chicago');
 saveplot('figs/dtwByLocation');
-
 
 
 

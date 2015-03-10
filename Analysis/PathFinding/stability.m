@@ -18,17 +18,17 @@ end
 
 clf
 hold on
-plot(1:50, baro(1,:), '-ro', 'LineWidth', 2, 'MarkerSize', 6);
-plot(1:50, baro(2,:), '-g^', 'LineWidth', 2, 'MarkerSize', 6);
-plot(1:50, baro(3,:), '-b*', 'LineWidth', 2, 'MarkerSize', 6);
-plot(1:50, baro(4,:), '-mv', 'LineWidth', 2, 'MarkerSize', 6);
+plot(1:50, baro(1,:)-baro(1,1), '-ro', 'LineWidth', 2, 'MarkerSize', 6);
+plot(1:50, baro(2,:)-baro(1,1), '-g^', 'LineWidth', 2, 'MarkerSize', 6);
+plot(1:50, baro(3,:)-baro(1,1), '-b*', 'LineWidth', 2, 'MarkerSize', 6);
+plot(1:50, baro(4,:)-baro(1,1), '-mv', 'LineWidth', 2, 'MarkerSize', 6);
 xlabel('Time (sec)', 'FontSize', 14)
 ylabel('Pressure (hPa)', 'FontSize', 14);
-ylim([1005.15 1005.45])
+ylim([-0.2 0.1])
 legend({'h=0', 'h=10', 'h=20', 'h=30 cm'}, 'Location', 'north', 'Orientation', 'horizontal')
 grid on
 
-saveplot('~/Dropbox/MercuryWriting/figures/barometer_sensing_ability')
+saveplot('~/Dropbox/MercuryWriting/mobicom15/figs/barometer_sensing_ability')
 
 return
 

@@ -186,7 +186,7 @@ end
 xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('5 paths', '3 paths', '1 paths','Location','SE');
+legend('5 paths', '3 paths', '1 paths','Random');
 saveplot('figs/sim_greedyRT_path');
 
 
@@ -202,7 +202,7 @@ end
 xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
-legend('5 paths', '3 paths', '1 paths','Location','SE');
+legend('5 paths', '3 paths', '1 paths','Random');
 saveplot('figs/sim_greedyRT_shape');
 
 % bi-shape

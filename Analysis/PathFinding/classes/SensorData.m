@@ -58,7 +58,7 @@ classdef SensorData < handle
             
             % ensure at least baro and gps are not empty
             if isempty(baro) || isempty(gps)
-                error('Error: Baro or GPS data supplied to SensorData constructor is empty');
+                warning('Error: Baro or GPS data supplied to SensorData constructor is empty');
             end
             
             % assign raw data
@@ -74,7 +74,7 @@ classdef SensorData < handle
             obj.SR_baro = mean(1./diff(obj.raw_baro(:,1)));
             obj.SR_acc =  mean(1./diff(obj.raw_acc(:,1)));
             obj.SR_gyro = mean(1./diff(obj.raw_gyro(:,1)));
-            obj.SR_mag =  mean(1./diff(obj.raw_gps(:,1)));
+            obj.SR_mag =  mean(1./diff(obj.raw_mag(:,1)));
             obj.SR_gps =  mean(1./diff(obj.raw_gps(:,1)));
             
             % Calculate gpsSpeed

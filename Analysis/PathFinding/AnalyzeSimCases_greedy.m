@@ -5,7 +5,7 @@ add_paths
 %SOLVER = 'greedyA';
 %SOLVER = 'greedyAT';
 %SOLVER = 'greedyR';
-SOLVER = 'greedyRT';
+SOLVER = 'greedyA';
 
 if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
     error('Which solver are you choosing?')
@@ -173,8 +173,8 @@ cfigure(14,8);
 
 clf
 
-colors = {'bs-', 'r^-', 'mo-', 'k*-'};
-skip = 1;
+colors = {'bs-', 'r^-', 'ko-', 'm*-'};
+skip = 20;
 
 %subplot(1, 3, 1);
 hold on
@@ -220,5 +220,5 @@ xlabel('Bi-Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
 legend('5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_greedyRT_bishape');
+saveplot('figs/sim_greedyA_bishape');
 

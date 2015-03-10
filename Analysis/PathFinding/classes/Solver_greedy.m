@@ -25,7 +25,7 @@ classdef Solver_greedy < handle
         % debugging options
         DBG = false;
 
-        
+        process_time;
     end
     
     methods
@@ -58,6 +58,7 @@ classdef Solver_greedy < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
+            tic
             
             if obj.DBG
                 figure();
@@ -137,6 +138,7 @@ classdef Solver_greedy < handle
                 fprintf('    Solver Delta: %.3f\n', deltaPerc);
                 if deltaPerc < 0.01;
                    fprintf('SOLVER DONE!\n');
+                   obj.process_time = toc;
                    return;
                 end
                 % rotate window
@@ -175,7 +177,7 @@ classdef Solver_greedy < handle
                 pause(0.1);
   
             end
-      
+            
         end
         
         % RETRIEVE PATHS

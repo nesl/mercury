@@ -313,9 +313,13 @@ classdef SensorData < handle
             % find valid indices for this segment
             gps_start_time = obj.segment_start;
             gps_stop_time  = obj.segment_stop;
-            gps2ele = obj.raw_gpsele( obj.raw_gpsele(:,1) >= gps_start_time & ...
-                obj.raw_gpsele(:,1) <= gps_stop_time, : );
-            gps2ele(:,1) = gps2ele(:,1) - gps_start_time;
+            if numel(obj.raw_gpsele) == 0
+                gps2ele = [];
+            else
+                gps2ele = obj.raw_gpsele( obj.raw_gpsele(:,1) >= gps_start_time & ...
+                    obj.raw_gpsele(:,1) <= gps_stop_time, : );
+                gps2ele(:,1) = gps2ele(:,1) - gps_start_time;
+            end
         end
         
         % VISUALIZATION

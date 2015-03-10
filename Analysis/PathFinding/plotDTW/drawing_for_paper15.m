@@ -46,7 +46,7 @@ estimatedAnswer = [
 
 sensorElev = sensor_data.getElevationTimeWindow();
 mapElev = map_data.getPathElev(estimatedAnswer(:,2));
-
+mapDis = (1:length(mapElev))' * 8 / 1000;
 %%
 
 clf
@@ -56,7 +56,7 @@ cfigure(14,8);
 hold on
 %a=axes('units','normalized','position',[.1 .25 .8 .7],'xlim',[0 144],'xtick',0:12:144)
 %xlabel(a,'Inches')
-plot((1:length(mapElev)) * 8 / 1000, mapElev - mapElev(1), 'b--','LineWidth',2);
+plot(mapDis, mapElev - mapElev(1), 'b--','LineWidth',2);
 plot(sensorElev(1,1), sensorElev(1,2), 'r', 'LineWidth', 2);
 ylim([-70 20]);
 xlabel('Traveling distance (Km, bottom) and time (Sec, top)', 'FontSize', 12);
@@ -84,6 +84,8 @@ set(gca, 'YTickLabel', {})
 %plot((1:length(mapElev)) * 8, mapElev - mapElev(1), 'r');
 %saveplot([rootDir 'elev_dtw_1']);
 
-return
+%%
+cfigure(14,8);
 pflag = 1;
-dtw(sensorElev(:,2),mapElev,pflag,[1 0 0]);
+dtw_for_paper(sensorElev(:,2) - mapElev(1) + 70, mapElev - mapElev(1) + 70, pflag);
+saveplot([rootDir 'elev_dtw_2']);

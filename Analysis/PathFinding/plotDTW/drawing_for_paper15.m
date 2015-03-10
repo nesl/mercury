@@ -82,7 +82,7 @@ set(gca, 'YTickLabel', {})
 %xlabel('Traveling time (Sec)', 'FontSize', 12);
 
 %plot((1:length(mapElev)) * 8, mapElev - mapElev(1), 'r');
-saveplot([rootDir 'elev_dtw_1']);
+%saveplot([rootDir 'elev_dtw_1']);
 
 return
 pflag = 1;

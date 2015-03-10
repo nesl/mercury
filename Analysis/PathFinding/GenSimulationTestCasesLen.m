@@ -38,7 +38,7 @@ for midx=1:length(map_ids)
         
         % random path length
         all_path_lens = linspace(walk_len_min, walk_len_max, paths_per_city);
-        path_len = all_path_lens(widx);
+        path_len = all_path_lens(widx)
         
         % random walk
         randwalk = map_data.getRandomWalkConstrainedByTurn(-1, path_len, false, 50);
@@ -106,7 +106,7 @@ for midx=1:length(map_ids)
         
         caseName = strcat('TESTCASE_SIM_', map_name, '_', num2str(widx));
         fprintf('Test case: %s\n', caseName);
-        testCase.saveTo(['../../Data/SimTestCasesLength/' caseName], caseName);
+        %testCase.saveTo(['../../Data/SimTestCasesLength/' caseName], caseName);
         
 
     end

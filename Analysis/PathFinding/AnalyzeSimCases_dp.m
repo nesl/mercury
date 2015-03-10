@@ -84,8 +84,8 @@ for tidx=1:length(test_files)
 end
 
 %%
-colors = {'bs-', 'r^-', 'mo-', 'k*-'};
-skip = 20;
+colors = {'bs-', 'r^-', 'ko-', 'm*-'};
+skip = 10;
 
 
 cfigure(14,8);
@@ -101,7 +101,7 @@ xlabel('Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
 legend('5 paths', '3 paths', '1 paths','Location','SE');
-%saveplot('figs/sim_dp_shape');
+saveplot('figs/sim_dp_shape');
 
 
 cfigure(14,8);
@@ -115,7 +115,7 @@ xlabel('Bi-Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
 legend('5 paths', '3 paths', '1 paths','Location','SE');
-%saveplot('figs/sim_dp_bishape');
+saveplot('figs/sim_dp_bishape');
 
 
 cfigure(14,8);
@@ -129,7 +129,7 @@ xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
 legend('5 paths', '3 paths', '1 paths','Location','SE');
-%saveplot('figs/sim_dp_path');
+saveplot('figs/sim_dp_path');
 
 
 

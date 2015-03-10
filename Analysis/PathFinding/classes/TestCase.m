@@ -72,7 +72,7 @@ classdef TestCase < handle
             end
 
             if obj.stopAbsTime - obj.startAbsTime < 30
-                error('Safety check: half-minute test case? (save())')
+                warning('Safety check: half-minute test case? (save())')
             end
             if obj.sensorWindowSize <= 0
                 error('Didn''t specify sensor window size (save())')

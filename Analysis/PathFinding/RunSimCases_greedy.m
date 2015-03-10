@@ -30,7 +30,7 @@ soldir = '../../Data/SimResults/';
 
 order = 1:length(test_files);
 order = reshape(reshape(order, 10, [])', 1, []);
-order = order(6:10:end);
+order = order(10:10:end);
 
 
 for tidx=1:length(test_files)

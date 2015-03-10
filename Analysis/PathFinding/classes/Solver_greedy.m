@@ -138,6 +138,7 @@ classdef Solver_greedy < handle
                 fprintf('    Solver Delta: %.3f\n', deltaPerc);
                 if deltaPerc < 0.01;
                    fprintf('SOLVER DONE!\n');
+                   obj.process_time = toc;
                    return;
                 end
                 % rotate window
@@ -176,7 +177,7 @@ classdef Solver_greedy < handle
                 pause(0.1);
   
             end
-            obj.process_time = toc;
+            
         end
         
         % RETRIEVE PATHS

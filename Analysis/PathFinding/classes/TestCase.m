@@ -10,7 +10,7 @@ classdef TestCase < handle
         mapFilePath = '';
         sensorFilePath = '';
         seaPressure = 0; 
-        PressureScalar = 0;
+        pressureScalar = 0;
         startAbsTime = 0; 
         stopAbsTime = 0;
         sensorWindowSize = 0;

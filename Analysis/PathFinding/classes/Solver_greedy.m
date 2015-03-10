@@ -25,7 +25,7 @@ classdef Solver_greedy < handle
         % debugging options
         DBG = false;
 
-        
+        process_time;
     end
     
     methods
@@ -58,6 +58,7 @@ classdef Solver_greedy < handle
         
         % FIND THE LIKELY PATHS
         function solve(obj)
+            tic
             
             if obj.DBG
                 figure();
@@ -175,7 +176,7 @@ classdef Solver_greedy < handle
                 pause(0.1);
   
             end
-      
+            obj.process_time = toc;
         end
         
         % RETRIEVE PATHS

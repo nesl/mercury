@@ -3,8 +3,8 @@ clc; close all; clear all;
 add_paths;
 rng(100);
 
-NUM_TRUE_PATHS = 100;
-NUM_FAKE_PATHS = 50;
+NUM_TRUE_PATHS = 300;
+NUM_FAKE_PATHS = 100;
 
 path_len_min = 2;
 path_len_max = 300;
@@ -16,7 +16,7 @@ path_len_max = 300;
 
 map_manager = MapManager('../../Data/EleSegmentSets/');
 map_size = 2;
-map_ids = [7, 1, 41];
+map_ids = [7, 1, 41]; % low var, med var, high var
 
 all_results_abs = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);
 all_results_rel = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);
@@ -77,3 +77,56 @@ save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
 
 %% Analyze and Plot Results
 load('cache/dtwByLocation');
+
+% plot ids: low (chicago), med (albuquerque), high (seattle)
+plotids = { {'bs-', 'bs--'}, {'ro-', 'rs--'}, {'m^-', 'm^--'} };
+cfigure(14,8);
+wsize = 20;
+
+handles = [];
+
+for m=3:-1:1
+    errors_abs = squeeze( all_results_abs(m,:,:) );
+    errors_rel = squeeze( all_results_rel(m,:,:) );
+    all_lengths = linspace(path_len_min, path_len_max, size(all_results_abs,2));
+    errors_ave_abs = median( errors_abs, 2);
+    errors_ave_rel = median( errors_rel, 2);
+    
+    % window to clean up
+    errors_win_abs = [];
+    errors_win_rel = [];
+    lengths = [];
+    for w=(1+wsize):wsize:length(errors_ave_abs)
+        errors_win_abs = [errors_win_abs; mean( errors_ave_abs((w-wsize):w) )];
+        errors_win_rel = [errors_win_rel; mean( errors_ave_rel((w-wsize):w) )];
+        lengths = [lengths; mean( all_lengths((w-wsize):w) )];
+    end
+    
+    h = semilogy(lengths*10, errors_win_abs, plotids{m}{1},'LineWidth',2);
+    handles = [handles; h];
+    hold on;
+    h = semilogy(lengths*10, errors_win_rel, plotids{m}{2},'LineWidth',2);
+    handles = [handles; h];
+
+    
+end
+
+
+
+grid on;
+xlabel('Path Length (m)','FontSize',12);
+ylabel('% Error vs. True Path','FontSize',12);
+legend([handles(1), handles(3), handles(5)], 'Seattle', 'Albuquerque', 'Chicago');
+saveplot('figs/dtwByLocation');
+
+
+
+
+
+
+
+
+
+
+
+

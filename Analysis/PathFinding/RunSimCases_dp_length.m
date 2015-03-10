@@ -33,7 +33,7 @@ order = reshape(reshape(order, 10, [])', 1, []);
 %order = order(3:4:end);
 order = order(end:-2:1);
 
-for tidx = order
+for tidx = 1:4:length(test_files)
 %for tidx = 270
     tfile = test_files{tidx};
     solfile = [tfile(1:(end-4)) '_' SOLVER '.mat'];
@@ -81,7 +81,7 @@ for tidx = order
         solver.getRawPath(1)
         solver.plotPathComparison(1)
         pause(1)
-        solver.toWeb();
+        %solver.toWeb();
     end
     
     % save results

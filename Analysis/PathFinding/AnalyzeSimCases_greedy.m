@@ -4,8 +4,8 @@ add_paths
 
 %SOLVER = 'greedyA';
 %SOLVER = 'greedyAT';
-SOLVER = 'greedyR';
-%SOLVER = 'greedyRT';
+%SOLVER = 'greedyR';
+SOLVER = 'greedyRT';
 
 if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
     error('Which solver are you choosing?')
@@ -115,7 +115,7 @@ return;
 %% load for plotting
 
 %rankOfInterest = [1 3 5 10 15 20 30 50 inf];
-rankOfInterest = [1 3 5 20];
+rankOfInterest = [1 3 5];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
 pathVSshapeError = [];
@@ -174,7 +174,7 @@ cfigure(14,8);
 clf
 
 colors = {'bs-', 'r^-', 'mo-', 'k*-'};
-skip = 20;
+skip = 1;
 
 %subplot(1, 3, 1);
 hold on
@@ -186,8 +186,8 @@ end
 xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_greedyA_path');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+saveplot('figs/sim_greedyRT_path');
 
 
 cfigure(14,8);
@@ -202,8 +202,8 @@ end
 xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_greedyA_shape');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+saveplot('figs/sim_greedyRT_shape');
 
 % bi-shape
 
@@ -219,6 +219,6 @@ end
 xlabel('Bi-Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_greedyA_bishape');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+saveplot('figs/sim_greedyRT_bishape');
 

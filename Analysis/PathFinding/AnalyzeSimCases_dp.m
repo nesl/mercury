@@ -31,7 +31,7 @@ end
 load('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
 
 
-rankOfInterest = [1 3 5 20];
+rankOfInterest = [1 3 5];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
 topNShapeError = [];  % numel(rankOfInterest) by num_available_solution
 topNBiShapeError = [];  % numel(rankOfInterest) by num_available_solution
@@ -100,8 +100,8 @@ end
 xlabel('Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_shape');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+%saveplot('figs/sim_dp_shape');
 
 
 cfigure(14,8);
@@ -114,8 +114,8 @@ end
 xlabel('Bi-Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_bishape');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+%saveplot('figs/sim_dp_bishape');
 
 
 cfigure(14,8);
@@ -128,8 +128,8 @@ end
 xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('20 path', '5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_path');
+legend('5 paths', '3 paths', '1 paths','Location','SE');
+%saveplot('figs/sim_dp_path');
 
 
 

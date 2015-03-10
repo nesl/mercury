@@ -57,8 +57,8 @@ for midx = 1:length(map_ids)
             fake_elev_rel = fake_elev - (fake_elev(1) - true_elev(1) - true_elev_noise(1));
             
             % DTW score
-            dtw_fake = DTW_MSE(true_elev, fake_elev);
-            dtw_fake_rel = DTW_MSE(true_elev, fake_elev_rel);
+            dtw_fake = DTW_MSE_2(true_elev, fake_elev);
+            dtw_fake_rel = DTW_MSE_2(true_elev, fake_elev_rel);
             
             % perc. diff
             error_perc = 100*(dtw_fake - dtw_base)/dtw_base;
@@ -71,9 +71,9 @@ for midx = 1:length(map_ids)
     end
 end
 
-save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
-    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
+%save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
+%    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
     
 
 %% Analyze and Plot Results
-load('cache/dtwByLocation');
+%load('cache/dtwByLocation');

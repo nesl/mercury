@@ -106,16 +106,16 @@ ylimValue = [
     ];
 
 xinterest = 11:PATH_LEN;
-skip = 3;
-for j = 1:4
+skip = 5;
+for j = 1:3
     cfigure(14, 6);
     x = xinterest;
     y = abs_errors(xinterest,j) / testCount(j) + 1e-6;
-    semilogy(x(1:skip:end), y(1:skip:end), 'bo', 'LineWidth', 2)
+    semilogy(x(1:skip:end), y(1:skip:end), '-bo', 'LineWidth', 2)
     hold on
     x = xinterest;
     y = rel_errors(xinterest,j) / testCount(j) + 1e-6;
-    semilogy(x(1:skip:end), y(1:skip:end), 'r^', 'LineWidth', 2)
+    semilogy(x(1:skip:end), y(1:skip:end), '-r^', 'LineWidth', 2)
     hold off
     ylim(ylimValue(j,:));
     xlim([0 260])

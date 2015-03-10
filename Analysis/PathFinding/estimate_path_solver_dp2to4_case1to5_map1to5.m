@@ -11,8 +11,8 @@ add_paths;
 
 %% knot
 solverVersion = 5;  % 2 to 5
-caseNo = 3; % 1 to 5
-mapSize = 2; % 1 to 5
+caseNo = 7; % 1 to 5
+mapSize = 4; % 1 to 5
 
 % some explanation on the map of ucla_small:
 %    top_left corner: (34.080821, -118.470371)
@@ -85,11 +85,18 @@ elseif caseNo == 6
     %        time: 444 sec
     %   avg speed: ??mph / ?? km/h / ?? meter/sec
     sensorfile = '../../Data/rawData/baro_n503_20150111_091333.baro.csv';
+elseif caseNo == 7
+    % driving in Los Angeles, with only one turn, keep moving
+    %    distance: ?? mile (?? km)
+    %        time: 444 sec
+    %   avg speed: ??mph / ?? km/h / ?? meter/sec
+    sensorfile = '../../Data/rawData/baro_n501_20150310_013555.baro.csv';
 else
     error('Kidding me? You didn''t choose a correct test case!');
 end
 
-caseDesp = {'weyburn', 'sunset', 'sunset_hilgard', 'one_round_ucla', 'east_ucla_1', 'los_angeles'};
+
+caseDesp = {'weyburn', 'sunset', 'sunset_hilgard', 'one_round_ucla', 'east_ucla_1', 'los_angeles', 'monica'};
 mapDesp = {'ucla_west', 'ucla_small', 'ucla_3x3', 'ucla_4x4', 'ucla_5x5', 'la_4x4'};
 outputWebFile = ['../../Data/resultSets/(B)case' num2str(caseNo) ...
     '_dp' num2str(solverVersion) '_' mapDesp{mapSize} ...
@@ -137,7 +144,36 @@ elseif caseNo == 6
     sensor_data.setAbsoluteSegment(1420998405, 1420998803);
     sensor_data.setWindowSize(1);  % finer case: 0.5
     map_data = MapData(mapfile, 2);  % finer case: 1
+elseif caseNo == 7
+    sensor_data.setSeaPressure(1014.8);  % coefficient hand-tuned
+    sensor_data.setPressureScalar(-8.42);
+    %sensor_data.setAbsoluteSegment(1425976694, 1425979064);
+    sensor_data.setAbsoluteSegment(1425976700, 1425977000);
+    sensor_data.setWindowSize(1);  % finer case: 0.5
+    map_data = MapData(mapfile, 2);  % finer case: 1
 end
+
+%
+%1425976694000 1425977338000
+%1425977371000 1425979064000
+gps = sensor_data.getGps();
+
+%
+gpsCalibratedFromMap = map_data.rawGpsAlignment(gps(:,2:3));
+
+%%
+sensor_data.setSeaPressure(1014.8);  % coefficient hand-tuned
+sensor_data.setPressureScalar(-8.42);
+baroTimeElev = sensor_data.getElevationTimeWindow();
+clf
+hold on
+plot(baroTimeElev(:,1), baroTimeElev(:,2), 'b');
+plot(gps(:,1), gpsCalibratedFromMap(:,3), 'r');
+return
+%
+%gpsTimeElev = [gps(:,1) gpsCalibratedFromMap(:,3)];
+%baroTimeElev = [baroTimeElev(:,1:2)];
+
 
 if solverVersion == 2
     solver = Solver_dp2(map_data, sensor_data);
@@ -192,6 +228,10 @@ end
 
 
 %% test solver
+
+if solverVersion == 5 && caseNo == 7
+    solver.setPressureParameterManually([-8.42 1014.8]);
+end
 
 solver.setOutputFilePath(outputWebFile);
 

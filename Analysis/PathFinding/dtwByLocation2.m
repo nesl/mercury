@@ -3,7 +3,7 @@ clc; close all; clear all;
 add_paths;
 %rng(100);
 
-NUM_PATHS = 2000;
+NUM_PATHS = 5000;
 PATH_LEN = 256;
 
 % Goal: for each location, pick a number of random true paths. for each
@@ -17,11 +17,9 @@ map_manager = MapManager('../../Data/EleSegmentSets/');
 
 map_info = [
     7  2
-    7  3
-    1  2
-    1  3
+    7  4
     41 2
-    41 3
+    41 4
 ];
 
 all_results_abs        = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
@@ -64,8 +62,8 @@ abs_errors = zeros(PATH_LEN, size(map_info, 1));
 rel_errors = zeros(PATH_LEN, size(map_info, 1));
 
 clf
-            
-for i = 1:size(tasks, 1)
+%%
+for i = 319366:size(tasks, 1)
     fprintf('iteration %d\n', i);
     if tasks(i, 2) ~= tasks(i, 3)
         abs_result = DTW_MSE_3( all_results_abs(:, tasks(i,2), tasks(i,1)), all_results_abs(:, tasks(i,3), tasks(i,1)) );
@@ -75,12 +73,13 @@ for i = 1:size(tasks, 1)
         testCount( tasks(i,1) ) = testCount( tasks(i,1) ) + 1;
     end
     
-    if mod(i, 100) == 0 || i == size(tasks, 1)
-        for j = 1:6
-            subplot(3, 2, j);
-            plot(1:PATH_LEN, abs_errors(:,j) / testCount(j), 'b')
+    
+    if mod(i, 10000) == 0 || i == size(tasks, 1)
+        for j = 1:size(map_info, 1)
+            subplot( ceil(size(map_info, 1) / 2), 2, j);
+            semilogy(1:PATH_LEN, abs_errors(:,j) / testCount(j), 'b')
             hold on
-            plot(1:PATH_LEN, rel_errors(:,j) / testCount(j), 'r')
+            semilogy(1:PATH_LEN, rel_errors(:,j) / testCount(j), 'r')
             hold off
             pause(0.1)
         end
@@ -88,7 +87,7 @@ for i = 1:size(tasks, 1)
 end
 return;
 %% fix the result
-
+%{
 for j = 1:6
     subplot(3, 2, j);
     semilogy(1:PATH_LEN, abs_errors(:,j)+eps / testCount(j), 'b')
@@ -97,12 +96,9 @@ for j = 1:6
     hold off
     pause(0.1)
 end  
-
+%}
 %% finalize the figure
-candidtate = [1 2 5 6];
 ylimValue = [
-    1e-3 1
-    1e-3 1
     1e-3 1
     1e-3 1
     1e-6 1
@@ -120,5 +116,6 @@ for j = candidtate
     saveplot(['~/Dropbox/MercuryWriting/mobicom15/figs/dtwErrorPercentage_' num2str(j)])
 end
 %%
-save('../../Data/tmpMatFiles/lengthVSdtwErrorRate_abs_errors', 'abs_errors');
-save('../../Data/tmpMatFiles/lengthVSdtwErrorRate_rel_errors', 'rel_errors');
+save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_abs_errors', 'abs_errors');
+save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_rel_errors', 'rel_errors');
+save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_testCount', 'testCount');

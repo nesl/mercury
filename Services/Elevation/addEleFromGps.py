@@ -1,7 +1,7 @@
 # imports
 import ElevationService
 
-filename = 'baro_n503_20150110_161641'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
+filename = 'baro_n501_20150310_013555'    # sample: baro_n501_20141208_211251, without TWO levels of extension plz...
 
 rootDir = '../../Data/rawData/'
 

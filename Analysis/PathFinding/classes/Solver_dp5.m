@@ -41,8 +41,9 @@ classdef Solver_dp5 < handle
         % about scheduler
         pressure_parameters;  % an n-by-2 array, each row is [scalar, offset]
                               % the setting is assigned when solve() is triggered only.
-        num_pressure_parameters;
-                            
+        num_pressure_parameters = 0;
+
+        
         % associated objects
         map_data;
         sensor_data;
@@ -116,6 +117,17 @@ classdef Solver_dp5 < handle
             obj.uncertain_meter = abs(meter);
         end
         
+        function setPressureParameterManually(obj, params)
+            if obj.num_pressure_parameters > 0
+                error('Parameters have already been generated. Abort to avoid conflict.');
+            end
+            if size(params, 2) ~= 2
+                error('Wrong barometer parameter format.');
+            end
+            obj.pressure_parameters = params;
+            obj.num_pressure_parameters = size(params, 1);
+        end
+        
         function useTurns(obj, varargin)
             if numel(varargin) == 0
                 obj.use_turn_assistance = 1;
@@ -139,9 +151,12 @@ classdef Solver_dp5 < handle
         function solve(obj)
             tic
             
+            
             if isa(obj.sensor_data, 'SensorData')
                 % get possible pressure parameters
-                obj.private_schedulePressureParameters();
+                if obj.num_pressure_parameters == 0
+                    obj.private_schedulePressureParameters();
+                end
 
                 % initialize all the possible pressure parameters
                 obj.elev_series_from_baro = cell(obj.num_pressure_parameters, 1);

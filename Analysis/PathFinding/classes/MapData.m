@@ -835,6 +835,7 @@ classdef MapData < handle
         % GPS ALLIGNMENT
         function result = rawGpsAlignment(obj, gpsLatLngs)
             % return value contains 4 columns which are [lat lng elev error]
+            %{
             prevSeg = [];
             numLatLng = size(gpsLatLngs, 1);
             result = zeros(numLatLng, 4);
@@ -866,6 +867,10 @@ classdef MapData < handle
                     end
                 end
             end
+            %}
+            [mapElevs, mapLatLngs, ~] = obj.getHomogeneousMap();
+            [disError, selectedIdx] = min( latlng2m(mapLatLngs, gpsLatLngs) );
+            result = [ mapLatLngs(selectedIdx, :) mapElevs(selectedIdx, :) disError' ];
         end
         
         % METHODS REGARDING ALL PAIRS DTW

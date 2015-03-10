@@ -20,16 +20,25 @@ caseNames = {
 '[Bo-Driving]_3-6_size4'
 '[Bo-Driving]_3-7_size4'
 '[Bo-Driving]_3-8_size4'
-'[Bo-Driving]_4-1_size4'
 '[Bo-Driving]_5-1_size4'
 '[Bo-Driving]_5-2_size4'
 '[Bo-Driving]_5-3_size4'
+'[Bo-Driving]_6-1_size4'
+'[Bo-Driving]_6-2_size4'
+'[Bo-Driving]_7-1_size4'
+'[Bo-Driving]_7-2_size4'
+'[Bo-Driving]_7-3_size4'
+'[Bo-Driving]_7-4_size4'
+'[Bo-Driving]_7-5_size4'
+'[Bo-Driving]_7-6_size4'
+'[Bo-Driving]_7-7_size4'
+'[Bo-Driving]_7-8_size4'
 };
 %%
 
 %for i = 1:size(caseNames, 1)
 %for i = 27:size(caseNames, 1)
-for i = 10:26
+for i = 21:2:size(caseNames, 1)
     fprintf('====== case %d: %s ======\n', i, caseNames{i});
     testCase = TestCase(caseNames{i});
     sensor_data = SensorData(testCase.sensorFilePath);
@@ -92,32 +101,6 @@ cdfplot(topNbiShapeError(:,3));
 return
 
 %% Paul solver, greedyA
-clear all; clc; close all;
-add_paths
-
-caseNames = {
-'[Sample]_WeyburnWalking'
-'[Bo-Driving]_1-1_size4'
-'[Bo-Driving]_1-2_size4'
-'[Bo-Driving]_1-3_size4'
-'[Bo-Driving]_1-4_size4'
-'[Bo-Driving]_1-5_size4'
-'[Bo-Driving]_1-6_size4'
-'[Bo-Driving]_2-1_size4'
-'[Bo-Driving]_2-2_size4'
-'[Bo-Driving]_3-1_size4'
-'[Bo-Driving]_3-2_size4'
-'[Bo-Driving]_3-3_size4'
-'[Bo-Driving]_3-4_size4'
-'[Bo-Driving]_3-5_size4'
-'[Bo-Driving]_3-6_size4'
-'[Bo-Driving]_3-7_size4'
-'[Bo-Driving]_3-8_size4'
-'[Bo-Driving]_4-1_size4'
-'[Bo-Driving]_5-1_size4'
-'[Bo-Driving]_5-2_size4'
-'[Bo-Driving]_5-3_size4'
-};
 
 for i = 2:numel(caseNames)
     fprintf('====== case %d: %s ======\n', i, caseNames{i});

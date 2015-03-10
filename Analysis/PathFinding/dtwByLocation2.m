@@ -1,13 +1,10 @@
 %% Housekeeping
 clc; close all; clear all;
 add_paths;
-rng(100);
+%rng(100);
 
-NUM_TRUE_PATHS = 300;
-NUM_FAKE_PATHS = 100;
-
-path_len_min = 2;
-path_len_max = 300;
+NUM_PATHS = 2000;
+PATH_LEN = 256;
 
 % Goal: for each location, pick a number of random true paths. for each
 % random true path, pick a number of fake candidate paths and perform dtw.
@@ -15,118 +12,113 @@ path_len_max = 300;
 % location, what's the dtw error vs. path length
 
 map_manager = MapManager('../../Data/EleSegmentSets/');
-map_size = 2;
-map_ids = [7, 1, 41]; % low var, med var, high var
+%map_size = [2 3 ];
+%map_ids = [7, 1, 41]; % low var, med var, high var
 
-all_results_abs = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);
-all_results_rel = zeros(length(map_ids), NUM_TRUE_PATHS, NUM_FAKE_PATHS);
+map_info = [
+    7  2
+    7  3
+    1  2
+    1  3
+    41 2
+    41 3
+];
 
-for midx = 1:length(map_ids)
-    mapID = map_ids(midx);
-    map_data = map_manager.getMapDataObject(mapID,map_size, 1);
-    map_name = map_manager.getMapName(mapID,map_size);
+all_results_abs        = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+all_results_rel        = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+all_results_abs_noise  = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+all_results_rel_noise  = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+all_results_abs_thres  = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+all_results_rel_thres  = zeros(PATH_LEN, NUM_PATHS, size(map_info, 1));
+
+for midx = 1:size(map_info)
+    mapID = map_info(midx, 1);
+    map_data = map_manager.getMapDataObject(mapID, map_info(midx, 2), 1);
+    %map_name = map_manager.getMapName(mapID,map_size);
     
-    for tidx=1:NUM_TRUE_PATHS
+    for tidx=1:NUM_PATHS
                 
-        % path len
-        all_lengths = linspace(path_len_min, path_len_max, NUM_TRUE_PATHS);
-        len = all_lengths(tidx);
-        
         % random walk for a true path
-        start_node = map_data.getRandomNode();
-        true_path = map_data.getRandomWalkConstrainedByTurn(...
-            start_node, len, false, 50);
+        true_path = map_data.getRandomWalkConstrainedByTurn(-1, PATH_LEN, false, 50);
         true_elev = map_data.getPathElev(true_path);
         true_elev_noise = additiveNoise_OU(0:1:(length(true_elev)-1), 150, 0.001)';
         
+        all_results_abs(:, tidx, midx)       = true_elev(1:PATH_LEN);
+        all_results_abs_noise(:, tidx, midx) = true_elev(1:PATH_LEN) + true_elev_noise(1:PATH_LEN);
+        all_results_rel(:, tidx, midx)       = all_results_abs(:, tidx, midx) - all_results_abs(1, tidx, midx);
+        all_results_rel_noise(:, tidx, midx) = all_results_abs_noise(:, tidx, midx) - all_results_abs_noise(1, tidx, midx);
+        all_results_abs_thres(:, tidx, midx) = DTW_MSE_3( all_results_abs(:, tidx, midx), all_results_abs_noise(:, tidx, midx) );
+        all_results_rel_thres(:, tidx, midx) = DTW_MSE_3( all_results_rel(:, tidx, midx), all_results_rel_noise(:, tidx, midx) );
 
-        % DTW of true vs. true + noise
-        dtw_base = DTW_MSE(true_elev, true_elev+true_elev_noise);
-        
-        for fidx=1:NUM_FAKE_PATHS
+        fprintf('finish %d-%d\n', midx, tidx);
+    end
+end
+
+%%
+tasks = ndgrid2vec(1:size(map_info, 1), 1:NUM_PATHS, 1:NUM_PATHS);
+order = randperm(size(tasks, 1))';
+tasks = tasks(order,:);
+
+testCount = zeros(size(map_info, 1), 1);
+abs_errors = zeros(PATH_LEN, size(map_info, 1));
+rel_errors = zeros(PATH_LEN, size(map_info, 1));
+
+clf
             
-            % print status
-            fprintf('Map %d / %d, path %d / %d, fake: %d / %d\n', ...
-                midx, length(map_ids), tidx, NUM_TRUE_PATHS, fidx, NUM_FAKE_PATHS);
-            
-            % random walk for a fake path
-            start_node = map_data.getRandomNode();
-            fake_path = map_data.getRandomWalkConstrainedByTurn(...
-                start_node, len, false, 50);
-            fake_elev = map_data.getPathElev(fake_path);
-            fake_elev_rel = fake_elev - (fake_elev(1) - true_elev(1) - true_elev_noise(1));
-            
-            % DTW score
-            dtw_fake = DTW_MSE_2(true_elev, fake_elev);
-            dtw_fake_rel = DTW_MSE_2(true_elev, fake_elev_rel);
-            
-            % perc. diff
-            error_perc = 100*(dtw_fake - dtw_base)/dtw_base;
-            error_perc_rel = 100*(dtw_fake_rel - dtw_base)/dtw_base;
-            
-            all_results_abs(midx, tidx, fidx) = error_perc;
-            all_results_rel(midx, tidx, fidx) = error_perc_rel;
-            
+for i = 1:size(tasks, 1)
+    fprintf('iteration %d\n', i);
+    if tasks(i, 2) ~= tasks(i, 3)
+        abs_result = DTW_MSE_3( all_results_abs(:, tasks(i,2), tasks(i,1)), all_results_abs(:, tasks(i,3), tasks(i,1)) );
+        abs_errors(:, tasks(i,1)) = abs_errors(:, tasks(i,1)) + (abs_result <= all_results_abs_thres(:, tasks(i,2), tasks(i,1)));
+        rel_result = DTW_MSE_3( all_results_rel(:, tasks(i,2), tasks(i,1)), all_results_rel(:, tasks(i,3), tasks(i,1)) );
+        rel_errors(:, tasks(i,1)) = rel_errors(:, tasks(i,1)) + (rel_result <= all_results_rel_thres(:, tasks(i,2), tasks(i,1)));
+        testCount( tasks(i,1) ) = testCount( tasks(i,1) ) + 1;
+    end
+    
+    if mod(i, 100) == 0 || i == size(tasks, 1)
+        for j = 1:6
+            subplot(3, 2, j);
+            plot(1:PATH_LEN, abs_errors(:,j) / testCount(j), 'b')
+            hold on
+            plot(1:PATH_LEN, rel_errors(:,j) / testCount(j), 'r')
+            hold off
+            pause(0.1)
         end
     end
 end
+return;
+%% fix the result
 
-save('cache/dtwByLocation', 'all_results_abs', 'all_results_rel', ...
-    'map_ids', 'map_size', 'path_len_min', 'path_len_max');
-    
+for j = 1:6
+    subplot(3, 2, j);
+    semilogy(1:PATH_LEN, abs_errors(:,j)+eps / testCount(j), 'b')
+    hold on
+    semilogy(1:PATH_LEN, rel_errors(:,j)+eps / testCount(j), 'r')
+    hold off
+    pause(0.1)
+end  
 
-%% Analyze and Plot Results
-load('cache/dtwByLocation');
+%% finalize the figure
+candidtate = [1 2 5 6];
+ylimValue = [
+    1e-3 1
+    1e-3 1
+    1e-3 1
+    1e-3 1
+    1e-6 1
+    1e-6 1
+    ];
 
-% plot ids: low (chicago), med (albuquerque), high (seattle)
-plotids = { {'bs-', 'bs--'}, {'ro-', 'rs--'}, {'m^-', 'm^--'} };
-cfigure(14,8);
-wsize = 20;
-
-handles = [];
-
-for m=3:-1:1
-    errors_abs = squeeze( all_results_abs(m,:,:) );
-    errors_rel = squeeze( all_results_rel(m,:,:) );
-    all_lengths = linspace(path_len_min, path_len_max, size(all_results_abs,2));
-    errors_ave_abs = median( errors_abs, 2);
-    errors_ave_rel = median( errors_rel, 2);
-    
-    % window to clean up
-    errors_win_abs = [];
-    errors_win_rel = [];
-    lengths = [];
-    for w=(1+wsize):wsize:length(errors_ave_abs)
-        errors_win_abs = [errors_win_abs; mean( errors_ave_abs((w-wsize):w) )];
-        errors_win_rel = [errors_win_rel; mean( errors_ave_rel((w-wsize):w) )];
-        lengths = [lengths; mean( all_lengths((w-wsize):w) )];
-    end
-    
-    h = semilogy(lengths*10, errors_win_abs, plotids{m}{1},'LineWidth',2);
-    handles = [handles; h];
-    hold on;
-    h = semilogy(lengths*10, errors_win_rel, plotids{m}{2},'LineWidth',2);
-    handles = [handles; h];
-
-    
+xinterest = 11:PATH_LEN;
+for j = candidtate
+    cfigure(14, 6);
+    semilogy(xinterest, (abs_errors(xinterest,j)+1e-6) / testCount(j), 'b')
+    hold on
+    semilogy(xinterest, (rel_errors(xinterest,j)+1e-6) / testCount(j), 'r')
+    hold off
+    ylim(ylimValue(j,:));
+    saveplot(['~/Dropbox/MercuryWriting/mobicom15/figs/dtwErrorPercentage_' num2str(j)])
 end
-
-
-
-grid on;
-xlabel('Path Length (m)','FontSize',12);
-ylabel('% Error vs. True Path','FontSize',12);
-legend([handles(1), handles(3), handles(5)], 'Seattle', 'Albuquerque', 'Chicago');
-saveplot('figs/dtwByLocation');
-
-
-
-
-
-
-
-
-
-
-
-
+%%
+save('../../Data/tmpMatFiles/lengthVSdtwErrorRate_abs_errors', 'abs_errors');
+save('../../Data/tmpMatFiles/lengthVSdtwErrorRate_rel_errors', 'rel_errors');

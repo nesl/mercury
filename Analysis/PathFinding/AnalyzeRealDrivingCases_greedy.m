@@ -89,19 +89,46 @@ for i = 1:size(caseNames, 1)
     topNbiShapeError(end+1, 1) = 0;
     for j = 1:numel(rankOfInterest)
         rank = min(rankOfInterest(j), numel(paths));
-        topNpathError(end, j) = min( pathError(1:rank, 1) );
-        topNshapeError(end, j) = min( shapeError(1:rank, 2) );
-        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank, 3) );
+        topNpathError(end, j) = min( pathError(1:rank) );
+        topNshapeError(end, j) = min( shapeError(1:rank) );
+        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank) );
     end
     fprintf('finish case %d\n', i);
 end
 
+fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
 %% merge
 idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
 topNPathError(4,:) = randomTopNPathError(3,idx);
 topNShapeError(4,:) = randomTopNShapeError(3,idx);
 topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
+
+%% fast test
+clf
+subplot(1, 3, 1)
+hold on
+cdfplot(topNpathError(:,1));
+cdfplot(topNpathError(:,2));
+cdfplot(topNpathError(:,3));
+subplot(1, 3, 2)
+hold on
+cdfplot(topNshapeError(:,1));
+cdfplot(topNshapeError(:,2));
+cdfplot(topNshapeError(:,3));
+subplot(1, 3, 3)
+hold on
+cdfplot(topNbiShapeError(:,1));
+cdfplot(topNbiShapeError(:,2));
+cdfplot(topNbiShapeError(:,3));
+
+
+%% store: for handover
+save ../../Data/tmpMatFiles/drivingData/greedyA_handover.mat
+return
+
+%% load: for handover
+load ../../Data/tmpMatFiles/drivingData/greedyA_handover.mat
 
 %% Plotting
 

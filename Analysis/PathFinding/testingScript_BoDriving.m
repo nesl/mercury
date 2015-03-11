@@ -210,9 +210,9 @@ for i = 2:size(caseNames, 1)
     topNbiShapeError(end+1, 1) = 0;
     for j = 1:numel(rankOfInterest)
         rank = min(rankOfInterest(j), numel(paths));
-        topNpathError(end, j) = min( pathError(1:rank, 1) );
-        topNshapeError(end, j) = min( shapeError(1:rank, 2) );
-        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank, 3) );
+        topNpathError(end, j) = min( pathError(1:rank) );
+        topNshapeError(end, j) = min( shapeError(1:rank) );
+        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank) );
     end
     fprintf('finish case %d\n', i);
 end

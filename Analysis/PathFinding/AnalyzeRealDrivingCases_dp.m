@@ -2,14 +2,6 @@
 clc; close all; clear all;
 add_paths
 
-SOLVER = 'greedyA';
-%SOLVER = 'greedyAT';
-%SOLVER = 'greedyR';
-%SOLVER = 'greedyRT';
-
-if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
-    error('Which solver are you choosing?')
-end
 
 caseNames = {
 '[Bo-Driving]_1-1_size4'
@@ -51,58 +43,29 @@ randomTopNShapeError = topNShapeError;  % numel(rankOfInterest) by num_available
 randomTopNBiShapeError = topNBiShapeError;  % numel(rankOfInterest) by num_available_solution
 
 totalTime = [];
-topNpathError = [];
-topNshapeError = [];
-topNbiShapeError = [];
+topNPathError = [];
+topNShapeError = [];
+topNBiShapeError = [];
 rankOfInterest = [1 3 5];
 for i = 2:size(caseNames, 1)
-    solver = solutionResolver_dp4([caseNames{i} '_greedyA']);
-    [scores, paths] = solver.getResults();
-    % evaluation
-    evaluator = Evaluator(sensor_data, map_data);
-    
-    pathError = zeros(numel(paths), 1);
-    shapeError = zeros(numel(paths), 1);
-    shapeErrorBi = zeros(numel(paths), 1);
-    
-    elevBaroWithTime = sensor_data.getElevationTimeWindow();
-    elevBaro = elevBaroWithTime(:,2);
-    
-    %pathsLatLng = cell(size(solver_results.paths));
-    for j = 1:numel(paths)
-        pathNodeIdxs = paths{j};
-        pathLatLng = map_data.getPathLatLng(pathNodeIdxs);
-        pathElev = map_data.getPathElev(pathNodeIdxs);
-        [idxFrom, idxTo, ~] = dp_backtracking(elevBaro, pathElev);
-        mapToPath = zeros(1, length(elevBaro));
-        for k = 1:length(elevBaro)
-            idxsOfInterest = (idxFrom == k);
-            mapToPath(k) = round( mean(idxTo(idxsOfInterest)) );
-        end
-        estiLatLngs = pathLatLng(mapToPath, :);
-        estiTimeLatLngs = [ elevBaroWithTime(:,1) estiLatLngs ];
-        pathError(j) = evaluator.getPathSimilarityConsideringTime(estiTimeLatLngs);
-        shapeError(j) = evaluator.getPathShapeSimilarity(estiLatLngs);
-        shapeErrorBi(j) = evaluator.getPathShapeSimilarityBiDirection(estiLatLngs);
-    end
-    
-    fprintf('min path error: %f\n', min(pathError)); 
-    fprintf('min shape error: %f\n', min(shapeError)); 
-    fprintf('min bi-dir shape error: %f\n', min(shapeErrorBi)); 
-    
-    totalTime = [totalTime solver.process_time];
-    
-    topNpathError(end+1, 1) = 0;
-    topNshapeError(end+1, 1) = 0;
-    topNbiShapeError(end+1, 1) = 0;
+    solver = solutionResolver_dp4(caseNames{i});
+    totalTime = [totalTime solver.getProcessingTime()];
+    tmp = solver.summarizeResult('pathError',  'shapeError',  'biShapeError');
+    topNPathError(end+1, 1) = 0;
+    topNShapeError(end+1, 1) = 0;
+    topNBiShapeError(end+1, 1) = 0;
     for j = 1:numel(rankOfInterest)
-        rank = min(rankOfInterest(j), numel(paths));
-        topNpathError(end, j) = min( pathError(1:rank, 1) );
-        topNshapeError(end, j) = min( shapeError(1:rank, 2) );
-        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank, 3) );
+        rank = min(rankOfInterest(j), size(tmp, 1));
+        topNPathError(end, j) = min( tmp(1:rank, 1) );
+        topNShapeError(end, j) = min( tmp(1:rank, 2) );
+        topNBiShapeError(end, j) = min( tmp(1:rank, 3) );
     end
     fprintf('finish case %d\n', i);
 end
+
+
+fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
+
 
 
 %% merge
@@ -139,7 +102,7 @@ xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_path']);
+saveplot([dirSaveFigure 'real_driving_dp_path']);
 
 
 cfigure(14,6);
@@ -155,7 +118,7 @@ xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_shape']);
+saveplot([dirSaveFigure 'real_driving_dp_shape']);
 
 % bi-shape
 
@@ -172,5 +135,5 @@ xlabel('Bi-Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_bishape']);
+saveplot([dirSaveFigure 'real_driving_dp_bishape']);
 

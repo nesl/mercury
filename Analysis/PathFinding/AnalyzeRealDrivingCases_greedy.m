@@ -43,9 +43,9 @@ randomTopNShapeError = topNShapeError;  % numel(rankOfInterest) by num_available
 randomTopNBiShapeError = topNBiShapeError;  % numel(rankOfInterest) by num_available_solution
 
 totalTime = [];
-topNpathError = [];
-topNshapeError = [];
-topNbiShapeError = [];
+topNPathError = [];
+topNShapeError = [];
+topNBiShapeError = [];
 rankOfInterest = [1 3 5];
 for i = 1:size(caseNames, 1)
     solver = solutionResolver_dp4([caseNames{i} '_greedyA']);
@@ -84,14 +84,14 @@ for i = 1:size(caseNames, 1)
     
     totalTime = [totalTime solver.process_time];
     
-    topNpathError(end+1, 1) = 0;
-    topNshapeError(end+1, 1) = 0;
-    topNbiShapeError(end+1, 1) = 0;
+    topNPathError(end+1, 1) = 0;
+    topNShapeError(end+1, 1) = 0;
+    topNBiShapeError(end+1, 1) = 0;
     for j = 1:numel(rankOfInterest)
         rank = min(rankOfInterest(j), numel(paths));
-        topNpathError(end, j) = min( pathError(1:rank) );
-        topNshapeError(end, j) = min( shapeError(1:rank) );
-        topNbiShapeError(end, j) = min( shapeErrorBi(1:rank) );
+        topNPathError(end, j) = min( pathError(1:rank) );
+        topNShapeError(end, j) = min( shapeError(1:rank) );
+        topNBiShapeError(end, j) = min( shapeErrorBi(1:rank) );
     end
     fprintf('finish case %d\n', i);
 end
@@ -99,31 +99,31 @@ end
 fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
 %% merge
-topNpathError = topNpathError';
-topNshapeError = topNshapeError';
-topNbiShapeError = topNbiShapeError';
-idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNbiShapeError, 2)));
-topNpathError(4,:) = randomTopNPathError(3,idx);
-topNshapeError(4,:) = randomTopNShapeError(3,idx);
-topNbiShapeError(4,:) = randomTopNBiShapeError(3,idx);
+topNPathError = topNPathError';
+topNShapeError = topNShapeError';
+topNBiShapeError = topNBiShapeError';
+idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
+topNPathError(4,:) = randomTopNPathError(3,idx);
+topNShapeError(4,:) = randomTopNShapeError(3,idx);
+topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
 
 %% fast test
 clf
 subplot(1, 3, 1)
 hold on
-cdfplot(topNpathError(:,1));
-cdfplot(topNpathError(:,2));
-cdfplot(topNpathError(:,3));
+cdfplot(topNPathError(:,1));
+cdfplot(topNPathError(:,2));
+cdfplot(topNPathError(:,3));
 subplot(1, 3, 2)
 hold on
-cdfplot(topNshapeError(:,1));
-cdfplot(topNshapeError(:,2));
-cdfplot(topNshapeError(:,3));
+cdfplot(topNShapeError(:,1));
+cdfplot(topNShapeError(:,2));
+cdfplot(topNShapeError(:,3));
 subplot(1, 3, 3)
 hold on
-cdfplot(topNbiShapeError(:,1));
-cdfplot(topNbiShapeError(:,2));
-cdfplot(topNbiShapeError(:,3));
+cdfplot(topNBiShapeError(:,1));
+cdfplot(topNBiShapeError(:,2));
+cdfplot(topNBiShapeError(:,3));
 
 
 %% store: for handover
@@ -153,7 +153,7 @@ lineOrder = [3 2 1 4];
 %subplot(1, 3, 1);
 hold on
 for i = lineOrder
-    x = sort(topNpathError(i,:));
+    x = sort(topNPathError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
@@ -168,7 +168,7 @@ cfigure(14,6);
 
 hold on
 for i = lineOrder
-    x = sort(topNshapeError(i,:));
+    x = sort(topNShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
@@ -185,7 +185,7 @@ cfigure(14,6);
 
 hold on
 for i = lineOrder
-    x = sort(topNbiShapeError(i,:));
+    x = sort(topNBiShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end

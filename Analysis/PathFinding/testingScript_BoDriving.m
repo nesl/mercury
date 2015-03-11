@@ -36,22 +36,37 @@ caseNames = {
 };
 %%
 
+total_dist = 0;
+total_time = 0;
+
 %for i = 1:size(caseNames, 1)
 %for i = 27:size(caseNames, 1)
-for i = 21:2:size(caseNames, 1)
+for i = 1:1:size(caseNames, 1)
     fprintf('====== case %d: %s ======\n', i, caseNames{i});
     testCase = TestCase(caseNames{i});
     sensor_data = SensorData(testCase.sensorFilePath);
     sensor_data.setAbsoluteSegment(testCase.startAbsTime, testCase.stopAbsTime);
     sensor_data.setWindowSize(testCase.sensorWindowSize);
-    map_data = MapData(testCase.mapFilePath, testCase.mapDataDownSampling);
-    solver = Solver_dp5(map_data, sensor_data, 1);
-    solver.solve();
-    webOutputPath = ['../../Data/resultSets/(B)' caseNames{i} '_dp5.rset'];
-    solver.setOutputFilePath(webOutputPath);
-    solver.toWeb();
+    %map_data = MapData(testCase.mapFilePath, testCase.mapDataDownSampling);
+    %solver = Solver_dp5(map_data, sensor_data, 1);
+    %solver.solve();
+    %webOutputPath = ['../../Data/resultSets/(B)' caseNames{i} '_dp5.rset'];
+    %solver.setOutputFilePath(webOutputPath);
+    %solver.toWeb();
     
-    solutionResolver_dp4(caseNames{i}, solver);
+    %solutionResolver_dp4(caseNames{i}, solver);
+    
+    % calculate dist / time tested
+    gps = sensor_data.getGps();
+    
+    t = gps(end,1) - gps(1,1);
+    total_time = total_time + t;
+    d = 0;
+    for i=2:size(gps,1)
+        dm = latlng2m(gps(i,2:3), gps(i-1,2:3));
+        total_dist = total_dist + dm;
+    end
+    
 end
 
 return

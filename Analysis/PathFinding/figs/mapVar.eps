@@ -1,0 +1,839 @@
+%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: MATLAB, The MathWorks, Inc. Version 8.0.0.783 (R2012b). Operating System: Darwin 13.4.0 Darwin Kernel Version 13.4.0: Sun Aug 17 19:50:11 PDT 2014; root:xnu-2422.115.4~1/RELEASE_X86_64 x86_64.
+%%Title: figs/mapVar.eps
+%%CreationDate: 03/10/2015  22:25:37
+%%DocumentNeededFonts: Helvetica
+%%DocumentProcessColors: Cyan Magenta Yellow Black
+%%LanguageLevel: 2
+%%Pages: 1
+%%BoundingBox:   116   256   477   529
+%%EndComments
+
+%%BeginProlog
+% MathWorks dictionary
+/MathWorks 160 dict begin
+% definition operators
+/bdef {bind def} bind def
+/ldef {load def} bind def
+/xdef {exch def} bdef
+/xstore {exch store} bdef
+% operator abbreviations
+/c  /clip ldef
+/cc /concat ldef
+/cp /closepath ldef
+/gr /grestore ldef
+/gs /gsave ldef
+/mt /moveto ldef
+/np /newpath ldef
+/cm /currentmatrix ldef
+/sm /setmatrix ldef
+/rm /rmoveto ldef
+/rl /rlineto ldef
+/s {show newpath} bdef
+/sc {setcmykcolor} bdef
+/sr /setrgbcolor ldef
+/sg /setgray ldef
+/w /setlinewidth ldef
+/j /setlinejoin ldef
+/cap /setlinecap ldef
+/rc {rectclip} bdef
+/rf {rectfill} bdef
+% page state control
+/pgsv () def
+/bpage {/pgsv save def} bdef
+/epage {pgsv restore} bdef
+/bplot /gsave ldef
+/eplot {stroke grestore} bdef
+% orientation switch
+/portraitMode 0 def /landscapeMode 1 def /rotateMode 2 def
+% coordinate system mappings
+/dpi2point 0 def
+% font control
+/FontSize 0 def
+/FMS {/FontSize xstore findfont [FontSize 0 0 FontSize neg 0 0]
+  makefont setfont} bdef
+/reencode {exch dup where {pop load} {pop StandardEncoding} ifelse
+  exch dup 3 1 roll findfont dup length dict begin
+  { 1 index /FID ne {def}{pop pop} ifelse } forall
+  /Encoding exch def currentdict end definefont pop} bdef
+/isroman {findfont /CharStrings get /Agrave known} bdef
+/FMSR {3 1 roll 1 index dup isroman {reencode} {pop pop} ifelse
+  exch FMS} bdef
+/csm {1 dpi2point div -1 dpi2point div scale neg translate
+ dup landscapeMode eq {pop -90 rotate}
+  {rotateMode eq {90 rotate} if} ifelse} bdef
+% line types: solid, dotted, dashed, dotdash
+/SO { [] 0 setdash } bdef
+/DO { [.5 dpi2point mul 4 dpi2point mul] 0 setdash } bdef
+/DA { [6 dpi2point mul] 0 setdash } bdef
+/DD { [.5 dpi2point mul 4 dpi2point mul 6 dpi2point mul 4
+  dpi2point mul] 0 setdash } bdef
+% macros for lines and objects
+/L {lineto stroke} bdef
+/MP {3 1 roll moveto 1 sub {rlineto} repeat} bdef
+/AP {{rlineto} repeat} bdef
+/PDlw -1 def
+/W {/PDlw currentlinewidth def setlinewidth} def
+/PP {closepath eofill} bdef
+/DP {closepath stroke} bdef
+/MR {4 -2 roll moveto dup  0 exch rlineto exch 0 rlineto
+  neg 0 exch rlineto closepath} bdef
+/FR {MR stroke} bdef
+/PR {MR fill} bdef
+/L1i {{currentfile picstr readhexstring pop} image} bdef
+/tMatrix matrix def
+/MakeOval {newpath tMatrix currentmatrix pop translate scale
+0 0 1 0 360 arc tMatrix setmatrix} bdef
+/FO {MakeOval stroke} bdef
+/PO {MakeOval fill} bdef
+/PD {currentlinewidth 2 div 0 360 arc fill
+   PDlw -1 eq not {PDlw w /PDlw -1 def} if} def
+/FA {newpath tMatrix currentmatrix pop translate scale
+  0 0 1 5 -2 roll arc tMatrix setmatrix stroke} bdef
+/PA {newpath tMatrix currentmatrix pop	translate 0 0 moveto scale
+  0 0 1 5 -2 roll arc closepath tMatrix setmatrix fill} bdef
+/FAn {newpath tMatrix currentmatrix pop translate scale
+  0 0 1 5 -2 roll arcn tMatrix setmatrix stroke} bdef
+/PAn {newpath tMatrix currentmatrix pop translate 0 0 moveto scale
+  0 0 1 5 -2 roll arcn closepath tMatrix setmatrix fill} bdef
+/vradius 0 def /hradius 0 def /lry 0 def
+/lrx 0 def /uly 0 def /ulx 0 def /rad 0 def
+/MRR {/vradius xdef /hradius xdef /lry xdef /lrx xdef /uly xdef
+  /ulx xdef newpath tMatrix currentmatrix pop ulx hradius add uly
+  vradius add translate hradius vradius scale 0 0 1 180 270 arc 
+  tMatrix setmatrix lrx hradius sub uly vradius add translate
+  hradius vradius scale 0 0 1 270 360 arc tMatrix setmatrix
+  lrx hradius sub lry vradius sub translate hradius vradius scale
+  0 0 1 0 90 arc tMatrix setmatrix ulx hradius add lry vradius sub
+  translate hradius vradius scale 0 0 1 90 180 arc tMatrix setmatrix
+  closepath} bdef
+/FRR {MRR stroke } bdef
+/PRR {MRR fill } bdef
+/MlrRR {/lry xdef /lrx xdef /uly xdef /ulx xdef /rad lry uly sub 2 div def
+  newpath tMatrix currentmatrix pop ulx rad add uly rad add translate
+  rad rad scale 0 0 1 90 270 arc tMatrix setmatrix lrx rad sub lry rad
+  sub translate rad rad scale 0 0 1 270 90 arc tMatrix setmatrix
+  closepath} bdef
+/FlrRR {MlrRR stroke } bdef
+/PlrRR {MlrRR fill } bdef
+/MtbRR {/lry xdef /lrx xdef /uly xdef /ulx xdef /rad lrx ulx sub 2 div def
+  newpath tMatrix currentmatrix pop ulx rad add uly rad add translate
+  rad rad scale 0 0 1 180 360 arc tMatrix setmatrix lrx rad sub lry rad
+  sub translate rad rad scale 0 0 1 0 180 arc tMatrix setmatrix
+  closepath} bdef
+/FtbRR {MtbRR stroke } bdef
+/PtbRR {MtbRR fill } bdef
+/stri 6 array def /dtri 6 array def
+/smat 6 array def /dmat 6 array def
+/tmat1 6 array def /tmat2 6 array def /dif 3 array def
+/asub {/ind2 exch def /ind1 exch def dup dup
+  ind1 get exch ind2 get sub exch } bdef
+/tri_to_matrix {
+  2 0 asub 3 1 asub 4 0 asub 5 1 asub
+  dup 0 get exch 1 get 7 -1 roll astore } bdef
+/compute_transform {
+  dmat dtri tri_to_matrix tmat1 invertmatrix 
+  smat stri tri_to_matrix tmat2 concatmatrix } bdef
+/ds {stri astore pop} bdef
+/dt {dtri astore pop} bdef
+/db {2 copy /cols xdef /rows xdef mul dup 3 mul string
+  currentfile 
+  3 index 0 eq {/ASCIIHexDecode filter}
+  {/ASCII85Decode filter 3 index 2 eq {/RunLengthDecode filter} if }
+  ifelse exch readstring pop
+  dup 0 3 index getinterval /rbmap xdef
+  dup 2 index dup getinterval /gbmap xdef
+  1 index dup 2 mul exch getinterval /bbmap xdef pop pop}bdef
+/it {gs np dtri aload pop moveto lineto lineto cp c
+  cols rows 8 compute_transform 
+  rbmap gbmap bbmap true 3 colorimage gr}bdef
+/il {newpath moveto lineto stroke}bdef
+currentdict end def
+%%EndProlog
+
+%%BeginSetup
+MathWorks begin
+
+0 cap
+
+end
+%%EndSetup
+
+%%Page: 1 1
+%%BeginPageSetup
+%%PageBoundingBox:   116   256   477   529
+MathWorks begin
+bpage
+%%EndPageSetup
+
+%%BeginObject: obj1
+bplot
+
+/dpi2point 1.01389 def
+portraitMode 0107 0545 csm
+
+   11     9   366   276 rc
+85 dict begin %Colortable dictionary
+/c0 { 0.000000 0.000000 0.000000 sr} bdef
+/c1 { 1.000000 1.000000 1.000000 sr} bdef
+/c2 { 0.900000 0.000000 0.000000 sr} bdef
+/c3 { 0.000000 0.820000 0.000000 sr} bdef
+/c4 { 0.000000 0.000000 0.800000 sr} bdef
+/c5 { 0.910000 0.820000 0.320000 sr} bdef
+/c6 { 1.000000 0.260000 0.820000 sr} bdef
+/c7 { 0.000000 0.820000 0.820000 sr} bdef
+c0
+1 j
+1 sg
+   0    0  405  288 rf
+0.506944 w
+0 233 313 0 0 -233 53 255 4 MP
+PP
+-313 0 0 233 313 0 0 -233 53 255 5 MP stroke
+0.337963 w
+DO
+SO
+0.506944 w
+0 sg
+  53  255 mt  366  255 L
+  53   22 mt  366   22 L
+  53  255 mt   53   22 L
+ 366  255 mt  366   22 L
+  53  255 mt  366  255 L
+  53  255 mt   53   22 L
+  53  255 mt   53  251 L
+  53   22 mt   53   25 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  51  266 mt 
+(0) s
+  97  255 mt   97  251 L
+  97   22 mt   97   25 L
+  95  266 mt 
+(5) s
+ 142  255 mt  142  251 L
+ 142   22 mt  142   25 L
+ 137  266 mt 
+(10) s
+ 187  255 mt  187  251 L
+ 187   22 mt  187   25 L
+ 182  266 mt 
+(15) s
+ 231  255 mt  231  251 L
+ 231   22 mt  231   25 L
+ 226  266 mt 
+(20) s
+ 276  255 mt  276  251 L
+ 276   22 mt  276   25 L
+ 271  266 mt 
+(25) s
+ 321  255 mt  321  251 L
+ 321   22 mt  321   25 L
+ 316  266 mt 
+(30) s
+ 366  255 mt  366  251 L
+ 366   22 mt  366   25 L
+ 361  266 mt 
+(35) s
+  53  255 mt   54  255 L
+ 366  255 mt  364  255 L
+  53  255 mt   56  255 L
+ 366  255 mt  362  255 L
+  36  258 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47  252 mt 
+(0) s
+  53  240 mt   54  240 L
+ 366  240 mt  364  240 L
+  53  232 mt   54  232 L
+ 366  232 mt  364  232 L
+  53  226 mt   54  226 L
+ 366  226 mt  364  226 L
+  53  222 mt   54  222 L
+ 366  222 mt  364  222 L
+  53  218 mt   54  218 L
+ 366  218 mt  364  218 L
+  53  215 mt   54  215 L
+ 366  215 mt  364  215 L
+  53  212 mt   54  212 L
+ 366  212 mt  364  212 L
+  53  210 mt   54  210 L
+ 366  210 mt  364  210 L
+  53  208 mt   54  208 L
+ 366  208 mt  364  208 L
+  53  208 mt   56  208 L
+ 366  208 mt  362  208 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  36  211 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47  205 mt 
+(1) s
+  53  194 mt   54  194 L
+ 366  194 mt  364  194 L
+  53  186 mt   54  186 L
+ 366  186 mt  364  186 L
+  53  180 mt   54  180 L
+ 366  180 mt  364  180 L
+  53  175 mt   54  175 L
+ 366  175 mt  364  175 L
+  53  172 mt   54  172 L
+ 366  172 mt  364  172 L
+  53  169 mt   54  169 L
+ 366  169 mt  364  169 L
+  53  166 mt   54  166 L
+ 366  166 mt  364  166 L
+  53  163 mt   54  163 L
+ 366  163 mt  364  163 L
+  53  161 mt   54  161 L
+ 366  161 mt  364  161 L
+  53  161 mt   56  161 L
+ 366  161 mt  362  161 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  36  164 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47  158 mt 
+(2) s
+  53  147 mt   54  147 L
+ 366  147 mt  364  147 L
+  53  139 mt   54  139 L
+ 366  139 mt  364  139 L
+  53  133 mt   54  133 L
+ 366  133 mt  364  133 L
+  53  129 mt   54  129 L
+ 366  129 mt  364  129 L
+  53  125 mt   54  125 L
+ 366  125 mt  364  125 L
+  53  122 mt   54  122 L
+ 366  122 mt  364  122 L
+  53  119 mt   54  119 L
+ 366  119 mt  364  119 L
+  53  117 mt   54  117 L
+ 366  117 mt  364  117 L
+  53  115 mt   54  115 L
+ 366  115 mt  364  115 L
+  53  115 mt   56  115 L
+ 366  115 mt  362  115 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  36  118 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47  112 mt 
+(3) s
+  53  101 mt   54  101 L
+ 366  101 mt  364  101 L
+  53   92 mt   54   92 L
+ 366   92 mt  364   92 L
+  53   87 mt   54   87 L
+ 366   87 mt  364   87 L
+  53   82 mt   54   82 L
+ 366   82 mt  364   82 L
+  53   78 mt   54   78 L
+ 366   78 mt  364   78 L
+  53   75 mt   54   75 L
+ 366   75 mt  364   75 L
+  53   73 mt   54   73 L
+ 366   73 mt  364   73 L
+  53   70 mt   54   70 L
+ 366   70 mt  364   70 L
+  53   68 mt   54   68 L
+ 366   68 mt  364   68 L
+  53   68 mt   56   68 L
+ 366   68 mt  362   68 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  36   71 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47   65 mt 
+(4) s
+  53   54 mt   54   54 L
+ 366   54 mt  364   54 L
+  53   46 mt   54   46 L
+ 366   46 mt  364   46 L
+  53   40 mt   54   40 L
+ 366   40 mt  364   40 L
+  53   36 mt   54   36 L
+ 366   36 mt  364   36 L
+  53   32 mt   54   32 L
+ 366   32 mt  364   32 L
+  53   29 mt   54   29 L
+ 366   29 mt  364   29 L
+  53   26 mt   54   26 L
+ 366   26 mt  364   26 L
+  53   24 mt   54   24 L
+ 366   24 mt  364   24 L
+  53   22 mt   54   22 L
+ 366   22 mt  364   22 L
+  53   22 mt   56   22 L
+ 366   22 mt  362   22 L
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  36   25 mt 
+(10) s
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 6.75926 FMSR
+
+  47   19 mt 
+(5) s
+  53  255 mt  366  255 L
+  53   22 mt  366   22 L
+  53  255 mt   53   22 L
+ 366  255 mt  366   22 L
+gs 53 22 314 234 rc
+gs 55 238 14 13 rc
+/c8 { 0.000000 0.000000 1.000000 sr} bdef
+c8
+   2    2   61  244 PO
+   2    2   61  244 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  97  248 mt 
+(Chicago) s
+gs 53 22 314 234 rc
+-36 0 97 244 2 MP stroke
+gr
+
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 12.1667 FMSR
+
+ 180  280 mt 
+(Map Index) s
+  28  198 mt  -90 rotate
+(Elevation Variation \(m) s
+90 rotate
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 9.125 FMSR
+
+  22   81 mt  -90 rotate
+(2) s
+90 rotate
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 12.1667 FMSR
+
+  28   76 mt  -90 rotate
+(\)) s
+90 rotate
+gs 53 22 314 234 rc
+gs 64 236 13 13 rc
+c8
+   2    2   70  242 PO
+   2    2   70  242 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+%%IncludeResource: font Helvetica
+/Helvetica /ISOLatin1Encoding 10.1389 FMSR
+
+  88  184 mt 
+(Virginia Beach) s
+gs 53 22 314 234 rc
+-18 62 88 180 2 MP stroke
+gs 73 217 13 14 rc
+c8
+   2    2   79  224 PO
+   2    2   79  224 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 115  228 mt 
+(Houston) s
+gs 53 22 314 234 rc
+-36 0 115 224 2 MP stroke
+gs 82 207 13 14 rc
+c8
+   2    2   88  213 PO
+   2    2   88  213 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 106  179 mt 
+(Phoneix) s
+gs 53 22 314 234 rc
+-18 38 106 175 2 MP stroke
+gs 91 207 13 13 rc
+c8
+   2    2   97  213 PO
+   2    2   97  213 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 133  217 mt 
+(Mesa) s
+gs 53 22 314 234 rc
+-36 0 133 213 2 MP stroke
+gs 100 196 13 13 rc
+c8
+   2    2  106  202 PO
+   2    2  106  202 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 124  172 mt 
+(Boston) s
+gs 53 22 314 234 rc
+-18 34 124 168 2 MP stroke
+gs 109 194 13 13 rc
+c8
+   2    2  115  200 PO
+   2    2  115  200 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 151  204 mt 
+(Long Beach) s
+gs 53 22 314 234 rc
+-36 0 151 200 2 MP stroke
+gs 118 191 13 13 rc
+c8
+   2    2  124  197 PO
+   2    2  124  197 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 142  163 mt 
+(Indianapolis) s
+gs 53 22 314 234 rc
+-18 38 142 159 2 MP stroke
+gs 127 188 13 13 rc
+c8
+   2    2  133  194 PO
+   2    2  133  194 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 169  198 mt 
+(San Jose) s
+gs 53 22 314 234 rc
+-36 0 169 194 2 MP stroke
+gs 136 186 13 13 rc
+c8
+   2    2  142  192 PO
+   2    2  142  192 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 160  153 mt 
+(Memphis) s
+gs 53 22 314 234 rc
+-18 43 160 149 2 MP stroke
+gs 145 179 13 14 rc
+c8
+   2    2  151  186 PO
+   2    2  151  186 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 187  190 mt 
+(New York) s
+gs 53 22 314 234 rc
+-36 0 187 186 2 MP stroke
+gs 154 175 13 13 rc
+c8
+   2    2  160  181 PO
+   2    2  160  181 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 178  141 mt 
+(Philadelphia) s
+gs 53 22 314 234 rc
+-18 44 178 137 2 MP stroke
+gs 163 174 13 13 rc
+c8
+   2    2  169  180 PO
+   2    2  169  180 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 205  184 mt 
+(San Antonio) s
+gs 53 22 314 234 rc
+-36 0 205 180 2 MP stroke
+gs 172 162 13 13 rc
+c8
+   2    2  178  168 PO
+   2    2  178  168 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 196  128 mt 
+(San Juan) s
+gs 53 22 314 234 rc
+-18 44 196 124 2 MP stroke
+gs 181 160 13 13 rc
+c8
+   2    2  187  166 PO
+   2    2  187  166 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 222  170 mt 
+(Tucson) s
+gs 53 22 314 234 rc
+-35 0 222 166 2 MP stroke
+gs 190 159 13 13 rc
+c8
+   2    2  196  165 PO
+   2    2  196  165 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 213  115 mt 
+(Dallas) s
+gs 53 22 314 234 rc
+-17 54 213 111 2 MP stroke
+gs 198 154 14 13 rc
+c8
+   2    2  205  160 PO
+   2    2  205  160 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 240  164 mt 
+(Washington) s
+gs 53 22 314 234 rc
+-35 0 240 160 2 MP stroke
+gs 207 152 14 13 rc
+c8
+   2    2  213  158 PO
+   2    2  213  158 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 231  102 mt 
+(Atlanta) s
+gs 53 22 314 234 rc
+-18 60 231 98 2 MP stroke
+gs 216 144 13 13 rc
+c8
+   2    2  222  150 PO
+   2    2  222  150 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 258  154 mt 
+(Denver) s
+gs 53 22 314 234 rc
+-36 0 258 150 2 MP stroke
+gs 225 140 13 13 rc
+c8
+   2    2  231  146 PO
+   2    2  231  146 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 249   88 mt 
+(Austin) s
+gs 53 22 314 234 rc
+-18 62 249 84 2 MP stroke
+gs 234 130 13 14 rc
+c8
+   2    2  240  136 PO
+   2    2  240  136 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 276  140 mt 
+(Albuquerque) s
+gs 53 22 314 234 rc
+-36 0 276 136 2 MP stroke
+gs 243 127 13 13 rc
+c8
+   2    2  249  133 PO
+   2    2  249  133 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 267   75 mt 
+(Los Angeles) s
+gs 53 22 314 234 rc
+-18 62 267 71 2 MP stroke
+gs 252 118 13 13 rc
+c8
+   2    2  258  124 PO
+   2    2  258  124 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 294  128 mt 
+(San Diego) s
+gs 53 22 314 234 rc
+-36 0 294 124 2 MP stroke
+gs 261 109 13 13 rc
+c8
+   2    2  267  115 PO
+   2    2  267  115 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 285   61 mt 
+(San Francisco) s
+gs 53 22 314 234 rc
+-18 58 285 57 2 MP stroke
+gs 270 102 13 13 rc
+c8
+   2    2  276  108 PO
+   2    2  276  108 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 312  112 mt 
+(Seattle) s
+gs 53 22 314 234 rc
+-36 0 312 108 2 MP stroke
+gs 279 97 13 13 rc
+c8
+   2    2  285  103 PO
+   2    2  285  103 FO
+gr
+
+c8
+gr
+
+c8
+0 sg
+ 303   47 mt 
+(Portland) s
+gs 53 22 314 234 rc
+-18 60 303 43 2 MP stroke
+gr
+
+
+end %%Color Dict
+
+eplot
+%%EndObject
+
+epage
+end
+
+showpage
+
+%%Trailer
+%%EOF

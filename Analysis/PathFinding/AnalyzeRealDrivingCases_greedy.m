@@ -158,7 +158,7 @@ xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_path']);
+saveplot([dirSaveFigure 'real_driving_greedyA_path']);
 
 
 cfigure(14,6);
@@ -174,7 +174,7 @@ xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_shape']);
+saveplot([dirSaveFigure 'real_driving_greedyA_shape']);
 
 % bi-shape
 
@@ -191,5 +191,5 @@ xlabel('Bi-Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
-saveplot([dirSaveFigure 'real_driving_' SOLVER '_bishape']);
+saveplot([dirSaveFigure 'real_driving_greedyA_bishape']);
 

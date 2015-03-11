@@ -98,10 +98,14 @@ end
 
 fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
-%% merge
 topNPathError = topNPathError';
 topNShapeError = topNShapeError';
 topNBiShapeError = topNBiShapeError';
+
+%% merge
+randomTopNPathError(3,:) = sort(randomTopNPathError(3,:));
+randomTopNShapeError(3,:) = sort(randomTopNShapeError(3,:));
+randomTopNBiShapeError(3,:) = sort(randomTopNBiShapeError(3,:));
 idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
 topNPathError(4,:) = randomTopNPathError(3,idx);
 topNShapeError(4,:) = randomTopNShapeError(3,idx);

@@ -106,16 +106,31 @@ ylimValue = [
     ];
 
 xinterest = 11:PATH_LEN;
-for j = candidtate
+skip = 5;
+for j = 1:3
     cfigure(14, 6);
-    semilogy(xinterest, (abs_errors(xinterest,j)+1e-6) / testCount(j), 'b')
+    x = xinterest;
+    y = abs_errors(xinterest,j) / testCount(j) + 1e-6;
+    semilogy(x(1:skip:end), y(1:skip:end), '-bo', 'LineWidth', 2)
     hold on
-    semilogy(xinterest, (rel_errors(xinterest,j)+1e-6) / testCount(j), 'r')
+    x = xinterest;
+    y = rel_errors(xinterest,j) / testCount(j) + 1e-6;
+    semilogy(x(1:skip:end), y(1:skip:end), '-r^', 'LineWidth', 2)
     hold off
     ylim(ylimValue(j,:));
+    xlim([0 260])
+    grid on
+    xlabel('Path length (# of samples)', 'FontSize', 14);
+    ylabel('Error (%)', 'FontSize', 14);
+    legend({'Absolute', 'Relative'})
     saveplot(['~/Dropbox/MercuryWriting/mobicom15/figs/dtwErrorPercentage_' num2str(j)])
 end
-%%
+%% store
 save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_abs_errors', 'abs_errors');
 save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_rel_errors', 'rel_errors');
 save('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_testCount', 'testCount');
+
+%% load
+load('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_abs_errors', 'abs_errors');
+load('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_rel_errors', 'rel_errors');
+load('../../Data/tmpMatFiles/dtwLengthVSerror/trial2_testCount', 'testCount');

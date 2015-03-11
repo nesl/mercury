@@ -30,6 +30,11 @@ end
 
 load('../../Data/tmpMatFiles/simPathKLVar.mat', 'resultEV');
 
+load ../../Data/tmpMatFiles/randomGuess/randomGuess3x3.mat
+randomTopNPathError = topNPathError;  % numel(rankOfInterest) by num_available_solution
+randomTopNShapeError = topNShapeError;  % numel(rankOfInterest) by num_available_solution
+randomTopNBiShapeError = topNBiShapeError;  % numel(rankOfInterest) by num_available_solution
+
 
 rankOfInterest = [1 3 5];
 topNPathError = [];  % numel(rankOfInterest) by num_available_solution
@@ -83,16 +88,30 @@ for tidx=1:length(test_files)
     pathVSshapeError = [pathVSshapeError; [pathError biShapeError]];
 end
 
-%%
-colors = {'bs-', 'r^-', 'ko-', 'm*-'};
+%% merge
+idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
+topNPathError(4,:) = randomTopNPathError(3,idx);
+topNShapeError(4,:) = randomTopNShapeError(3,idx);
+topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
+
+
+%% Plotting
+
+%dirSaveFigure = 'figs/';
+dirSaveFigure = '~/Dropbox/mercuryWriting/mobicom15/figs/';
+%
+cfigure(14,6);
+
+colors = {'bs-', 'r^-', 'm*-', 'ko-'};
+legendTexts = {'1 paths', '3 paths', '5 paths', 'Random'};
 skip = 10;
 
+lineOrder = [3 2 1 4];
 
-cfigure(14,8);
-clf
+
 
 hold on
-for i = length(rankOfInterest):-1:1
+for i = lineOrder
     x = sort(topNShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
@@ -100,13 +119,13 @@ end
 xlabel('Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_shape');
+legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
+saveplot([dirSaveFigure 'sim_dp_shape']);
 
 
-cfigure(14,8);
+cfigure(14,6);
 hold on
-for i = length(rankOfInterest):-1:1
+for i = lineOrder
     x = sort(topNBiShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
@@ -114,13 +133,13 @@ end
 xlabel('Bi-Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_bishape');
+legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
+saveplot([dirSaveFigure 'sim_dp_bishape']);
 
 
-cfigure(14,8);
+cfigure(14,6);
 hold on
-for i = length(rankOfInterest):-1:1
+for i = lineOrder
     x = sort(topNPathError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
@@ -128,10 +147,8 @@ end
 xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
-legend('5 paths', '3 paths', '1 paths','Location','SE');
-saveplot('figs/sim_dp_path');
-
-
+legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
+saveplot([dirSaveFigure 'sim_dp_path']);
 
 
 

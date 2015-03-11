@@ -99,10 +99,13 @@ end
 fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
 %% merge
-idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
-topNPathError(4,:) = randomTopNPathError(3,idx);
-topNShapeError(4,:) = randomTopNShapeError(3,idx);
-topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
+topNpathError = topNpathError';
+topNshapeError = topNshapeError';
+topNbiShapeError = topNbiShapeError';
+idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNbiShapeError, 2)));
+topNpathError(4,:) = randomTopNPathError(3,idx);
+topNshapeError(4,:) = randomTopNShapeError(3,idx);
+topNbiShapeError(4,:) = randomTopNBiShapeError(3,idx);
 
 %% fast test
 clf
@@ -141,7 +144,7 @@ clf
 
 colors = {'bs-', 'r^-', 'm*-', 'ko-'};
 legendTexts = {'1 paths', '3 paths', '5 paths', 'Random'};
-skip = 25;
+skip = 1;
 
 lineOrder = [3 2 1 4];
 
@@ -150,7 +153,7 @@ lineOrder = [3 2 1 4];
 %subplot(1, 3, 1);
 hold on
 for i = lineOrder
-    x = sort(topNPathError(i,:));
+    x = sort(topNpathError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
@@ -165,7 +168,7 @@ cfigure(14,6);
 
 hold on
 for i = lineOrder
-    x = sort(topNShapeError(i,:));
+    x = sort(topNshapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
@@ -182,7 +185,7 @@ cfigure(14,6);
 
 hold on
 for i = lineOrder
-    x = sort(topNBiShapeError(i,:));
+    x = sort(topNbiShapeError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end

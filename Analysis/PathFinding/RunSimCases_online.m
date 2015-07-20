@@ -5,7 +5,8 @@ add_paths
 %SOLVER = 'greedyA';
 %SOLVER = 'greedyAT';
 %SOLVER = 'greedyR';
-SOLVER = 'greedyRT';
+%SOLVER = 'greedyRT';
+SOLVER = 'greedyOnline';
 
 %if ~strcmp(SOLVER, 'greedyA') && ~strcmp(SOLVER, 'greedyAT') && ~strcmp(SOLVER, 'greedyR') && ~strcmp(SOLVER, 'greedyRT')
 %    error('Which solver are you choosing?')
@@ -17,7 +18,7 @@ all_files = dir(testdir);
 test_files = {};
 for i=1:length(all_files)
     fname = all_files(i).name;
-    if isempty( regexp(fname, 'SIM') )
+    if isempty( regexp(fname, 'SIM_ucla') )
         continue;
     end
     test_files = [test_files; fname];
@@ -41,30 +42,29 @@ for tidx=1:length(test_files)
     solpath = [soldir solfile];
     
     if exist(solfile)
-        fprintf('skip test caes %s\n', tfile);
+        fprintf('skipping test case %s\n', tfile);
         continue;
     end
     
     fprintf('Simulating file: %s\n', tfile);
     
-    % solve this test case w/ greedy solver
+    % solve this test case w/ online solver
     loaded = load([testdir tfile]);
     testcase = loaded.obj;
-    
+        
     % sensor data
     sensor_data = SensorDataSim(testcase.sim_elevations, ...
         testcase.sim_turns, testcase.sim_gps);
     % map data
     map_data = MapData(testcase.mapFilePath{1}, testcase.mapDataDownSampling);
+    
+    % ground truth data
+    gt_path = testcase.sim_path;
+    gt_t = testcase.stopAbsTime - testcase.startAbsTime;
+    
     % solver
-    solver = Solver_greedy(map_data, sensor_data);
+    solver = Solver_online(map_data, sensor_data, gt_path, gt_t);
     solver.setNumPathsToKeep(40);
-    if strcmp(SOLVER, 'greedyA') || strcmp(SOLVER, 'greedyAT')
-        solver.useAbsoluteElevation();
-    end
-    if strcmp(SOLVER, 'greedyAT') || strcmp(SOLVER, 'greedyRT')
-        solver.useTurns();
-    end
     
     % solve
     tic;
@@ -77,7 +77,6 @@ for tidx=1:length(test_files)
     
     % save results
     save(solpath, 'solver_results');
-    
     
 end
 

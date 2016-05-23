@@ -61,9 +61,18 @@ for i=1:size(names,1)
     semilogy(i,mapVariation, 'ob','MarkerFaceColor','b',...
         'MarkerSize',5)
     hold on;
-    if mod(i,2) == 0
-        text(i+2, 3e1 + 1.4^(i+5), mapName,'FontSize',10);
-        plot([i+2, i], [3e1 + 1.4^(i+5), mapVariation], 'k-');
+    if i == 1
+        text(i+2.4, 2 * 1.3^(i+5), mapName,'FontSize',10, 'HorizontalAlignment', 'right');
+        plot([i+1, i], [1.55 * 1.3^(i+5), mapVariation], 'k-');
+    elseif i == 2
+        text(i+4, mapVariation, mapName,'FontSize',10);
+        plot([i+4, i], [mapVariation mapVariation], 'k-');
+    elseif i == 4
+        text(i+2.4, 2 * 1.3^(i+5), mapName,'FontSize',10, 'HorizontalAlignment', 'right');
+        plot([i+1, i], [1.55 * 1.3^(i+5), mapVariation], 'k-');
+    elseif mod(i,2) == 0
+        text(i+2.4, 2 * 1.3^(i+5), mapName,'FontSize',10, 'HorizontalAlignment', 'right');
+        plot([i+1.8, i], [1.7 * 1.3^(i+5), mapVariation], 'k-');
     else
         text(i+4, mapVariation, mapName,'FontSize',10);
         plot([i+4, i], [mapVariation mapVariation], 'k-');
@@ -74,7 +83,8 @@ for i=1:size(names,1)
     
 end
 
-xlim([0 35]);
+xlim([-3 34]);
+set(gca, 'XTick', 1:5:26)
 saveplot('figs/mapVar');
 
 

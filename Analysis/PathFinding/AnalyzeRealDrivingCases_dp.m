@@ -66,7 +66,9 @@ end
 
 fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
-
+topNPathError = topNPathError';
+topNShapeError = topNShapeError';
+topNBiShapeError = topNBiShapeError';
 
 %% merge
 idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));
@@ -85,7 +87,7 @@ clf
 
 colors = {'bs-', 'r^-', 'm*-', 'ko-'};
 legendTexts = {'1 paths', '3 paths', '5 paths', 'Random'};
-skip = 25;
+skip = 2;
 
 lineOrder = [3 2 1 4];
 
@@ -101,10 +103,12 @@ end
 xlabel('Timed Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_dp_path']);
 
 
+%{
 cfigure(14,6);
 
 hold on
@@ -117,8 +121,10 @@ end
 xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_dp_shape']);
+%}
 
 % bi-shape
 
@@ -131,9 +137,10 @@ for i = lineOrder
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-xlabel('Bi-Path Error (m)', 'FontSize',12);
-ylabel('Probability', 'FontSize',12);
+xlabel('Path Error (m)', 'FontSize',14);
+ylabel('Probability', 'FontSize',14);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_dp_bishape']);
 

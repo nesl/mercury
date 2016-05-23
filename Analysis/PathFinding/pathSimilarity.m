@@ -68,24 +68,23 @@ colorbar
 %% load mat and time to have some insight (for paper)
 
 dirPath = '../../Data/tmpMatFiles/pathSimilarity/';
-%{
 matFileName = {
 'simi-map41-size3.mat'
-'simi-map38-size3.mat'
+%'simi-map38-size3.mat'
 'simi-map23-size3.mat'
-'simi-map2-size3.mat'
+%'simi-map2-size3.mat'
 'simi-map29-size3.mat'
 'simi-map7-size3.mat'
 };
-%}
 
+%{
 matFileName = {
 'simi-map41-size4.mat'
 'simi-map23-size4.mat'
 'simi-map2-size4.mat'
 'simi-map7-size4.mat'
 };
-
+%}
 
 scoresAll = {};
 sortedScoresAll = {};
@@ -96,8 +95,13 @@ expectedVisitingTime = 2;
 
 fractionControl = expectedVisitingTime * 0.5;
 
+symbols = {'r-*', 'b-o', 'm-^', 'k-x', 'g-o'};
+
+skip = 10;
+
+cfigure(14, 6)
 clf
-hold on
+
 for i = 1:numel(matFileName)
     matPath = [dirPath matFileName{i}];
     load(matPath, 'scores');
@@ -115,9 +119,21 @@ for i = 1:numel(matFileName)
     %colorbar
     y = linspace(0, 1, numel(numSimilarPath));
     x = sort(numSimilarPath);
-    plot(x, y, 'Color', hsv2rgb([i/7, 1, 0.8]));
+    group = [x;y];
+    idx = (x ~= 0);
+    group = group(:,idx);
+    x = group(1,:);
+    y = group(2,:);
+    %plot(x, y, 'Color', hsv2rgb([i/7, 1, 0.8]));
+    plot(x(1:skip:end), y(1:skip:end), symbols{i}, 'LineWidth', 2);
+    hold on
     %pause
-    xlabel('Percentage of similar paths')
-    ylabel('CDF probability')
 end
-legend('Seattle', 'SF', 'LA', 'Atlanta', 'NY', 'Chicago')
+xlabel('Confusion factor (%)', 'FontSize', 12)
+ylabel('Probability (%)', 'FontSize', 12)
+%legend('Seattle', 'SF', 'LA', 'Atlanta', 'NY', 'Chicago')
+legend({'Seattle',       'LA',            'NY', 'Chicago'}, 'Orientation', 'Horizontal', 'Location', 'SE')
+xlim([0, 0.12])
+ylim([0, 1])
+grid on
+saveplot('~/Dropbox/MercuryWriting/mobicom15/figs/confusing_factor')

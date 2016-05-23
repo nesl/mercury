@@ -184,7 +184,7 @@ topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
 %dirSaveFigure = 'figs/';
 dirSaveFigure = '~/Dropbox/mercuryWriting/mobicom15/figs/';
 %
-cfigure(14,6);
+
 
 clf
 
@@ -197,19 +197,22 @@ lineOrder = [3 2 1 4];
 %orderedLegendTexts = legendTexts{lineOrder};
 
 %subplot(1, 3, 1);
+cfigure(14,6);
 hold on
 for i = lineOrder
     x = sort(topNPathError(i,:));
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('Timed Path Error (m)','FontSize',12);
-ylabel('Probability','FontSize',12);
+xlabel('Timed Path Error (m)','FontSize',14);
+ylabel('Probability','FontSize',14);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_' SOLVER '_path']);
 
-
+%{
 cfigure(14,6);
 
 hold on
@@ -222,8 +225,11 @@ end
 xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_' SOLVER '_shape']);
+%}
 
 % bi-shape
 
@@ -236,9 +242,11 @@ for i = lineOrder
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-xlabel('Bi-Path Error (m)', 'FontSize',12);
-ylabel('Probability', 'FontSize',12);
+xlabel('Path Error (m)', 'FontSize',14);
+ylabel('Probability', 'FontSize',14);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_' SOLVER '_bishape']);
 

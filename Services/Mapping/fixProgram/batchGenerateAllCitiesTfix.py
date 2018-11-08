@@ -52,15 +52,13 @@ filenames = [
 #'ucla_small.osm',
 ]
 
-idx = 0
-acceptedIdx = range(len(filenames))
+acceptedIdxs = range(len(filenames))
 if len(sys.argv) > 1:
 	acceptedIdx = [ int(x) for x in sys.argv[1:] ]
 
-for x in filenames:
-    if idx in acceptedIdx:
+for idx, filename in list(enumerate(filenames)):
+    if idx in acceptedIdxs:
         print('idx=' + str(idx))
-        cmd = 'python3 script.py ' + x
+        cmd = 'python3 tmp_script.py ' + x
         print(cmd)
         os.system(cmd)
-    idx += 1

@@ -115,19 +115,19 @@ topNBiShapeError(4,:) = randomTopNBiShapeError(3,idx);
 clf
 subplot(1, 3, 1)
 hold on
-cdfplot(topNPathError(:,1));
-cdfplot(topNPathError(:,2));
-cdfplot(topNPathError(:,3));
+cdfplot(topNPathError(1,:));
+cdfplot(topNPathError(2,:));
+cdfplot(topNPathError(3,:));
 subplot(1, 3, 2)
 hold on
-cdfplot(topNShapeError(:,1));
-cdfplot(topNShapeError(:,2));
-cdfplot(topNShapeError(:,3));
+cdfplot(topNShapeError(1,:));
+cdfplot(topNShapeError(2,:));
+cdfplot(topNShapeError(3,:));
 subplot(1, 3, 3)
 hold on
-cdfplot(topNBiShapeError(:,1));
-cdfplot(topNBiShapeError(:,2));
-cdfplot(topNBiShapeError(:,3));
+cdfplot(topNBiShapeError(1,:));
+cdfplot(topNBiShapeError(2,:));
+cdfplot(topNBiShapeError(3,:));
 
 
 %% store: for handover

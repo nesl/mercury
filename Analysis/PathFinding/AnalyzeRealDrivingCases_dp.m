@@ -66,7 +66,7 @@ end
 
 fprintf('avg solving time = %f +/- %f sec\n', mean(totalTime), std(totalTime));
 
-
+return;
 
 %% merge
 idx = floor(linspace(1, size(randomTopNShapeError, 2) + 0.5, size(topNBiShapeError, 2)));

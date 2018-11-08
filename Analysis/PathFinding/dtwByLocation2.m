@@ -63,7 +63,7 @@ rel_errors = zeros(PATH_LEN, size(map_info, 1));
 
 clf
 %%
-for i = 319366:size(tasks, 1)
+for i = 1349707:size(tasks, 1)
     fprintf('iteration %d\n', i);
     if tasks(i, 2) ~= tasks(i, 3)
         abs_result = DTW_MSE_3( all_results_abs(:, tasks(i,2), tasks(i,1)), all_results_abs(:, tasks(i,3), tasks(i,1)) );

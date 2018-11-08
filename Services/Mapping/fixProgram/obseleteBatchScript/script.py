@@ -11,9 +11,7 @@ import re
 
 # also, please scroll down the very bottom to see what's the next step
 
-osmName = 'Paul_driving_home_part5.osm'   # sample: 'ucla.osm'
-#osmName = 'ucla_5x5.osm'   # sample: 'ucla.osm'
-
+osmName = 'ucla_5x5.osm'   # sample: 'ucla.osm'
 optionAllowLoop = False   # most of the cases are building bounding boxes
 
 
@@ -45,10 +43,11 @@ f.close()
 xmlWayDetail = outRootDir + 'originOfLife/' + osmNameWoExt + '.xml'
 cmd = 'basex findWayTrajectory.xq > ' + xmlWayDetail
 print('CMD: ' + cmd)
-if os.path.isfile(xmlWayDetail):
-    print('File existed. Skip.')
-else:
-    os.system(cmd)
+os.system(cmd)
+
+cmd = 'python fix.py ' + ('-a' if optionAllowLoop else '') + ' < ' + xmlWayDetail + ' > ' + outFile 
+print('CMD: ' + cmd)
+os.system(cmd)
 
 # the next step should be executing the python3 ../makeElevSegMap.py with the input
 # parameter outFile, but because of the relative folder path issue, integrating

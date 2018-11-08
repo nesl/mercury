@@ -114,21 +114,21 @@ end
 
 
 %% Plot elevations
-cfigure(30,30);
-subplot(3,1,1);
+cfigure(30,20);
+subplot(4,1,1);
 plot(elev_est_rsz(:,1), elev_est_rsz(:,2));
 hold on;
 plot(elev_map(:,1), elev_map(:,4), 'b');
 
-%% Plot error
-subplot(3,1,2);
+% Plot error
+subplot(4,1,2);
 estError = elev_est_rsz(:,2) - elev_map(:,4);
 plot(elev_est_rsz(:,1), estError,'r');
 ylim([-5 5]);
 ylabel('Estimation Error');
 
-%% Plot some simulated noise just for fun
-subplot(3,1,3);
+% Plot some simulated noise just for fun
+subplot(4,1,3);
 % OU is times, rev_time, variance
 % GOOD VALUES: 150, 0.04
 sim_noise = additiveNoise_OU(elev_est_rsz(:,1), 150, 0.04);
@@ -136,10 +136,16 @@ plot(elev_est_rsz(:,1), sim_noise, 'k');
 ylim([-5 5]);
 ylabel('Simulated Error');
 
+subplot(4, 1, 4)
+m = mean(estError);
+v = var(estError);
+gaussian_noise = randn(size(elev_est_rsz(:,1))) * v + m;
+plot(elev_est_rsz(:,1), gaussian_noise);
 
 
-
-
+%
+[elev_est_rsz(:,1:2) estError sim_noise' gaussian_noise]
+elev_map(:, [1 4])
 
 
 

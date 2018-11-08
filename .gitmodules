@@ -1,0 +1,3 @@
+[submodule "DataCollection/barometerDataCollection"]
+	path = DataCollection/barometerDataCollection
+	url = https://github.com/nesl/barometerDataCollection.git

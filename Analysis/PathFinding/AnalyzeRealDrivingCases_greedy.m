@@ -142,18 +142,19 @@ load ../../Data/tmpMatFiles/drivingData/greedyA_handover.mat
 %dirSaveFigure = 'figs/';
 dirSaveFigure = '~/Dropbox/mercuryWriting/mobicom15/figs/';
 %
-cfigure(14,6);
+
 
 clf
 
 colors = {'bs-', 'r^-', 'm*-', 'ko-'};
 legendTexts = {'1 paths', '3 paths', '5 paths', 'Random'};
-skip = 1;
+skip = 2;
 
 lineOrder = [3 2 1 4];
 
 %orderedLegendTexts = legendTexts{lineOrder};
 
+cfigure(14,6);
 %subplot(1, 3, 1);
 hold on
 for i = lineOrder
@@ -161,13 +162,14 @@ for i = lineOrder
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('Timed Path Error (m)','FontSize',12);
-ylabel('Probability','FontSize',12);
+xlabel('Timed Path Error (m)','FontSize',14);
+ylabel('Probability','FontSize',14);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_greedyA_path']);
 
-
+%{
 cfigure(14,6);
 
 hold on
@@ -180,8 +182,11 @@ end
 xlabel('Path Error (m)', 'FontSize',12);
 ylabel('Probability', 'FontSize',12);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_greedyA_shape']);
+%}
+
 
 % bi-shape
 
@@ -194,9 +199,10 @@ for i = lineOrder
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
 
-xlabel('Bi-Path Error (m)', 'FontSize',12);
-ylabel('Probability', 'FontSize',12);
+xlabel('Path Error (m)', 'FontSize',14);
+ylabel('Probability', 'FontSize',14);
 grid on;
+xlim([0 2000])
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'real_driving_greedyA_bishape']);
 

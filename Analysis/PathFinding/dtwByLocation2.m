@@ -2,10 +2,10 @@
 clc; close all; clear all;
 add_paths;
 %rng(100);
-
+%%
 NUM_PATHS = 5000;
 PATH_LEN = 256;
-
+%%
 % Goal: for each location, pick a number of random true paths. for each
 % random true path, pick a number of fake candidate paths and perform dtw.
 % of all the dtw results, compute a % error number so that we can say per
@@ -102,12 +102,12 @@ ylimValue = [
     1e-3 1
     1e-3 1
     1e-6 1
-    1e-6 1
+    1e-5*0.8 1e-2
     ];
 
 xinterest = 11:PATH_LEN;
 skip = 5;
-for j = 1:3
+for j = [2 4]
     cfigure(14, 6);
     x = xinterest;
     y = abs_errors(xinterest,j) / testCount(j) + 1e-6;

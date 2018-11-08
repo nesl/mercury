@@ -109,7 +109,7 @@ skip = 10;
 lineOrder = [3 2 1 4];
 
 
-
+%{
 hold on
 for i = lineOrder
     x = sort(topNShapeError(i,:));
@@ -119,9 +119,11 @@ end
 xlabel('Path Error (m)','FontSize',12);
 ylabel('Probability','FontSize',12);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_dp_shape']);
-
+%}
 
 cfigure(14,6);
 hold on
@@ -130,9 +132,11 @@ for i = lineOrder
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('Bi-Path Error (m)','FontSize',12);
-ylabel('Probability','FontSize',12);
+xlabel('Path Error (m)','FontSize',14);
+ylabel('Probability','FontSize',14);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_dp_bishape']);
 
@@ -144,9 +148,11 @@ for i = lineOrder
     y = linspace(0, 1, length(x));
     plot(x(1:skip:end), y(1:skip:end), colors{i}, 'LineWidth',2);
 end
-xlabel('Timed Path Error (m)','FontSize',12);
-ylabel('Probability','FontSize',12);
+xlabel('Timed Path Error (m)','FontSize',14);
+ylabel('Probability','FontSize',14);
 grid on;
+xlim([0 1001]);
+ylim([0 1.01]);
 legend(legendTexts{lineOrder}, 'Location', 'SouthEast');
 saveplot([dirSaveFigure 'sim_dp_path']);
 
@@ -374,3 +380,7 @@ for tidx=1:length(test_files)
     fclose(fid);
 end
 %}
+
+
+
+
